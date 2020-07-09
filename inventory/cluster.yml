@@ -12,6 +12,5 @@ all:
                 p1.local:
                 p3.local:
         workers:
-            hosts:
-                even:
-                odd:
+            even:
+            odd:
