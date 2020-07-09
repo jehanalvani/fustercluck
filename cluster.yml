@@ -1,0 +1,17 @@
+all:
+    children:
+        main:
+            hosts:
+                cluster0.local:
+        even:
+            hosts:
+                p2.local:
+                p4.local:
+        odd:
+            hosts:
+                p1.local:
+                p3.local:
+        workers:
+            hosts:
+                even:
+                odd:
