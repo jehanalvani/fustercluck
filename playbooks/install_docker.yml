@@ -1,0 +1,112 @@
+# This is modified from a playbook by Aruna Lakmal
+# https://www.techcrumble.net/2019/12/how-install-docker-and-docker-compose-using-ansible-playbooks/
+
+# {{ target }} must be provided via `-e "taget:[pattern]"` argument
+# from the command line. 
+
+# {{ remote_username }} must be provided via `-e "remote_username:[usename]"` argument
+# from the command line.
+
+# This playbook requires -K (--ask-become-pass) because the remote user must become root 
+# to lock apt (most apt functions require sudo)
+
+--- 
+  - hosts: "{{ target }}"
+    become: yes
+
+
+
+# User that Ansible runs as on the remote system can be passed or defined below.
+
+    tasks:
+
+      - name: Install docker prerequisites
+        remote_user: "{{ remote_username }}"
+        apt:
+            name: "{{ item }}"
+            state: present
+            update_cache: yes
+        with_items:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+        tags:
+          - docker
+
+      - name: Add Docker's official GPG key
+        remote_user: "{{ remote_username }}"
+        apt_key:
+          url: https://download.docker.com/linux/debian/gpg
+          state: present
+        tags:
+          - docker
+
+      - name: Verify that we have the key with the fingerprint
+        remote_user: "{{ remote_username }}"
+        apt_key:
+          id: 0EBFCD88
+          state: present
+        tags:
+          - docker
+
+      - name: Set up the stable repository
+        remote_user: "{{ remote_username }}"
+        apt_repository:
+          repo: deb [arch=armhf] https://download.docker.com/linux/debian/ buster stable
+          state: present
+          update_cache: yes
+        tags:
+          - docker
+
+      - name: Update apt packages
+        remote_user: "{{ remote_username }}"
+        apt:
+          update_cache: yes
+        tags:
+          - docker
+
+      - name: Install docker
+        remote_user: "{{ remote_username }}"
+        apt:
+          name: docker-ce
+          state: present
+          update_cache: yes
+        #notify: Start docker on boot
+        tags:
+          - docker
+          
+      - name: Install docker-cli
+        remote_user: "{{ remote_username }}"
+        apt:
+          name: docker-ce-cli
+          state: present
+          update_cache: yes
+        #notify: Start docker on boot
+        tags:
+          - docker
+
+
+      - name: "Add remote '{{ remote_username }}' user to 'docker' group"
+        remote_user: "{{ remote_username }}"
+        user:
+          name: "{{ remote_username }}"
+          group: "docker"
+          append: yes
+        tags:
+          - docker
+
+      - name: Install docker-compose
+        remote_user: "{{ remote_username }}"
+        apt:
+          name: docker-compose
+          state: present
+          update_cache: yes
+
+
+##      - name: Install docker-compose
+##        remote_user: "{{ remote_username }}"
+##        get_url: 
+##          url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-armv71
+##         dest: /usr/local/bin/docker-compose
+##          mode: 'u+x,g+x'
