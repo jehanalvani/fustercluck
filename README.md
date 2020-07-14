@@ -4,7 +4,7 @@ All the stuff that makes my fun cluster do the stuff it do.
 
 ## Key Components
 
-1. Controller pi (3b+, cluster0 in `inventory/cluster.yml`)
+1. Controller pi (3b+, cluster0 in `cluster.yml`)
 2. ClusterHat
 3. 4x Pi ZeroWs
 5. SSH & Keys
@@ -21,4 +21,4 @@ All the stuff that makes my fun cluster do the stuff it do.
         * `HomeBridge` requires full access to the local LAN; I'd prefer to run this in a container on the Controller Pi. 
 4. Create a *new* user Controller and Worker Pis
    * Create and distribute SSH keys   
-5. Create Inventory file (`inventory/cluster.yml`)
+5. Create Inventory file (`cluster.yml`)
