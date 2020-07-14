@@ -23,14 +23,13 @@
       - name: Install docker prerequisites
         remote_user: "{{ remote_username }}"
         apt:
-            name: "{{ item }}"
+            name: 
+                - apt-transport-https
+                - ca-certificates
+                - curl
+                - software-properties-common
             state: present
             update_cache: yes
-        with_items:
-          - apt-transport-https
-          - ca-certificates
-          - curl
-          - software-properties-common
         tags:
           - docker
 
@@ -70,7 +69,7 @@
         remote_user: "{{ remote_username }}"
         apt:
           name: docker-ce
-          state: present
+          state: latest
           update_cache: yes
         #notify: Start docker on boot
         tags:
@@ -95,6 +94,16 @@
           append: yes
         tags:
           - docker
+          - groupmod
+
+      - name: "Add `iptables` entry to permit reaching clusterhat ZeroWs"
+        become: yes
+        iptables:
+            chain: FORWARD
+            policy: ACCEPT
+        tags:
+          - iptables
+
 
       - name: Install docker-compose
         remote_user: "{{ remote_username }}"
@@ -102,11 +111,7 @@
           name: docker-compose
           state: present
           update_cache: yes
+        tags:
+         - docker_compose
 
 
-##      - name: Install docker-compose
-##        remote_user: "{{ remote_username }}"
-##        get_url: 
-##          url : https://github.com/docker/compose/releases/download/1.25.1-rc1/docker-compose-Linux-armv71
-##         dest: /usr/local/bin/docker-compose
-##          mode: 'u+x,g+x'
