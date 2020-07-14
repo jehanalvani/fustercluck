@@ -19,5 +19,6 @@ All the stuff that makes my fun cluster do the stuff it do.
     * This is to allow me to more easily accomplish the following:
         * Run Ansible Playbooks from my PCs rather than require the cluster controller to be the Ansible host.
         * `HomeBridge` requires full access to the local LAN; I'd prefer to run this in a container on the Controller Pi. 
-4. Create a *new* user and SSH keys on Controller and Worker Pis
+4. Create a *new* user Controller and Worker Pis
+   * Create and distribute SSH keys   
 5. Create Inventory file (`inventory/cluster.yml`)
