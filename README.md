@@ -4,7 +4,7 @@ All the stuff that makes my fun cluster do the stuff it do.
 
 ## Key Components
 
-1. Controller pi (3b+, cluster0 in `inventory/cluster.yml')
+1. Controller pi (3b+, cluster0 in `inventory/cluster.yml`)
 2. ClusterHat
 3. 4x Pi ZeroWs
 5. SSH & Keys
