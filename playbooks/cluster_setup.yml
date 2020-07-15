@@ -1,0 +1,132 @@
+# Playbook runs basic setup and configuration for clusterhat cluster using USBBOOT images. Follow steps below.
+# 1. Image controller SD with desired clusterctrl image
+# 2. Touch `ssh` in `boot` vol (/Volumes/boot on MacOS)
+# 3. Boot controller from SD
+# 4. ssh to  controller using default username/pw and change hostname
+# 4. Copy pi user ID `ssh-copy-id [pi user id file] pi@[hostname]`
+# 5. Run playbook with ` ansible-playbook -i cluster.yml -limit main  --private-key ~/.ssh/pi_id_ecdsa -u pi playbooks/cluster_setup.yml -K `
+# 6. Once completed boot workers using clusterhat control or Worker power ctrl playbook
+# 7. Copy pi user ID `ssh-copy-id [pi user id file] pi@p[1-4].local`
+# 8. `ansible-playbook -i cluster.yml --limit workers --private-key ~/.ssh/pi_id_ecdsa -u pi playbooks/cluster_setup.yml  -K --tags workers`
+# 9. Password change playbook.
+---
+  - hosts: all
+    remote_user: pi
+    become: yes
+    
+    
+    tasks:
+        
+      - name: Add the user 'jehan' with default admin groups
+        user:
+            name: jehan
+            groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+            append: yes
+            create_home: true
+        tags: 
+            - controller
+            - workers
+            - user_accounts
+                
+      - name: Add the user 'ansible' user with default admin groups
+        user:
+            name: ansible
+            groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+            append: yes
+            create_home: true
+        tags: 
+            - controller
+            - workers
+            - user_accounts
+        
+      - name: Set authorized keys taken from url
+        authorized_key:
+            user: jehan
+            state: present
+            key: https://github.com/jehanalvani.keys
+        tags: 
+            - controller
+            - workers
+            - keys
+                
+      - name: Set authorized keys taken from url
+        authorized_key:
+            user: ansible
+            state: present
+            key: https://github.com/jehanalvani.keys
+        tags: 
+            - controller
+            - workers
+            - keys
+              
+      - name: Create a directory if it does not exist
+        file:
+            path: /tmp/usbboot_image/
+            state: directory
+            mode: '0755'
+        tags: 
+            - controller
+                                 
+      - name: Download the USBBOOT image
+        get_url: 
+            url: https://dist.8086.net/clusterctrl/usbboot/buster/2020-02-13/ClusterCTRL-2020-02-13-lite-1-usbboot.tar.xz
+            dest: /tmp/usbboot_image/clusterctrl.tar.gz
+        tags:
+            - controller
+
+      - name: Clear the P1-4 boot directories if contents exit
+        file:
+            path: /var/lib/clusterctrl/nfs/{{ item }}/*
+            state: absent
+        with_items:
+            - p1
+            - p2
+            - p3
+            - p4
+        tags:
+            - controller
+        
+
+      - name: Unpack the clusterctrl image to the P1-4 directories
+        unarchive:
+            src: /tmp/usbboot_image/clusterctrl.tar.gz
+            remote_src: yes
+            dest: /var/lib/clusterctrl/nfs/{{ item }}/
+        with_items:
+            - p1
+            - p2
+            - p3
+            - p4
+        tags:
+            - controller
+            
+      - name: Cleanup the temp image file
+        file:
+            path: /tmp/usbboot_image/clusterctrl.tar.gz
+            state: absent
+        tags:
+            - controller
+
+      - name: USBBOOT init the four USBBOOT directories
+        shell:
+            cmd: usbboot-init {{ item }}
+        with_items:
+            - 1
+            - 2
+            - 3
+            - 4
+        tags:
+            - controller
+            
+      - name: Create a `ssh` file in /boot/ of the P1-4 boot dirs to enable ssh on first startup
+        file:
+            path: /var/lib/clusterctrl/nfs/{{ item }}/boot/ssh
+            state: touch
+        with_items:
+            - p1
+            - p2
+            - p3
+            - p4
+        tags: 
+            - controller
+            - enable_ssh
