@@ -1,6 +1,6 @@
 ---
 -   hosts: main
-
+    remote_user: ansible
     vars_prompt:  
         
       - name: workers_list
