@@ -19,9 +19,9 @@ All the stuff that makes my fun cluster do the stuff it do.
 3. `ssh` to Controller using default username/password
 4. Copy `pi` user keys to controller
 5. Run `playbooks/cluster_setup.yml` against the controller RaspberryPi. 
-	* `ansible-playbook -i cluster.yml -limit main  --private-key [priv key file] -u pi playbooks/cluster_setup.yml -K`
+	* `ansible-playbook -i cluster.yml -limit main  --private-key [key file] -u pi playbooks/cluster_setup.yml -K`
 6. Boot ZeroWs, all have bridge IPs on local LAN 
 4. Copy `pi` user key to blades
 5. Setup the blades
-	* `ansible-playbook -i cluster.yml --limit workers --private-key ~/.ssh/pi_id_ecdsa -u pi playbooks/cluster_setup.yml  -K --tags workers`
+	* `ansible-playbook -i cluster.yml --limit workers --private-key [key file] -u pi playbooks/cluster_setup.yml  -K --tags workers`
 6. Change user passwords on all rPis (Controller and Workers)
