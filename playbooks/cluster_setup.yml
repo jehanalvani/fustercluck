@@ -8,7 +8,7 @@
 # 6. Once completed boot workers using clusterhat control or Worker power ctrl playbook
 # 7. Copy pi user ID `ssh-copy-id [pi user id file] pi@p[1-4].local`
 # 8. `ansible-playbook -i cluster.yml --limit workers --private-key ~/.ssh/pi_id_ecdsa -u pi playbooks/cluster_setup.yml  -K --tags workers`
-# 9. Password change playbook.
+
 ---
   - hosts: all
     remote_user: pi
