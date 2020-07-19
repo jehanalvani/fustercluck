@@ -1,9 +1,6 @@
 # This is modified from a playbook by Aruna Lakmal
 # https://www.techcrumble.net/2019/12/how-install-docker-and-docker-compose-using-ansible-playbooks/
 
-# {{ target }} must be provided via `-e "taget:[pattern]"` argument
-# from the command line. 
-
 # {{ remote_username }} must be provided via `-e "remote_username:[usename]"` argument
 # from the command line.
 
@@ -11,8 +8,9 @@
 # to lock apt (most apt functions require sudo)
 
 --- 
-  - hosts: "{{ target }}"
+  - hosts: main
     become: yes
+    remote_user: ansible
 
 
 
@@ -20,8 +18,12 @@
 
     tasks:
 
+
+      - debug: var=ansible_user
+        tags:
+            - groupmod
+
       - name: Install docker prerequisites
-        remote_user: "{{ remote_username }}"
         apt:
             name: 
                 - apt-transport-https
@@ -32,86 +34,87 @@
             update_cache: yes
         tags:
           - docker
+          - controller
+          - workers
 
       - name: Add Docker's official GPG key
-        remote_user: "{{ remote_username }}"
         apt_key:
           url: https://download.docker.com/linux/debian/gpg
           state: present
         tags:
           - docker
-
+          - controller
+          - workers
+          
       - name: Verify that we have the key with the fingerprint
-        remote_user: "{{ remote_username }}"
         apt_key:
           id: 0EBFCD88
           state: present
         tags:
           - docker
+          - controller
+          - workers
 
       - name: Set up the stable repository
-        remote_user: "{{ remote_username }}"
         apt_repository:
           repo: deb [arch=armhf] https://download.docker.com/linux/debian/ buster stable
           state: present
           update_cache: yes
         tags:
           - docker
-
-      - name: Update apt packages
-        remote_user: "{{ remote_username }}"
-        apt:
-          update_cache: yes
-        tags:
-          - docker
+          - controller
+          - workers
 
       - name: Install docker
-        remote_user: "{{ remote_username }}"
         apt:
-          name: docker-ce
-          state: latest
-          update_cache: yes
-        #notify: Start docker on boot
-        tags:
-          - docker
-          
-      - name: Install docker-cli
-        remote_user: "{{ remote_username }}"
-        apt:
-          name: docker-ce-cli
+          name: 
+            - docker-ce
+            - docker-ce-cli
           state: present
           update_cache: yes
         #notify: Start docker on boot
         tags:
           - docker
-
-
-      - name: "Add remote '{{ remote_username }}' user to 'docker' group"
-        remote_user: "{{ remote_username }}"
+          - controller
+          - workers
+                    
+      - name: "Add remote-user to 'docker' group"
         user:
-          name: "{{ remote_username }}"
+          name: "{{ ansible_user }}"
           group: "docker"
           append: yes
         tags:
           - docker
           - groupmod
+          - controller
+          - workers
 
       - name: "Add `iptables` entry to permit reaching clusterhat ZeroWs"
-        become: yes
         iptables:
             chain: FORWARD
             policy: ACCEPT
         tags:
           - iptables
-
-
+          - controller
+          - workers
+        
+      - name: Start DHCPd Service, if not already running
+        service: 
+            name: dhcpd.service
+            enabled: yes
+            state: started
+        tags:
+            - dhcpd
+            - controller
+            
+            
       - name: Install docker-compose
-        remote_user: "{{ remote_username }}"
         apt:
           name: docker-compose
           state: present
           update_cache: yes
         tags:
          - docker_compose
-
+          - controller
+          - workers
 
