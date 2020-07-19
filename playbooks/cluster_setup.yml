@@ -13,7 +13,8 @@
   - hosts: all
     remote_user: pi
     become: yes
-    
+    vars:
+        sudoer_uname: ansible
     
     tasks:
         
@@ -38,6 +39,15 @@
             - controller
             - workers
             - user_accounts
+
+      - name: Generate a template for /etc/sudoers.d/ansible enabling passwordless priv excalation
+        template:
+            src: sudoers.d.j2
+            dest: /etc/sudoers.d/{{ sudoer_uname }}
+        tags:
+           - controller
+           - workers
+           - template
         
       - name: Set authorized keys taken from url
         authorized_key:
