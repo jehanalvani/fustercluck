@@ -1,0 +1,26 @@
+  - hosts: all
+    remote_user: pi
+    become: yes
+    
+    vars_prompt:
+    
+      - name: "username"
+        prompt: "Username"
+        private: no
+
+
+      - name: "password"
+        prompt: "New password"
+        private: yes
+        encrypt: "sha512_crypt"
+        confirm: yes
+        unsafe: yes
+        salt_size: 7
+
+    
+    tasks:
+        
+      - name: Update {{ username }}'s password
+        user:
+            name: "{{ username }}"
+            password: "{{ password }}"
