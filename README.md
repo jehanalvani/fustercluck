@@ -26,4 +26,4 @@ All the stuff that makes my fun cluster do the stuff it do.
 	* `ansible-playbook -i cluster.yml --limit workers --private-key [key file] -u pi playbooks/cluster_setup.yml  -K --tags workers`
 6. Change user passwords on all rPis (Controller and Workers)
 7. Run `ansible-playbook -i cluster.yml playbooks/install_docker.yml`
-8. Run `ansible-playbook -i cluster.yml playbooks/homebridge_setup.yml' 
+8. Run `ansible-playbook -i cluster.yml playbooks/homebridge_setup.yml`
