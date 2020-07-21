@@ -1,0 +1,65 @@
+{
+    "bridge": {
+        "name": "Homebridge",
+        "username": "CC:22:3F:E3:CE:31",
+        "port": 51826,
+        "pin": "037-45-154"
+    },
+
+    "description": "Configuration file including Garage Door and Camera Platform",
+
+	 "accessories":
+        [
+            {
+            "accessory": "opengarage",
+            "name": "Garage",
+            "garage_open_url": "http://10.0.1.137/cc?dkey=k$Q7/pYoJE2v&click=1",
+            "garage_close_url": "http://10.0.1.137/cc?dkey=k$Q7/pYoJE2v&click=1",
+            "status_url": "http://10.0.1.137/jc"
+            }
+        ],
+	
+	"platforms": [{	
+	  "platform": "Camera-ffmpeg",
+	  "cameras": 
+	  [
+		{
+		  "name": "Front Porch",
+		  "videoConfig": {
+			"source": "-re -i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.164:554/cam/realmonitor?channel=1&subtype=0",
+			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.164/cgi-bin/snapshot.cgi?1",
+			"maxStreams": 2,
+			"maxWidth": 1280,
+			"maxHeight": 720,
+			"maxFPS": 30,
+			"vcodec": "h264_omx"            
+		  }
+		},	
+		{
+		  "name": "Garage Door",
+		  "videoConfig": {
+			"source": "-re -i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.163:554/cam/realmonitor?channel=1&subtype=0",
+			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.163/cgi-bin/snapshot.cgi?1",
+			"maxStreams": 2,
+			"maxWidth": 1280,
+			"maxHeight": 720,
+			"maxFPS": 30,
+			"vcodec": "h264_omx"            
+		  }
+		  },
+		  {
+		  "name": "Backyard",
+		  "videoConfig": {
+			"source": "-re -i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.157:554/cam/realmonitor?channel=1&subtype=0",
+			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.157/cgi-bin/snapshot.cgi?1",
+			"maxStreams": 2,
+			"maxWidth": 1280,
+			"maxHeight": 720,
+			"maxFPS": 30,
+			"vcodec": "h264_omx"            
+		  }
+		}			  
+	  ]
+	}
+	]
+	}
