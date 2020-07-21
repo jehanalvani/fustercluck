@@ -1,11 +1,8 @@
 # This is modified from a playbook by Aruna Lakmal
 # https://www.techcrumble.net/2019/12/how-install-docker-and-docker-compose-using-ansible-playbooks/
 
-# {{ remote_username }} must be provided via `-e "remote_username:[usename]"` argument
-# from the command line.
-
 # This playbook requires -K (--ask-become-pass) because the remote user must become root 
-# to lock apt (most apt functions require sudo)
+# to lock apt (most apt functions require sudo), if your remote_user does not have NOPASSWD powers
 
 --- 
   - hosts: main
