@@ -25,11 +25,11 @@
             name: python-configparser
             state: absent
         
-#      - name: "Install Python docker pkg via pip if not already installed"
-#        pip:
-#            name: 
-#                - docker
-#            state: present
+      - name: "Install Python docker pkg via pip if not already installed"
+        pip:
+            name: 
+               - docker
+            state: present
         
       - name: "Modify ownership of /config directory"
         file:

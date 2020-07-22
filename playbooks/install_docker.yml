@@ -20,13 +20,14 @@
         tags:
             - groupmod
 
-      - name: Install docker prerequisites
+      - name: Install docker prerequisites and iptables-persistent
         apt:
             name: 
                 - apt-transport-https
                 - ca-certificates
                 - curl
                 - software-properties-common
+                - iptables-persistent
             state: present
             update_cache: yes
         tags:
@@ -85,25 +86,63 @@
           - groupmod
           - controller
           - workers
+          
+      - name: "Add remote-user to 'docker' group"
+        user:
+          name: "jehan"
+          group: "docker"
+          append: yes
+        tags:
+          - docker
+          - groupmod
+          - controller
+          - workers
 
       - name: "Add `iptables` entry to permit reaching clusterhat ZeroWs"
         iptables:
             chain: FORWARD
             policy: ACCEPT
+            state: present
         tags:
           - iptables
           - controller
           - workers
-        
-      - name: Start DHCPd Service, if not already running
-        service: 
-            name: dhcpd.service
-            enabled: yes
-            state: started
+
+      - name: "Add `iptables` entry to permit transit packet on br0 interface"
+        iptables:
+            chain: FORWARD
+            in_interface: br0
+            out_interface: br0 
+            jump: ACCEPT
+            state: present
         tags:
-            - dhcpd
             - controller
+      
+      - name: "Use iptables-persistent to save modified iptables v4 and v6 to respective files"
+        command: 
+            cmd: /usr/sbin/iptables-save -f /etc/iptables/rules.v4
+        tags:
+            - controller
+            - workers
+            - iptables-save
+
             
+#      - name: Start DHCPd Service, if not already running
+#        service: 
+#            name: dhcpd.service
+#            enabled: yes
+#            state: started
+#        tags:
+#            - dhcpd
+#            - controller
+    
+      - name: "Remove python-configparser due to incompatibilities with ARM"
+        apt:
+            name: python-configparser
+            state: absent
+        tags: 
+            - controller
+            - workers    
             
       - name: Install docker-compose
         apt:

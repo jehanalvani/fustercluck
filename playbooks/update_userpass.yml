@@ -1,5 +1,5 @@
   - hosts: all
-    remote_user: pi
+    remote_user: ansible
     become: yes
     
     vars_prompt:
