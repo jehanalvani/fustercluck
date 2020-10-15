@@ -6,25 +6,27 @@
         "pin": "037-45-154",
         "debug": true
     },
-
+    
     "description": "Configuration file including Garage Door and Camera Platform",
 
-	 "accessories":
-        [
-            {
-            "accessory": "OpenGarage",
-            "name": "Garage",
-            "ip": "10.0.1.137",
-            "key": "k$Q7/pYoJE2v",
-            "openCloseDurationSecs": 25,
-            "pollFrequencySecs": 60
-            }
-        ],
+	"accessories":
+	[
+		{
+		"accessory": "OpenGarage",
+		"name": "Garage",
+		"ip": "10.0.1.137",
+		"key": "k$Q7/pYoJE2v",
+		"openCloseDurationSecs": 25,
+		"pollFrequencySecs": 60
+		}
+	],
 	
-	"platforms": [{	
-	  "platform": "Camera-ffmpeg",
-	  "cameras": 
-	  [
+	"platforms": 
+	[
+		{	
+	  	"platform": "Camera-ffmpeg",
+	  	"cameras": 
+	  	[
 		{
 		  "name": "Front Porch",
 		  "videoConfig": {
@@ -32,8 +34,7 @@
 			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.164/cgi-bin/snapshot.cgi?1",
 			"maxWidth": 1920,
 			"maxHeight": 1080,
-			"maxFPS": 12,
-			"vcodec": "libx264",            
+			"maxFPS": 30,
 			"audio": "false"
 		  }
 		},	
@@ -44,8 +45,7 @@
 			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.163/cgi-bin/snapshot.cgi?1",
 			"maxWidth": 1920,
 			"maxHeight": 1080,
-			"maxFPS": 12,
-			"vcodec": "libx264",
+			"maxFPS": 30,
 			"audio": "false"            
 		  }
 		  },
@@ -56,12 +56,25 @@
 			"stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.157/cgi-bin/snapshot.cgi?1",
 			"maxWidth": 1920,
 			"maxHeight": 1080,
-			"maxFPS": 12,
-			"vcodec": "libx264",
+			"maxFPS": 30,
 			"audio": "false"			            
 		  }
 		}			  
 	  ]
-	}
+		}
+		{
+		"platform": "LutronCasetaPlatform",
+		"bridgeConnection": {
+			"host": "10.0.1.117"
+		},
+		"accessories": 	
+		[
+			{
+			"name": "Office Five-Button Audio Remote",
+			"type": "PJ2-3BRL"
+			"integrationID": 39
+			}
+		]
+		}
 	]
-	}
+}
