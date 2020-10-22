@@ -1,0 +1,31 @@
+---
+  - name: Add the user '{{ interactive_uname }}' with default admin groups  
+    user:
+        name: {{ interactive_uname }}
+        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+        append: yes
+        create_home: true
+
+  - name: Add the user '{{ ansible_uname }}' user with default admin groups
+    user:
+        name: {{ ansible_uname }}
+        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+        append: yes
+        create_home: true    
+
+  - name: Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation
+    template:
+        src: sudoers.d.j2
+        dest: /etc/sudoers.d/{{ ansible_uname }}
+
+  - name: Set authorized keys taken from url
+    authorized_key:
+        user: {{ interactive_uname }}
+        state: present
+        key: https://github.com/jehanalvani.keys
+            
+  - name: Set authorized keys taken from url
+    authorized_key:
+        user: {{ ansible_uname }}
+        state: present
+        key: https://github.com/jehanalvani.keys

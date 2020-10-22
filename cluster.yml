@@ -1,5 +1,8 @@
 all:
     children:
+        new:
+            hosts:
+                raspberrypi.local:
         main:
             hosts:
                 cluster0.local:
@@ -15,3 +18,4 @@ all:
             children:
                 even:
                 odd:
+        

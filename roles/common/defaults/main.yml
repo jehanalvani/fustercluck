@@ -1,0 +1,5 @@
+---
+# defaults file for common
+
+  - vars: 
+        ansible_uname: ansible
