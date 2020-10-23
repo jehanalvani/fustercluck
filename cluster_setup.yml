@@ -1,0 +1,7 @@
+---
+ - hosts: new
+   remote_user: pi
+   become: yes
+   
+   roles:
+   - common

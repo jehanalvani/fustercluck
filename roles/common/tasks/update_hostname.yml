@@ -1,0 +1,12 @@
+---
+
+  - name: update hostname on "{{ inventory_hostname }}"
+    hostname:
+        name: "{{ hostname }}"
+
+  - name: add "{{ hostname }}" to "{{ inventory_hostname }}'s'" /etc/hosts file
+    lineinfile:
+        dest: /etc/hosts
+        regexp: '^127\.0\.0\.1[ \t]+localhost'
+        line: "127.0.0.1 localhost {{ hostname }}"
+        state: present

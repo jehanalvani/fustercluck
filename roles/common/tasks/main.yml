@@ -1,6 +1,6 @@
 ---
 # tasks file for common
 
+- import_tasks: update_hostname.yml
 - import_tasks: user_setup.yml
-- import_tasks: install_avahi.yml
-- import_tasks: configure_avahi.yml
+# - import_tasks: configure_avahi.yml

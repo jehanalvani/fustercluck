@@ -1,5 +1,4 @@
 ---
 # defaults file for common
-
-  - vars: 
-        ansible_uname: ansible
+ansible_uname: ansible
+interactive_uname: jehan

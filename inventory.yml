@@ -1,21 +1,33 @@
+---
+
 all:
     children:
         new:
             hosts:
                 raspberrypi.local:
+                    hostname: cluster1
         main:
             hosts:
                 cluster0.local:
+                    hostname: cluster0
         even:
             hosts:
                 p2.local:
+                    hostname: p2
                 p4.local:
+                    hostname: p4
         odd:
             hosts:
+                cluster1.local:
+                    hostname: cluster1
                 p1.local:
+                    hostname: p1
                 p3.local:
+                    hostname: p3
+        cluster_master:
+            children:
+                    main:
         workers:
             children:
                 even:
                 odd:
-        
