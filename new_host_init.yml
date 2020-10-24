@@ -8,6 +8,15 @@
 
 
 ---
+ - hosts: new
+   remote_user: pi
+   become: yes
+   vars_files:
+    - vars/external_variables.yml
+   
+   roles:
+   - common
+   
 
  - hosts: cluster
    remote_user: ansible

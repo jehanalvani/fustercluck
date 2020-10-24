@@ -1,0 +1,5 @@
+# Global variables file for fustercluckvars
+---
+
+ansible_uname: ansible
+interactive_uname: jehan

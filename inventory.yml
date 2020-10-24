@@ -27,6 +27,14 @@ all:
         cluster_master:
             children:
                     main:
+        cluster_workers:
+            hosts: cluster1.local
+            
+        cluster:
+            children:
+                cluster_master:
+                cluster_workers:
+ 
         workers:
             children:
                 even:

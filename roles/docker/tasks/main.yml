@@ -1,0 +1,74 @@
+---
+# tasks file for docker role
+
+  - name: Install docker prerequisites and iptables-persistent
+    apt:
+        name: 
+            - apt-transport-https
+            - ca-certificates
+            - curl
+            - software-properties-common
+            - iptables-persistent
+        state: present
+        update_cache: yes
+    tags:
+      - docker
+      - controller
+      - workers
+
+  - name: Add Docker's official GPG key
+    apt_key:
+      url: https://download.docker.com/linux/debian/gpg
+      state: present
+    tags:
+      - docker
+      - controller
+      - workers
+      
+  - name: Verify that we have the key with the fingerprint
+    apt_key:
+      id: 0EBFCD88
+      state: present
+    tags:
+      - docker
+      - controller
+      - workers
+
+  - name: Set up the stable repository
+    apt_repository:
+      repo: deb [arch=armhf] https://download.docker.com/linux/debian/ buster stable
+      state: present
+      update_cache: yes
+    tags:
+      - docker
+      - controller
+      - workers
+
+  - name: Install docker
+    apt:
+      name: 
+        - docker-ce
+        - docker-ce-cli
+      state: present
+      update_cache: yes
+    #notify: Start docker on boot
+                
+  - name: "Add {{ ansible_uname }} to 'docker' group"
+    user:
+      name: "{{ ansible_uname }}"
+      group: "docker"
+      append: yes
+      
+  - name: "Add {{interactive_uname }} to 'docker' group"
+    user:
+      name: "{{ interactive_uname }}"
+      group: "docker"
+      append: yes
+
+  - name: "Remove python-configparser due to incompatibilities with ARM"
+    apt:
+        name: python-configparser
+        state: absent
+
+
+
