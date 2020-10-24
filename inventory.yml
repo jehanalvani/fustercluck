@@ -5,7 +5,7 @@ all:
         new:
             hosts:
                 raspberrypi.local:
-                    hostname: cluster1
+                    hostname: raspberrypi
         main:
             hosts:
                 cluster0.local:

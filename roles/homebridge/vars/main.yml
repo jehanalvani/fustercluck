@@ -1,2 +1,6 @@
 ---
 # vars file for homebridge
+
+homebridge_mount_path: /mnt/homebridge
+nfs_server: starman.local
+homebridge_nfs_path: /volume1/homebridge

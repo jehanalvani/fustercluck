@@ -1,0 +1,15 @@
+# Playbook to setup homebridge role
+---
+
+ - hosts: cluster0.local
+   remote_user: ansible
+   become: yes
+   vars_files:
+    - vars/external_variables.yml
+   
+   roles:
+   - homebridge
+
+
+
+       
