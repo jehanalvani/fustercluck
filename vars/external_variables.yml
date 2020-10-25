@@ -13,4 +13,4 @@ homebridge_nfs_path: /volume1/homebridge
 # vars for prometheus
 
 prometheus_mount_path: /mnt/prometheus
-homebridge_nfs_path: /volume1/prometheus
+prometheus_nfs_path: /volume1/prometheus
