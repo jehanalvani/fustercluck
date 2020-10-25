@@ -1,0 +1,73 @@
+---
+# tasks file for roles/prometheus---
+
+  - name: "Install python-pip, virtualenv if they aren't already"
+    apt: 
+        name:
+            - python-pip
+            - virtualenv
+            - python-setuptools
+        state: present
+        update_cache: yes
+
+  - name: "Remove python-configparser due to incompatibilities with ARM"
+    apt:
+        name: python-configparser
+        state: absent
+    
+  - name: "Install Python docker pkg via pip if not already installed"
+    pip:
+        name: 
+           - docker
+        state: present
+v    
+#  - name: "Modify ownership of /config directory"
+#    file:
+#       path: /config
+#       group: users
+#       state: directory
+    
+  - name: "Create mountpoint"
+    file: 
+        path: "{{ prometheus_mount_path }}"
+        state: directory
+        mode: 0777
+        owner: root
+        group: users
+        
+
+  - name: "Mount nfs drive for Homebridge filesystem"
+    mount: 
+        path: "{{ prometheus_mount_path }}"
+        src: "{{ nfs_server }}:{{ prometheus_nfs_path }}"
+        state: mounted
+        fstype: nfs
+        
+  - name: "Create config.json in mountpoint from template"
+    template: 
+        src: prometheus.yml.j2
+        dest: "{{ prometheus_mount_path }}/prometheus.yml"
+
+ # - name: "Create startup.sh in mountpoint from template"
+ #   template: 
+ #       src: homebridge.startup.sh.j2
+ #       dest: "{{ homebridge_mount_path }}/startup.sh"
+        
+  - name: "Deploy prometheus container"
+    docker_container:
+        name: prometheus
+        image: prom/prometheus:latest
+        restart_policy: always
+        state: started
+        network_mode: host
+#        env:
+#        # might need to replace PGIO and PUID with user parameter
+#            PGID: "995"
+#            PUID: "1002"
+#            HOMEBRIDGE_CONFIG_UI: "1"
+#            HOMEBRIDGE_CONFIG_UI_PORT: "8080"
+        volumes:
+            - "{{ prometheus_mount_path }}:/etc/prometheus"
+#        comparisons:
+#            '*': ignore
+#            env: strict
