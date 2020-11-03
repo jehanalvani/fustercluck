@@ -17,13 +17,3 @@
    roles:
    - common
    
-
- - hosts: cluster
-   remote_user: ansible
-   become: yes
-   vars_files:
-    - vars/external_variables.yml
-   
-   roles:
-   - docker
-   

@@ -7,6 +7,7 @@
             - python-pip
             - virtualenv
             - python-setuptools
+            - nfs-common
         state: present
         update_cache: yes
 
@@ -21,56 +22,43 @@
            - docker
         state: present
     
-#  - name: "Modify ownership of /config directory"
-#    file:
-#       path: /config
-#       group: users
-#       state: directory
-    
-  - name: "Create mountpoint"
-    file: 
-        path: "{{ prometheus_mount_path }}"
+   
+  - name: "Create {{ prometheus_config_path }} if it does not exist"
+    file:
+        path: "{{ prometheus_config_path }}"
         state: directory
-        mode: 0777
-        owner: root
-        group: users
+        mode: '0775'
         
-
-  - name: "Mount nfs drive for prometheus filesystem"
-    mount: 
-        path: "{{ prometheus_mount_path }}"
-        src: "{{ nfs_server }}:{{ prometheus_nfs_path }}"
-        state: mounted
-        fstype: nfs
+  - name: "Create prometheus.yml in {{ prometheus_config_path }} from template"
+    template: 
+        src: prometheus.yml.j2
+        dest: "{{ prometheus_config_path }}/prometheus.yml"
         
-#  - name: "Create prometheus.yml in mountpoint from template"
-#    template: 
-#        src: prometheus.yml.j2
-#        dest: "{{ prometheus_mount_path }}/prometheus.yml"
-
- # - name: "Create startup.sh in mountpoint from template"
- #   template: 
- #       src: homebridge.startup.sh.j2
- #       dest: "{{ homebridge_mount_path }}/startup.sh"
-        
+                
+  - name: "Creates named docker volume at {{ prometheus_mount_path }}"
+    docker_volume:
+        volume_name: prometheus_persist
+        state: present
+        driver_options: 
+            type: nfs
+            o: "addr={{ nfs_server }},rw"
+            device: ":{{ prometheus_nfs_path }}"
+            
+            
   - name: "Deploy prometheus container"
     docker_container:
         name: prometheus
-        image: prom/prometheus:latest
+        hostname: prometheus
+        image: prom/prometheus
         restart_policy: always
         state: started
-        network_mode: host
-        hostname: prometheus
-        exposed_ports: 9090
-        published_ports: 9090:9090
-#        env:
-#        # might need to replace PGIO and PUID with user parameter
-#            PGID: "995"
-#            PUID: "1002"
-#            HOMEBRIDGE_CONFIG_UI: "1"
-#            HOMEBRIDGE_CONFIG_UI_PORT: "8080"
+        ports: 9090:9090
         volumes:
-            - "{{ prometheus_mount_path }}:/etc/prometheus"
-        comparisons:
-            '*': ignore
-          
+          - "{{ prometheus_config_path }}:/etc/prometheus"
+        mounts:
+          - source: prometheus_persist
+            target: /prometheus
+            read_only: no
+            type: volume        
+        comparisons:        
+            env: strict
