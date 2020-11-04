@@ -1,4 +1,4 @@
-# Playbook to setup prometheus role
+# Playbook to setup grafana role
 ---
 
  - hosts: cluster1.local
@@ -8,5 +8,5 @@
     - vars/external_variables.yml
    
    roles:
-   - prometheus
+   - grafana
       
