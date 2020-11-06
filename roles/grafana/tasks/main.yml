@@ -43,7 +43,7 @@
         state: started
         ports: 3000:3000
         env:
-            GF_INTSTALL_PLUGINS: "{{ grafana_plugins }}"         
+            GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"         
         mounts:
           - source: grafana_persist
             target: "/var/lib/grafana"
