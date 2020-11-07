@@ -21,4 +21,9 @@ prometheus_nfs_path: /volume1/prometheus
 
 grafana_plugins: "grafana-clock-panel,grafana-simple-json-datasource"
 grafana_nfs_path: /volume1/grafana
-grafana_mount_path: /mnt/grafana
+# grafana_mount_path: /mnt/grafana
+
+# vars for statping:
+
+statping_nfs_path: /volume1/statping_persist
+# statping_mount_path: 

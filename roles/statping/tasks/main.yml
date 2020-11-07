@@ -1,5 +1,5 @@
 ---
-# tasks file for roles/grafana
+# tasks file for roles/statping
 
   - name: "Install python-pip, virtualenv if they aren't already"
     apt: 
@@ -22,34 +22,28 @@
            - docker
         state: present
 
-  - name: "Creates named docker volume at {{ grafana_mount_path }}"
+  - name: "Creates named docker volume"
     docker_volume:
-        volume_name: grafana_persist
+        volume_name: statping_persist
         state: present
         driver_options: 
             type: nfs
             o: "addr={{ nfs_server }},rw"
-            device: ":{{ grafana_nfs_path }}"
+            device: ":{{ statping_nfs_path }}"
             
 
-
-
-  - name: "Deploy grafana container"
+  - name: "Deploy statping container"
     docker_container:
-        name: grafana
-        image: grafana/grafana
+        name: statping
+        image: statping/statping
         restart_policy: always
         network_mode: host
         state: started
-        ports: 3000:3000
-        env:
-            GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"         
+        ports: 8080:8080
         mounts:
-          - source: grafana_persist
-            target: "/var/lib/grafana"
+          - source: statping_persist
+            target: "/app"
             read_only: no
-            type: volume     
-        volumes:
-            - "/var/lib/dbus:/var/lib/dbus"
+            type: volume
         comparisons:        
             env: strict

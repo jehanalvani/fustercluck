@@ -17,3 +17,9 @@ scrape_configs:
 
     static_configs:
       - targets: ['localhost:9090']
+      
+     
+  - job_name: 'statping'
+    bearer_token: 'd0b3875a76473018409a4b2ace29a8f1cce785694bfecd312812769e15d33f0a'
+    static_configs:
+      - targets: ['localhost:8080']
