@@ -43,13 +43,13 @@
         state: started
         ports: 3000:3000
         env:
-            GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"         
+            GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"  
+            GF_STRAVA_DS_DATA_PATH: "/var/lib/grafana/strava"    
+            GF_PLUGINS_ENABLE_ALPHA: "true"   
         mounts:
           - source: grafana_persist
             target: "/var/lib/grafana"
             read_only: no
             type: volume     
-        volumes:
-            - "/var/lib/dbus:/var/lib/dbus"
         comparisons:        
             env: strict

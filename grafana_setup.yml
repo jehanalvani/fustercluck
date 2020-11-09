@@ -8,5 +8,6 @@
     - vars/external_variables.yml
    
    roles:
+   - common
    - grafana
       
