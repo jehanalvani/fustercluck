@@ -8,6 +8,7 @@
     - vars/external_variables.yml
    
    roles:
+   - common
    - homebridge
 
 
