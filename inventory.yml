@@ -24,6 +24,10 @@ all:
                     hostname: p1
                 p3.local:
                     hostname: p3
+        ancillary:
+            hosts:
+                displaypi.local:
+                    hostname: displaypi
         cluster_master:
             children:
                     main:
@@ -39,3 +43,4 @@ all:
             children:
                 even:
                 odd:
+        
