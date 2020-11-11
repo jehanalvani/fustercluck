@@ -5,25 +5,21 @@ All the stuff that makes my fun cluster do the stuff it do.
 ## Key Components
 
 1. Controller pi (3b+, cluster0 in `cluster.yml`)
-2. ClusterHat
-3. 4x Pi ZeroWs
-5. SSH & Keys
-6. Ansible
+2. SSH & Keys
+3. [Cloudalchemy's node_exporter role](https://github.com/cloudalchemy/ansible-node-exporter)[^1] `ansible-galaxy install cloudalchemy.node-exporter`
+4. 
 
 ## Steps
 
-1. Flash Controller Pi SD 
-    * [CBRIDGE - Lite Controller Buster Image](http://dist.8086.net/clusterctrl/buster/2020-02-13/ClusterCTRL-2020-02-13-lite-1-CBRIDGE.zip)
+1. Flash Pi SD 
 	1. Touch `ssh` in `boot` vol (/Volumes/boot on MacOS)
-2. Boot controller rPi from SD
 3. `ssh` to Controller using default username/password
 4. Copy `pi` user keys to controller
 5. Run `playbooks/cluster_setup.yml` against the controller RaspberryPi. 
-	* `ansible-playbook -i cluster.yml -limit main  --private-key [key file] -u pi playbooks/cluster_setup.yml -K`
-6. Boot ZeroWs, all have bridge IPs on local LAN 
-4. Copy `pi` user key to blades
-5. Setup the blades
-	* `ansible-playbook -i cluster.yml --limit workers --private-key [key file] -u pi playbooks/cluster_setup.yml  -K --tags workers`
-6. Change user passwords on all rPis (Controller and Workers)
-7. Run `ansible-playbook -i cluster.yml playbooks/install_docker.yml`
-8. Run `ansible-playbook -i cluster.yml playbooks/homebridge_setup.yml`
+	* `ansible-playbook -i cluster.yml -limit main  --private-key [key file] -u pi playbooks/new_host_init.yml`
+6. Run playbooks for appropriate role configurations
+
+---
+
+## Footnotes
+[1]: The CloudAlchemy role, if run from a Mac, requires disabling export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES (more detail [here](https://github.com/cloudalchemy/ansible-node-exporter/issues/54) and [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html)) and requires `gnu-tar` (`brew install gnu-tar`)

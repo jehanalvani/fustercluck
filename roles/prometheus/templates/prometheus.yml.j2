@@ -23,3 +23,15 @@ scrape_configs:
     bearer_token: 'd0b3875a76473018409a4b2ace29a8f1cce785694bfecd312812769e15d33f0a'
     static_configs:
       - targets: ['localhost:8080']
+
+  - job_name: 'raspberry_pis'
+    static_configs:
+      - targets: ['10.0.1.246:9100']
+        labels: 
+            hostname: "displaypi"
+      - targets: ['10.0.1.42:9100']
+        labels: 
+            hostname: "cluster0"
+      - targets: ['10.0.1.201:9100']
+        labels: 
+            hostname: "cluster1"            

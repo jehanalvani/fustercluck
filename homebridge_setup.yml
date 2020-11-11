@@ -9,6 +9,7 @@
    
    roles:
    - common
+   - docker
    - homebridge
 
 
