@@ -35,3 +35,12 @@ scrape_configs:
       - targets: ['10.0.1.201:9100']
         labels: 
             hostname: "cluster1"            
+            
+  - job_name: 'cAdvisor'
+    static_configs:
+      - targets: ['10.0.1.42:8000']
+        labels: 
+            hostname: "cluster0"
+      - targets: ['10.0.1.201:8000']
+        labels: 
+            hostname: "cluster1"            

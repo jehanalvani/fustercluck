@@ -1,0 +1,19 @@
+---
+# tasks file for roles/zcube-cadvisor
+
+
+  - name: "Deploy cAdvisor container"
+    docker_container:
+        name: cAdvisor
+        image: zcube/cadvisor
+        restart_policy: always
+        state: started
+        ports: 8000:8080
+        volumes: 
+            - /:/rootfs:ro
+            - /var/run:/var/run:ro 
+            - /sys:/sys:ro
+            - /var/lib/docker/:/var/lib/docker:ro
+            - /dev/disk/:/dev/disk:ro 
+        comparisons:        
+            env: strict

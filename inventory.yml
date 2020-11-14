@@ -35,4 +35,18 @@ all:
             children:
                 even:
                 odd:
+        homebridge:
+            hosts: 
+                cluster0.local:
+        grafana:
+            hosts: 
+                cluster1.local:
+        statping:
+            hosts:
+                cluster1.local:
+        prometheus:
+            hosts:
+                cluster1.local:
+            
+            
         

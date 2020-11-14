@@ -1,7 +1,7 @@
 # Playbook to setup grafana role
 ---
 
- - hosts: cluster1.local
+ - hosts: statping
    remote_user: ansible
    become: yes
    vars_files:
@@ -11,4 +11,5 @@
    - common
    - docker
    - statping
+   - zcube-cadvisor
       

@@ -1,12 +1,15 @@
 # Playbook to setup prometheus role
 ---
 
- - hosts: cluster1.local
+ - hosts: prometheus
    remote_user: ansible
    become: yes
    vars_files:
     - vars/external_variables.yml
    
    roles:
+   - common
+   - docker
    - prometheus
+   - zcube-cadvisor
       
