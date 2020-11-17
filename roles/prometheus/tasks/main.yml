@@ -65,6 +65,9 @@
           - source: prometheus_persist
             target: /prometheus
             read_only: no
-            type: volume        
+            type: volume      
+        env:
+          PUID: "1002"
+          PGID: "995"
         comparisons:        
             env: strict

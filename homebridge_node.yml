@@ -1,0 +1,39 @@
+# Playbook to setup homebridge role
+---
+
+ - hosts: cluster0.local
+   remote_user: ansible
+   become: yes
+   vars_files:
+    - vars/external_variables.yml
+
+   pre_tasks:
+       
+      - name: "Install pip, setuptools, virtualenv if not already"
+        apt: 
+           name:
+                - python-pip
+                - python-setuptools
+                - virtualenv
+           state: present
+           update_cache: yes
+    
+      - name: "Install pyOpenSSL if not already"
+        pip:
+           name:
+               - cryptography 
+               - pyOpenSSL  # required for OpenSSL cert creation
+           state: present
+
+   
+   roles:
+     - common 
+     - docker
+     - homebridge
+     - cloudalchemy.node-exporter
+     - zcube-cadvisor
+   
+
+
+
+       

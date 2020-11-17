@@ -9,7 +9,7 @@
 
 ---
 
-  - hosts: all
+  - hosts: cluster1.local
     remote_user: ansible
     become: yes
     vars_files:
@@ -37,6 +37,11 @@
 
        
     roles:
-    - common
-    - cloudalchemy.node-exporter
+      - common
+      - docker
+      - prometheus
+      - grafana
+      - zcube-cadvisor
+      - statping
+      - cloudalchemy.node-exporter
 
