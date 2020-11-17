@@ -1,6 +1,21 @@
 ---
 # tasks file for roles/zcube-cadvisor
 
+  - name: Append details to /boot/cmdline.txt
+    linelinfile:
+        create: yes
+        state: present
+        path: /boot/cmdline.txt
+        line: " cgroup_enable=cpuset cgroup_enable=memory cgroup_memory=1"
+
+  - name: Append to /etc/docker/daemon.json
+    lineinfile:
+        create: yes
+        state: present
+        path: /etc/docker/daemon.json
+        line: '{ "exec-opts": ["native.cgroupdriver=systemd"] }'
+
+
 
   - name: "Deploy cAdvisor container"
     docker_container:
