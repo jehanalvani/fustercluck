@@ -36,9 +36,8 @@
     docker_container:
         name: statping
         image: statping/statping
-        restart_policy: always
-        network_mode: host
         state: started
+        restart_policy: always
         ports: 8080:8080
         mounts:
           - source: statping_persist

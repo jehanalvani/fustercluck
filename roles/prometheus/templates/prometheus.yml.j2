@@ -22,7 +22,7 @@ scrape_configs:
   - job_name: 'statping'
     bearer_token: 'd0b3875a76473018409a4b2ace29a8f1cce785694bfecd312812769e15d33f0a'
     static_configs:
-      - targets: ['localhost:8080']
+      - targets: ['statping.alvani.me']
 
   - job_name: 'raspberry_pis'
     static_configs:
@@ -34,8 +34,12 @@ scrape_configs:
             hostname: "cluster0"
       - targets: ['10.0.1.201:9100']
         labels: 
-            hostname: "cluster1"            
+            hostname: "cluster1"
+      - targets: ['10.0.1.252:9100']
+        labels:
+            hostname: "cluster2"
             
+                            
   - job_name: 'cAdvisor'
     static_configs:
       - targets: ['10.0.1.42:8000']
@@ -43,4 +47,7 @@ scrape_configs:
             hostname: "cluster0"
       - targets: ['10.0.1.201:8000']
         labels: 
-            hostname: "cluster1"            
+            hostname: "cluster1"
+      - targets: ['10.0.1.252:8000']
+        labels:
+            hostname: "cluster2"    

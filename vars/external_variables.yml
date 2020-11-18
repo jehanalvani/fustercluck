@@ -12,7 +12,7 @@ homebridge_nfs_path: /volume1/homebridge
 
 # vars for prometheus
 
-prometheus_mount_path: /mnt/prometheus
+prometheus_mnt_path: /mnt/prometheus
 prometheus_config_path: /etc/prometheus
 prometheus_nfs_path: /volume1/prometheus
 
@@ -21,7 +21,7 @@ prometheus_nfs_path: /volume1/prometheus
 
 grafana_plugins: "grafana-clock-panel,grafana-simple-json-datasource,grafana-synthetic-monitoring-app,innius-video-panel,grafana-strava-datasource"
 grafana_nfs_path: /volume1/grafana
-# grafana_mount_path: /mnt/grafana
+grafana_mnt_path: /mnt/grafana
 
 # vars for statping:
 

@@ -9,7 +9,7 @@
 
 ---
 
-  - hosts: monitoring
+  - hosts: database
     remote_user: ansible
     become: yes
     vars_files:
@@ -39,8 +39,7 @@
     roles:
       - common
       - docker
-      - grafana
+      - prometheus
       - zcube-cadvisor
-      - statping
       - cloudalchemy.node-exporter
 

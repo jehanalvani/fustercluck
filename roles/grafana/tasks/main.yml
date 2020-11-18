@@ -22,7 +22,16 @@
            - docker
         state: present
 
-  - name: "Creates named docker volume at {{ grafana_mount_path }}"
+  - name: Mount grafana NFS Share to host
+    mount:
+        src: "{{ nfs_server }}:{{ grafana_nfs_path }}"
+        path: "{{ grafana_mnt_path }}"
+        fstype: nfs
+        state: mounted
+        
+
+
+  - name: Creates named docker volume 'grafana_persist' 
     docker_volume:
         volume_name: grafana_persist
         state: present

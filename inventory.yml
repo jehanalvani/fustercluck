@@ -1,52 +1,35 @@
 ---
 
 all:
+    hosts: 
+        displaypi.local:
+#        raspberrypi.local:
     children:
-
-        main:
-            hosts:
-                cluster0.local:
-                    hostname: cluster0
-        even:
-            hosts:
-       
-        odd:
-            hosts:
-                cluster1.local:
-                    hostname: cluster1
-        ancillary:
-            hosts:
-                displaypi.local:
-                    hostname: displaypi
-                    
-        cluster_master:
+        lab:
             children:
-                    main:
-
-        cluster_workers:
-            hosts: cluster1.local
-            
-        cluster:
-            children:
-                cluster_master:
-                cluster_workers:
- 
-        workers:
-            children:
-                even:
-                odd:
-        homebridge:
-            hosts: 
-                cluster0.local:
-        grafana:
-            hosts: 
-                cluster1.local:
-        statping:
-            hosts:
-                cluster1.local:
-        prometheus:
-            hosts:
-                cluster1.local:
-            
+                homebridge:
+                    hosts: 
+                        cluster0.local:
+                monitoring:
+                    hosts:
+                        cluster1.local:
+                database:
+                    hosts:
+                        cluster2.local:
+                grafana:
+                    hosts: 
+                        cluster1.local:
+                statping:
+                    hosts:
+                        cluster1.local:
+                prometheus:
+                    hosts:
+                        cluster1.local:
+                cAdvisor:
+                    hosts:
+                        cluster0.local:
+                        cluster1.local:
+                
+                        
             
         
