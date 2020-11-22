@@ -4,8 +4,8 @@
  - hosts: homebridge
    remote_user: ansible
    become: yes
-   vars_files:
-    - vars/external_variables.yml
+#   vars_files:
+#    - vars/external_variables.yml
 
    pre_tasks:
        

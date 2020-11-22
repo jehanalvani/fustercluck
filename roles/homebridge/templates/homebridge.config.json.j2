@@ -11,7 +11,7 @@
             "accessory": "OpenGarage",
             "name": "Garage",
             "ip": "10.0.1.137",
-            "key": "k$Q7/pYoJE2v",
+            "key": "{{ open_garage_key }}",
             "openCloseDurationSecs": 25,
             "pollFrequencySecs": 60
         }
@@ -24,8 +24,8 @@
                     "name": "Front Porch",
                     "unbridge": false,
                     "videoConfig": {
-                        "source": "-i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.164:554/cam/realmonitor?channel=1&subtype=0",
-                        "stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.164/cgi-bin/snapshot.cgi?1",
+                        "source": "-i rtsp://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.164:554/cam/realmonitor?channel=1&subtype=0",
+                        "stillImageSource": "-i http://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.164/cgi-bin/snapshot.cgi?1",
                         "maxWidth": 0,
                         "maxHeight": 0,
                         "maxFPS": 0,
@@ -36,8 +36,8 @@
                 {
                     "name": "Garage Door",
                     "videoConfig": {
-                        "source": "-i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.163:554/cam/realmonitor?channel=1&subtype=0",
-                        "stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.163/cgi-bin/snapshot.cgi?1",
+                        "source": "-i rtsp://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.163:554/cam/realmonitor?channel=1&subtype=0",
+                        "stillImageSource": "-i http://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.163/cgi-bin/snapshot.cgi?1",
                         "maxWidth": 0,
                         "maxHeight": 0,
                         "maxFPS": 0,
@@ -47,8 +47,8 @@
                 {
                     "name": "Backyard",
                     "videoConfig": {
-                        "source": "-i rtsp://stream:snJUJ8uvLnykKBZojN@10.0.1.157:554/cam/realmonitor?channel=1&subtype=0",
-                        "stillImageSource": "-i http://stream:snJUJ8uvLnykKBZojN@10.0.1.157/cgi-bin/snapshot.cgi?1",
+                        "source": "-i rtsp://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.157:554/cam/realmonitor?channel=1&subtype=0",
+                        "stillImageSource": "-i http://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.157/cgi-bin/snapshot.cgi?1",
                         "maxWidth": 0,
                         "maxHeight": 0,
                         "maxFPS": 0,

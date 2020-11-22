@@ -12,8 +12,8 @@
   - hosts: monitoring
     remote_user: ansible
     become: yes
-    vars_files:
-       - vars/external_variables.yml
+#    vars_files:
+#       - vars/external_variables.yml
    
 
 
@@ -42,5 +42,6 @@
       - grafana
       - zcube-cadvisor
       - statping
+#      - varken
       - cloudalchemy.node-exporter
 

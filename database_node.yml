@@ -12,8 +12,8 @@
   - hosts: database
     remote_user: ansible
     become: yes
-    vars_files:
-       - vars/external_variables.yml
+#    vars_files:
+#       - vars/external_variables.yml
    
 
 
@@ -40,6 +40,7 @@
       - common
       - docker
       - prometheus
+      - influxdb
       - zcube-cadvisor
       - cloudalchemy.node-exporter
 

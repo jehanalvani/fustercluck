@@ -1,2 +1,5 @@
 ---
 # vars file for common
+
+ansible_uname: ansible
+interactive_uname: jehan

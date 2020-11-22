@@ -11,8 +11,8 @@
  - hosts: all
    remote_user: pi
    become: yes
-   vars_files:
-    - vars/external_variables.yml
+#   vars_files:
+#    - vars/external_variables.yml
    
    roles:
    - common

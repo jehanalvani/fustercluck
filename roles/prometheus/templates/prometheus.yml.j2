@@ -51,3 +51,7 @@ scrape_configs:
       - targets: ['10.0.1.252:8000']
         labels:
             hostname: "cluster2"    
+    
+  - job_name: 'influxDB' 
+    static_configs:
+        - targets: ['influxdb.alvani.me']

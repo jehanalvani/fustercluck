@@ -1,2 +1,7 @@
 ---
 # vars file for roles/grafana
+
+nfs_server: starman.local
+grafana_plugins: "grafana-clock-panel,grafana-simple-json-datasource,grafana-synthetic-monitoring-app,innius-video-panel,grafana-strava-datasource,yesoreyeram-boomtheme-panel"
+grafana_nfs_path: /volume1/grafana
+grafana_mnt_path: /mnt/grafana
