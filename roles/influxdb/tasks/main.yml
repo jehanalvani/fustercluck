@@ -1,0 +1,66 @@
+---
+# tasks file for roles/influxdb
+
+  - name: "Install python-pip, virtualenv if they aren't already"
+    apt: 
+        name:
+            - python-pip
+            - virtualenv
+            - python-setuptools
+            - nfs-common
+        state: present
+        update_cache: yes
+
+  - name: "Remove python-configparser due to incompatibilities with ARM"
+    apt:
+        name: python-configparser
+        state: absent
+    
+  - name: "Install Python docker pkg via pip if not already installed"
+    pip:
+        name: 
+           - docker
+        state: present
+        
+  - name: Mount InfluxDB NFS Share to host
+    mount:
+        src: "{{ nfs_server }}:{{ influxdb_nfs_path }}"
+        path: "{{ influxdb_mnt_path }}"
+        fstype: nfs
+        state: mounted
+
+  - name: "Create influxdb.conf in mountpoint from template"
+    template: 
+        src: influxdb.config.j2
+        dest: "{{ influxdb_mnt_path }}/influxdb.conf"
+       
+  - name: Creates named docker volume for database
+    docker_volume:
+       volume_name: influxdb_db_persist
+       state: present
+       driver_options: 
+           type: nfs
+           o: "addr={{ nfs_server }},rw"
+           device: ":{{ influxdb_nfs_path }}/db"
+
+    
+  - name: "Deploy InfluxDB container"
+    docker_container:
+        name: influxDB
+        hostname: influxdb
+        image: arm32v7/influxdb
+        restart_policy: always
+        state: started
+        ports: 
+          - 8086:8086
+        volumes:
+          - "{{ influxdb_mnt_path }}/influxdb.conf:/etc/influxdb/influxdb.conf"
+        mounts:
+          - source: influxdb_db_persist
+            target: /var/lib/influxdb
+            read_only: no
+            type: volume
+        env:
+            INFLUXDB_CONFIG_PATH: "/etc/influxdb/influxdb.conf"
+
+            

@@ -42,6 +42,6 @@
       - grafana
       - zcube-cadvisor
       - statping
-#      - varken
+      - varken
       - cloudalchemy.node-exporter
 
