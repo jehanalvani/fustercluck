@@ -1,2 +1,7 @@
 ---
 # vars file for roles/prometheus
+
+nfs_server: starman.local
+prometheus_mnt_path: /mnt/prometheus
+prometheus_config_path: /etc/prometheus
+prometheus_nfs_path: /volume1/prometheus
