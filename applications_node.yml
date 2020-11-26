@@ -43,5 +43,6 @@
       - zcube-cadvisor
       - statping
       - varken
+      - nzbget
       - cloudalchemy.node-exporter
 
