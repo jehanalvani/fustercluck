@@ -42,16 +42,16 @@ Server1.Level=0
 Server1.Optional=no
 Server1.Group=0
 Server1.Host={{ nzbget_server1_host }}
-Server1.Port=119
+Server1.Port={{ nzbget_server1_port }}
 Server1.Username={{ nzbget_server1_username }}
 Server1.Password={{ nzbget_server1_password }} 
 Server1.JoinGroup=no
-Server1.Encryption=no
+Server1.Encryption=yes
 Server1.Cipher=
-Server1.Connections=4
-Server1.Retention=0
+Server1.Connections=8
+Server1.Retention=4487
 Server1.IpVersion=auto
-Server1.Notes=
+Server1.Notes=Highwinds/Omicron-Backed
 
 ## Server 2
 Server2.Active=yes
@@ -60,16 +60,34 @@ Server2.Level=0
 Server2.Optional=no
 Server2.Group=0
 Server2.Host={{ nzbget_server2_host }}
-Server2.Port=119
+Server2.Port={{ nzbget_server2_port }}
 Server2.Username={{ nzbget_server2_username }}
 Server2.Password={{ nzbget_server2_password }}
 Server2.JoinGroup=no
 Server2.Encryption=no
 Server2.Cipher=
-Server2.Connections=4
+Server2.Connections=30
 Server2.Retention=0
 Server2.IpVersion=auto
-Server2.Notes=
+Server2.Notes=Giganews-Backed
+
+## Server 3
+Server3.Active=yes
+Server3.Name={{ nzbget_server3_name }}
+Server3.Level=1
+Server3.Optional=no
+Server3.Group=0
+Server3.Host={{ nzbget_server3_host }}
+Server3.Port={{ nzbget_server3_port }}
+Server3.Username={{ nzbget_server3_username }}
+Server3.Password={{ nzbget_server3_password }}
+Server3.JoinGroup=no
+Server3.Encryption=yes
+Server3.Cipher=
+Server3.Connections=40
+Server3.Retention=0
+Server3.IpVersion=auto
+Server3.Notes=Uzo Reto-backed
 
 # Categories
 
@@ -87,7 +105,14 @@ Category2.Name=Series
 Category2.DestDir=
 Category2.Unpack=yes
 Category2.Extensions=
-Category2.Aliases=series
+Category2.Aliases=series,tv
+
+## Category 3
+Category3.Name=Anime
+Category3.DestDir=
+Category3.Unpack=yes
+Category3.Extensions=
+Category3.Aliases=anime
 
 
 # Unpack
