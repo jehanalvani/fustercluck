@@ -37,12 +37,31 @@
 
        
     roles:
-      - common
-      - docker
-      - grafana
-      - zcube-cadvisor
-      - statping
-      - varken
-      - nzbget
-      - cloudalchemy.node-exporter
+      - role: common
+        tags:
+          - common
+      - role: docker
+        tags:
+          - docker
+      - role: grafana
+        tags:
+          - grafana
+      - role: zcube-cadvisor
+        tags:
+          - cadvisor
+      - role: statping
+        tags:
+          - statping
+      - role: varken
+        tags:
+          - varken
+      - role: nzbget
+        tags:
+          - nzbget
+      - role: radarr
+        tags:
+          - radarr
+      - role: cloudalchemy.node-exporter
+        tags:
+          - node-exporter
 

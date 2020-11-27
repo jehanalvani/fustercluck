@@ -13,7 +13,7 @@
 
   - name: "Creates named docker volume at {{ nzbget_intermediate }}"
     docker_volume:
-        volume_name: nzb_intermediate
+        volume_name: nzbget_intermediate
         state: present
         driver_options: 
             type: nfs
@@ -55,5 +55,6 @@
           TZ: "America/Los_Angeles"
           PUID: "1002"
           PGID: "995"
+          UMASK: "003"
         comparisons:        
             env: strict
