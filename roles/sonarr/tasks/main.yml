@@ -1,0 +1,48 @@
+---
+# tasks file for roles/radarr
+
+    
+
+
+  - name: "Creates named docker volume media"
+    docker_volume:
+        volume_name: media
+        state: present
+        driver_options: 
+            type: nfs
+            o: "addr={{ nfs_server }},rw"
+            device: ":{{ media_nfs_path }}"
+
+  - name: "Creates named docker volume radarr_config"
+    docker_volume:     
+        volume_name: sonarr_config
+        state: present
+        driver_options: 
+            type: nfs
+            o: "addr={{ nfs_server }},rw"
+            device: ":{{ sonarr_config_nfs_path }}"
+
+           
+  - name: "Deploy Sonarr container"
+    docker_container:
+        name: sonarr
+        hostname: sonarr
+        image: linuxserver/sonarr
+        restart_policy: always
+        state: started
+        ports: 8989:8989
+        mounts:
+          - source: sonarr_config
+            target: /config
+            read_only: no
+            type: volume
+          - source: media
+            target: /media
+            read_only: no
+            type: volume
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1002"
+          PGID: "995"
+        comparisons:        
+            env: strict

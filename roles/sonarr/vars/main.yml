@@ -1,0 +1,7 @@
+---
+# vars file for roles/sonarr
+
+nfs_server: starman.local
+media_nfs_path: /volume1/media
+sonarr_config_nfs_path: /volume1/sonarr_config
+
