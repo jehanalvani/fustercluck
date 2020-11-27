@@ -1,14 +1,14 @@
 ---
 # tasks file for roles/nzbget
 
-  - name: "Creates named docker volume at {{ nzb_downloads }}"
+  - name: "Creates named docker volume media"
     docker_volume:
-        volume_name: nzb_downloads
+        volume_name: media
         state: present
         driver_options: 
             type: nfs
             o: "addr={{ nfs_server }},rw"
-            device: ":{{ nzb_downloads_nfs_path }}"
+            device: ":{{ media_nfs_path }}"
 
 
   - name: "Creates named docker volume at {{ nzbget_intermediate }}"
@@ -45,8 +45,8 @@
             target: /intermediate
             read_only: no
             type: volume
-          - source: nzb_downloads
-            target: /downloads
+          - source: media
+            target: /media
             read_only: no
             type: volume
         volumes:

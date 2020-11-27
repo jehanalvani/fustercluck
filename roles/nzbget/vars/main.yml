@@ -2,12 +2,16 @@
 # vars file for roles/nzbget
 
 nfs_server: starman.local
-nzb_downloads_nfs_path: /volume1/nzb_downloads
+media_nfs_path: /volume1/media
 nzb_intermediate_nfs_path: /volume1/nzbget_intermediate
 
-nzbget_config_path: /etc/nzbget/
+nzbget_config_path: /etc/nzbget
+
+
+nzbget_maindir_path: /media/nzb_downloads
 
 # nzbget_config_nfs_path: /volume1/nzbget_config
+
 nzbget_control_username: nzbget
 nzbget_control_password: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
