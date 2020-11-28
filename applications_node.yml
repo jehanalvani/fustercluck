@@ -64,6 +64,9 @@
       - role: sonarr
         tags:
           - sonarr
+      - role: ombi
+        tags:
+          - ombi
       - role: cloudalchemy.node-exporter
         tags:
           - node-exporter
