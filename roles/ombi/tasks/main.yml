@@ -1,0 +1,33 @@
+---
+# tasks file for roles/radarr
+
+    
+  - name: "Creates named docker volume ombi_config"
+    docker_volume:     
+        volume_name: ombi_config
+        state: present
+        driver_options: 
+            type: nfs
+            o: "addr={{ nfs_server }},rw"
+            device: ":{{ ombi_config_nfs_path }}"
+
+           
+  - name: "Deploy Ombi container"
+    docker_container:
+        name: ombi
+        hostname: ombi
+        image: linuxserver/ombi
+        restart_policy: always
+        state: started
+        ports: 3579:3579
+        mounts:
+          - source: ombi_config
+            target: /config
+            read_only: no
+            type: volume
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1002"
+          PGID: "995"
+        comparisons:        
+            env: strict

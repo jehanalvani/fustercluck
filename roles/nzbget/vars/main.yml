@@ -21,6 +21,7 @@ nzbget_control_password: !vault |
           6565383966353831640a396562633932303863643431663434363635653434663764633731643331
           63336139346338313562333230393936633962376638306237666432616632643064
 nzbget_server1_host: news.newsdemon.com
+nzbget_server1_port: 563
 nzbget_server1_username: p10295043
 nzbget_server1_password: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
@@ -31,6 +32,7 @@ nzbget_server1_password: !vault |
           3032
 
 nzbget_server2_host: news.supernews.com
+nzbget_server2_port: 119
 nzbget_server2_username: jehan@jehanalvani.com
 nzbget_server2_password: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
@@ -40,4 +42,15 @@ nzbget_server2_password: !vault |
           3834313465336539390a386639313863393538346439643334633239653437626563383762663332
           3830
           
-          
+
+nzbget_server3_name: ViperNews          
+nzbget_server3_host: news.vipernews.com
+nzbget_server3_port: 563
+nzbget_server3_username: jehan@jehanalvani.com
+nzbget_server3_password: !vault |
+          $ANSIBLE_VAULT;1.2;AES256;fustercluck
+          30356531343166313131383463356638343939333837366562653835613334353937356635633532
+          3037666539303061346432643439313363333166323439320a373566356336396333373766303733
+          63313437383039653738313434383632613839386164653366626130353036623361353833336337
+          3633366265326439390a663934383362326238616230376464336464303930386133323138613965
+          35386533363835643631303462633365653462343639653361633630323666373965
