@@ -1,17 +1,23 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+My own grafana role. Built for personal use in Docker on a Raspberry Pi cluster. Simple handler to restart container when grafani.ini is changed. 
+
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+Ansible, Docker on host node. 
+
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+* `{{ nfs_server }}`: NFS server for data configuration persistence.
+* `{{ grafana_plugins }}`: list of plugins to be installed
+* `{{ grafana_data_nfs_path }}`, `{{ grafana_config_nfs_path }}`: path on NFS exporter to data, path to mount and deploy on host
+* `{{ grafana_data_mnt_path }}`, `{{ grafana_config_mnt_path }}`: path on NFS exporter to config, path to mount and deploy on host
+* `{{ grafana_smtp_username }}`, `{{ grafana_smtp_password }}`: vault encrypted username and password for SMTP
 
 Dependencies
 ------------
@@ -23,9 +29,12 @@ Example Playbook
 
 Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
 
-    - hosts: servers
+    - hosts: application
       roles:
-         - { role: username.rolename, x: 42 }
+         - role: grafana
+           tags:
+           	 - grafana
+      
 
 License
 -------
