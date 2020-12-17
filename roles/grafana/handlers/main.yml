@@ -1,2 +1,9 @@
 ---
 # handlers file for roles/grafana
+
+
+  - name: Restart grafana container
+    docker_container:
+        name: grafana
+        state: started
+        restart: yes

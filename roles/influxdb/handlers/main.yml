@@ -1,2 +1,8 @@
 ---
 # handlers file for roles/influxdb
+
+  - name: Restart influxDB container
+    docker_container:
+        name: influxDB
+        state: started
+        restart: yes

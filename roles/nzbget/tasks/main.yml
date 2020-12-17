@@ -30,7 +30,9 @@
     template: 
         src: nzbget.conf.j2
         dest: "{{ nzbget_config_path }}/nzbget.conf"
-    tags: deploy_prom_config       
+    tags: deploy_prom_config
+    notify: 
+      - Restart nzbget container       
             
   - name: "Deploy NZBget container"
     docker_container:

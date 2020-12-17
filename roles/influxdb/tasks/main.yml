@@ -33,6 +33,8 @@
     template: 
         src: influxdb.config.j2
         dest: "{{ influxdb_mnt_path }}/influxdb.conf"
+    notify: 
+      - Restart influxDB container
        
   - name: Creates named docker volume for database
     docker_volume:
