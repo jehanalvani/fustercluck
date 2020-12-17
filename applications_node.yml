@@ -9,7 +9,7 @@
 
 ---
 
-  - hosts: monitoring
+  - hosts: application
     remote_user: ansible
     become: yes
 #    vars_files:

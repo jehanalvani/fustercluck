@@ -10,7 +10,7 @@ all:
                 homebridge:
                     hosts: 
                         cluster0.local:
-                monitoring:
+                application:
                     hosts:
                         cluster1.local:
                 database:
