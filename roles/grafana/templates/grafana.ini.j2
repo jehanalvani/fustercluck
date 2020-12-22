@@ -32,7 +32,7 @@
 #################################### Server ####################################
 [server]
 # Protocol (http, https, h2, socket)
-;protocol = http
+protocol = http
 
 # The ip address to bind to, empty will bind to all interfaces
 ;http_addr =
@@ -41,14 +41,15 @@
 ;http_port = 3000
 
 # The public facing domain name used to access grafana from a browser
-;domain = localhost
+domain = grafana.alvani.me
 
 # Redirect to correct domain if host header does not match domain
 # Prevents DNS rebinding attacks
-;enforce_domain = false
+; enforce_domain = true
 
 # The full public facing url you use in browser, used for redirects and emails
 # If you use reverse proxy and sub path specify full url (with sub path)
+root_url = %(protocol)s://%(domain)s/
 ;root_url = %(protocol)s://%(domain)s:%(http_port)s/
 
 # Serve Grafana from subpath specified in `root_url` setting. By default it is set to `false` for compatibility reasons.
