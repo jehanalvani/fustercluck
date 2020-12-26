@@ -37,10 +37,23 @@
 
        
     roles:
-      - common
-      - docker
-      - prometheus
-      - influxdb
-      - zcube-cadvisor
-      - cloudalchemy.node-exporter
+      - role: common
+        tags:
+          - common
+      - role: docker
+        tags:
+          - docker 
+      - role: prometheus
+        tags:
+          - prometheus
+      - role: influxdb
+        tags: 
+          - influxdb
+      - role: zcube-cadvisor
+        tags:
+          - cadvisor
+      - role: cloudalchemy.node-exporter
+        tags:
+          - node-exporter
+        
 
