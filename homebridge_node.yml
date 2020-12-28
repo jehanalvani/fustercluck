@@ -27,11 +27,24 @@
 
    
    roles:
-     - common 
-     - docker
-     - homebridge
-     - cloudalchemy.node-exporter
-     - zcube-cadvisor
+      - role: common
+        tags:
+          - common
+      - role: docker
+        tags:
+          - docker
+      - role: cloudalchemy.node-exporter
+        tags:
+          - node-exporter
+      - role: zcube-cadvisor
+        tags:
+          - cadvisor
+      - role: homebridge
+        tags:
+          - homebridge
+              
+          
+
    
 
 

@@ -1,26 +1,6 @@
 ---
 # tasks file for homebridge
 
-  - name: "Install python-pip, virtualenv if they aren't already"
-    apt: 
-        name:
-            - python-pip
-            - virtualenv
-            - python-setuptools
-        state: present
-        update_cache: yes
-
-  - name: "Remove python-configparser due to incompatibilities with ARM"
-    apt:
-        name: python-configparser
-        state: absent
-    
-  - name: "Install Python docker pkg via pip if not already installed"
-    pip:
-        name: 
-           - docker
-        state: present
-    
   - name: "Modify ownership of /config directory"
     file:
        path: /config
@@ -47,11 +27,14 @@
     template: 
         src: homebridge.config.json.j2
         dest: "{{ homebridge_mount_path }}/config.json"
+    notify: Restart homebridge container
 
   - name: "Create startup.sh in mountpoint from template"
     template: 
         src: homebridge.startup.sh.j2
         dest: "{{ homebridge_mount_path }}/startup.sh"
+    notify: Restart homebridge container
+    
         
   - name: "Deploy Homebridge container"
     docker_container:
