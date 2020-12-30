@@ -11,9 +11,8 @@
  - hosts: displaypi.local
    remote_user: pi
    become: yes
-#   vars_files:
-#    - vars/external_variables.yml
-   
+   gather_facts: True
+      
    roles:
    - common
    
