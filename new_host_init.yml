@@ -4,14 +4,21 @@
 # 3. Boot controller from SD
 # 4. ssh to  controller using default username/pw and change hostname
 # 4. Copy pi user ID `ssh-copy-id [pi user id file] pi@[hostname]`
-# 5. Run playbook with `ansible-playbook -i [hostname] --private-key ~/.ssh/pi_id_ecdsa new_host_init.yml -K`
+# 5. Run playbook with one of the following, for example
+#    ansible-playbook -u pi --private-key ~/.ssh/pi_id_ecdsa new_host_init.yml -K
+# or
+#    ansible-playbook -u jehan --private-key ~/.ssh/jehan_personal_id_ecdsa new_host_init.yml -K
+
+
 
 
 ---
- - hosts: displaypi.local
-   remote_user: pi
+ - hosts: displaypi.local,20-size.local
+#   remote_user: pi
    become: yes
-   gather_facts: True
+   gather_facts: true
+   
+   
       
    roles:
    - common

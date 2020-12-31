@@ -1,6 +1,5 @@
 ---
 # vars file for common
-include_vars: vault.yml
 
 ansible_uname: ansible
 ansible_user_pass: "{{ vault_ansible_user_pass }}"

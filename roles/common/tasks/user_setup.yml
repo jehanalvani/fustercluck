@@ -13,7 +13,7 @@
   - name: Add the user '{{ interactive_uname }}' with default admin groups  
     user:
         name: "{{ interactive_uname }}"
-        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
         append: yes
         password: "{{ interactive_user_pass | password_hash('sha512') }}"
         create_home: true
@@ -21,10 +21,21 @@
   - name: Add the user '{{ ansible_uname }}' user with default admin groups
     user:
         name: "{{ ansible_uname }}"
-        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
+        groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
         append: yes
         password: "{{ ansible_user_pass | password_hash('sha512') }}"
         create_home: true    
+        
+#  - name: Check ansible_lsb.id on systems
+#    debug:
+#        msg: "{{ ansible_lsb.id }}"
+#    tags: debug
+
+  - name: Add {{ ansible_uname }} user as system user only if Ubuntu system
+    template:
+        src: service_acct.j2
+        dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
+    when: ansible_lsb.id == "Ubuntu"
 
   - name: Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation
     template:
