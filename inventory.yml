@@ -5,24 +5,24 @@ all:
         displaypi.local:
         20-size.local:
 #        raspberrypi.local:
-        children:
-            lab:
-                children:
-                    homebridge:
-                        hosts: 
-                            cluster0.local:
-                    application:
-                        hosts:
-                            cluster1.local:
-                    database:
-                        hosts:
-                            cluster2.local:
-                    cAdvisor:
-                        hosts:
-                            cluster0.local:
-                            cluster1.local:
-                            cluster2.local:
-                
-                        
+    children:
+        lab:
+            children:
+                homebridge:
+                    hosts: 
+                        cluster0.local:
+                application:
+                    hosts:
+                        cluster1.local:
+                database:
+                    hosts:
+                        cluster2.local:
+                cAdvisor:
+                    hosts:
+                        cluster0.local:
+                        cluster1.local:
+                        cluster2.local:
             
+                    
         
+    
