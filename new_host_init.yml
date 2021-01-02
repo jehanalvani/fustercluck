@@ -21,5 +21,8 @@
    
       
    roles:
-   - common
+     - role: common
+       tags:
+         - common
+
    
