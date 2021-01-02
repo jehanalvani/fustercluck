@@ -24,20 +24,29 @@ scrape_configs:
     static_configs:
       - targets: ['statping.alvani.me']
 
-  - job_name: 'raspberry_pis'
+  - job_name: 'node-exporter'
     static_configs:
       - targets: ['10.0.1.246:9100']
         labels: 
             hostname: "displaypi"
+            class: "raspberry pi"
       - targets: ['10.0.1.42:9100']
         labels: 
             hostname: "cluster0"
+            class: "raspberry pi"
       - targets: ['10.0.1.201:9100']
         labels: 
             hostname: "cluster1"
+            class: "raspberry pi"
       - targets: ['10.0.1.252:9100']
         labels:
             hostname: "cluster2"
+            class: "raspberry pi"
+      - targets: ['10.0.1.217:9100']
+        labels: 
+            hostname: "20-size"
+            class: "nas server"
+
             
                             
   - job_name: 'cAdvisor'
