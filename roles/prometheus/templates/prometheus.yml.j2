@@ -26,40 +26,41 @@ scrape_configs:
 
   - job_name: 'node-exporter'
     static_configs:
-      - targets: ['10.0.1.246:9100']
-        labels: 
-            hostname: "displaypi"
-            class: "raspberry pi"
       - targets: ['10.0.1.42:9100']
         labels: 
             hostname: "cluster0"
             class: "raspberry pi"
+            environment: "cluster"
       - targets: ['10.0.1.201:9100']
         labels: 
             hostname: "cluster1"
             class: "raspberry pi"
+            environment: "cluster"
       - targets: ['10.0.1.252:9100']
         labels:
             hostname: "cluster2"
             class: "raspberry pi"
+            environment: "cluster"
       - targets: ['10.0.1.217:9100']
         labels: 
             hostname: "20-size"
             class: "nas server"
+            environment: "storage"
 
-            
-                            
   - job_name: 'cAdvisor'
     static_configs:
       - targets: ['10.0.1.42:8000']
         labels: 
             hostname: "cluster0"
+            environment: "cluster"
       - targets: ['10.0.1.201:8000']
         labels: 
             hostname: "cluster1"
+            environment: "cluster"
       - targets: ['10.0.1.252:8000']
         labels:
             hostname: "cluster2"    
+            environment: "cluster"
     
   - job_name: 'influxDB' 
     static_configs:
