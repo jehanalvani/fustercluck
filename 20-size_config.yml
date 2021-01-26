@@ -4,25 +4,6 @@
     remote_user: ansible
     become: yes
 
-#    pre_tasks:
-#       
-#       - name: "Install pip, setuptools, virtualenv if not already"
-#         apt: 
-#            name:
-#                - python-pip
-#                - python-setuptools
-#                - virtualenv
-#            state: present
-#            update_cache: yes
-#    
-#       - name: "Install pyOpenSSL if not already"
-#         pip:
-#            name:
-#               - cryptography 
-#               - pyOpenSSL  # required for OpenSSL cert creation
-#            state: present
-
-       
     roles:
       - role: common
         tags:
@@ -39,10 +20,11 @@
           ]
         tags:
           - nfs
-        
-        
-#      - role: docker
+      - role: docker
+        tags:
+          - docker
+#      - role: zcube-cadvisor
 #        tags:
-#          - docker
+#          - cadvisor
 
 

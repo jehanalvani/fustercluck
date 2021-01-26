@@ -1,0 +1,9 @@
+---
+# tasks file for docker role - Ubuntu-specific tasks
+
+
+  - name: Set up the stable repository (Ubuntu)
+    apt_repository:
+      repo: deb https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable
+      state: present
+      update_cache: yes

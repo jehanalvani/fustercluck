@@ -11,38 +11,24 @@
             - iptables-persistent
         state: present
         update_cache: yes
-    tags:
-      - docker
-      - controller
-      - workers
 
   - name: Add Docker's official GPG key
     apt_key:
       url: https://download.docker.com/linux/debian/gpg
       state: present
-    tags:
-      - docker
-      - controller
-      - workers
       
   - name: Verify that we have the key with the fingerprint
     apt_key:
       id: 0EBFCD88
       state: present
-    tags:
-      - docker
-      - controller
-      - workers
 
-  - name: Set up the stable repository
-    apt_repository:
-      repo: deb [arch=armhf] https://download.docker.com/linux/debian/ buster stable
-      state: present
-      update_cache: yes
-    tags:
-      - docker
-      - controller
-      - workers
+  - include_tasks: setup-arm.yml
+    when: ansible_machine is match("armv.*") 
+    # details on above can be found in [Testing Strings](https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html#testing-strings)
+
+  - include_tasks: setup-ubuntu.yml
+    when: ansible_lsb.id == "Ubuntu" 
+
 
   - name: Install docker
     apt:
@@ -51,7 +37,7 @@
         - docker-ce-cli
       state: present
       update_cache: yes
-    #notify: Start docker on boot
+#    notify: Start docker on boot
                 
   - name: "Add {{ ansible_uname }} to 'docker' group"
     user:
@@ -65,10 +51,5 @@
       group: "docker"
       append: yes
 
-  - name: "Remove python-configparser due to incompatibilities with ARM"
-    apt:
-        name: python-configparser
-        state: absent
-
-
+ 
 

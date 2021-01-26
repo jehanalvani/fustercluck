@@ -1,0 +1,15 @@
+---
+# tasks file for docker role - ARM specific tasks
+
+
+  - name: "Remove python-configparser due to incompatibilities with ARM"
+    apt:
+        name: python-configparser
+        state: absent
+
+# armhf likely Raspberry Pi running Raspbian 
+
+  - name: Set up the stable repository
+    apt_repository:
+      repo: deb [arch=armhf] https://download.docker.com/linux/debian/ buster stable
+      state: present
