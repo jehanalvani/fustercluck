@@ -30,6 +30,13 @@
       - role: cloudalchemy.node-exporter
         tags:
           - node-exporter
+      - role: geerlingguy.nfs
+      # `insecure` option required for NFS to be mountable via MacOS' finder
+        nfs_exports: ["/snoqualmie/media 10.0.1.0/24(rw,sync,no_root_squash,insecure)", "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure)"]
+        tags:
+          - nfs
+        
+        
 #      - role: docker
 #        tags:
 #          - docker
