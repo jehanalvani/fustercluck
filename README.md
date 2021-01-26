@@ -7,9 +7,12 @@ All the stuff that makes my fun cluster do the stuff it do.
 1. One or more raspberries pi per `inventory.yml`
 2. SSH & Keys
 3. [Cloudalchemy's node_exporter role](https://github.com/cloudalchemy/ansible-node-exporter)[^1] `ansible-galaxy install cloudalchemy.node-exporter`
+4. [Jeff Geerling's NFS Role](https://github.com/geerlingguy/ansible-role-nfs)
 
 
 ## Steps
+
+### If adding a new Raspberry Pi node
 
 1. Flash Pi SD 
 	1. Touch `ssh` in `boot` vol (/Volumes/boot on MacOS)
@@ -19,6 +22,12 @@ All the stuff that makes my fun cluster do the stuff it do.
 	* `ansible-playbook --private-key [key file] -u pi playbooks/new_host_init.yml`
 6. Run playbooks for appropriate node types
 
+### If adding a new host in general
+
+1. Create `ansible` user and copy `ansible` keys to new host
+2. Run `new_host_init.yml` against the host as the `ansible` user. 
+	* `ansible-playbook --private-key [key file] -u pi playbooks/new_host_init.yml`
+	
 --- 
 
 ## Footnotes
