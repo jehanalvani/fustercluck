@@ -67,5 +67,7 @@
       - role: ombi
         tags:
           - ombi
-
+      - role: cloudalchemy.node-exporter
+        tags:
+          - node-exporter
 
