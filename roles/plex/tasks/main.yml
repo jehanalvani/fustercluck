@@ -81,6 +81,7 @@
             capabilities: 
               - gpu
               - compute
+              - video
               - utility
         comparisons:        
             env: strict
