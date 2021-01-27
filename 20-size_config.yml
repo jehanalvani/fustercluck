@@ -48,5 +48,8 @@
       - role: zcube-cadvisor
         tags:
           - cadvisor
+      - role: plex
+        tags:
+          - plex
 
 

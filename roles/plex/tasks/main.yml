@@ -1,0 +1,86 @@
+---
+# tasks file for plex
+
+
+  - name: Add Nvidia's official GPG key
+    apt_key:
+      url: https://nvidia.github.io/nvidia-docker/gpgkey
+      state: present
+
+  - name: Verify that we have the key with the fingerprint
+    apt_key:
+      id: AC1160CD 
+      state: present
+ 
+  - name: Install nvidia's container toolkit
+    apt:
+        name: 
+            - nvidia-container-toolkit
+        state: present
+        update_cache: yes
+           
+  - name: "Deploy Plex container"
+    docker_container:
+        name: plex
+        hostname: plex
+        image: plexinc/pms-docker:plexpass
+        restart_policy: unless-stopped
+        state: started
+        ports: 
+          - 32400:32400
+          - 32400:32400/udp
+          - 3005:3005
+          - 8324:8324
+          - 32469:32469
+          - 32469:32469/udp
+          - 1900:1900
+          - 1900:1900/udp
+          - 32410:32410
+          - 32410:32410/udp
+          - 32412:32412
+          - 32412:32412/udp
+          - 32413:32413
+          - 32413:32413/udp
+          - 32414:32414
+          - 32414:32414/udp
+        mounts:
+          - source: /snoqualmie/media
+            target: /media
+            read_only: no
+            type: bind
+
+          - source: /seatac/plex/config
+            target: /config
+            read_only: no
+            type: bind
+            
+          - source: /seatac/plex/transcode
+            target: /transcode
+            read_only: no
+            type: bind
+
+          - source: /seatac/plex/backups
+            target: /data/backups
+            read_only: no
+            type: bind
+
+          - source: /seatac/plex/certs
+            target: /data/certs
+            read_only: no
+            type: bind
+        env:
+            TZ: "America/Los_Angeles"
+            PUID: "1001"
+            PGID: "997"
+            PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
+            ADVERTISE_IP: "https://plex.alvani.me/"
+        device_requests: 
+          - device_ids: 0            
+            driver: nvidia
+            #count: -1
+            capabilities: 
+              - gpu
+              - compute
+              - utility
+        comparisons:        
+            env: strict

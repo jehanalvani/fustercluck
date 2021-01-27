@@ -1,0 +1,5 @@
+---
+# vars file for roles/plex
+
+media_path: "/snoqualmie/media"
+plex_config_path: "/seatac/plex"
