@@ -51,5 +51,8 @@
       - role: plex
         tags:
           - plex
+      - role: tautulli
+        tags:
+          - tautulli
 
 

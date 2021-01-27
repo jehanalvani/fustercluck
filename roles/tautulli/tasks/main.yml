@@ -1,0 +1,26 @@
+---
+# tasks file for roles/tautulli
+
+  - name: "Deploy tautulli container"
+    docker_container:
+        name: tautulli
+        hostname: tautulli
+        image: tautulli/tautulli
+        restart_policy: unless-stopped
+        state: started
+        ports: 8181:8181
+        mounts:
+          - source: /whidbey/tautulli_config
+            target: /config
+            read_only: no
+            type: bind
+          - source: "/seatac/plex/config/Library/Application Support/Plex Media Server/Logs"
+            target: /plex_logs
+            read_only: no
+            type: bind
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1001"
+          PGID: "997"
+        comparisons:        
+            env: strict
