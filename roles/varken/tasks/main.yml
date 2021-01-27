@@ -43,6 +43,7 @@
     template: 
         src: varken.ini.j2
         dest: "{{ varken_mount_path }}/varken.ini"
+    notify: Restart varken
 
 
   - name: "Creates named docker volume for varken persistent data"
