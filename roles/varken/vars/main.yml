@@ -2,6 +2,8 @@
 # vars file for roles/varken
 
 nfs_server: starman.local
+
+
 varken_nfs_path: /volume1/varken_persist
 varken_mount_path: /mnt/varken
 maxmind_license_key: !vault |
