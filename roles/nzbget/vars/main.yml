@@ -1,9 +1,9 @@
 ---
 # vars file for roles/nzbget
 
-nfs_server: starman.local
-media_nfs_path: /volume1/media
-nzb_intermediate_nfs_path: /volume1/nzbget_intermediate
+nfs_server: 20-size.local
+media_nfs_path: /snoqualmie/media
+nzb_intermediate_nfs_path: /whidbey/nzbget/intermediate
 
 nzbget_config_path: /etc/nzbget
 

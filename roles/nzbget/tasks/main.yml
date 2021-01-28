@@ -39,7 +39,7 @@
         name: nzbget
         hostname: nzbget
         image: linuxserver/nzbget
-        restart_policy: always
+        restart_policy: unless-stopped
         state: started
         ports: 6789:6789
         mounts:
