@@ -1,0 +1,34 @@
+--- 
+# tasks
+
+## Four plays are to workaround the following issue #######################################
+# https://docs.linuxserver.io/faq#my-host-is-incompatible-with-images-based-on-ubuntu-focal
+###########################################################################################
+
+  - name: Add debians's official GPG key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 04EE7237B7D453EC
+      state: present
+      
+  - name: Add debians's official GPG key
+    apt_key:
+      keyserver: keyserver.ubuntu.com
+      id: 648ACFD622F3D138
+      state: present
+
+  - name: Add specified repository into sources list using specified filename
+    ansible.builtin.apt_repository:
+      repo: deb http://deb.debian.org/debian buster-backports main
+      state: present
+      filename: buster-backports
+      
+  - name: Install buster backports libseccomp2
+    apt:
+      default_release: buster-backports
+      name: 
+        - libseccomp2
+      state: present
+      update_cache: yes
+      
+

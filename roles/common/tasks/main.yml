@@ -5,5 +5,12 @@
 - import_tasks: user_setup.yml
 
 
+- name: "Include Raspbian (32-bit) libseccomp2 workaround if Raspbian 32-bit installed."
+  include_tasks: raspbian_32_focal_alpine3.13.yml
+  when: 
+    - ansible_facts['lsb']['id'] == "Raspbian" 
+    - ansible_facts['lsb']['codename'] == "buster" 
+  
+
 # - import_tasks: update_hostname.yml
 
