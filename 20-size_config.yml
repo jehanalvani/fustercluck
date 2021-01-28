@@ -38,7 +38,11 @@
         nfs_exports: 
           [
           "/snoqualmie/media 10.0.1.0/24(rw,sync,no_root_squash,insecure)", 
-          "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure)"
+          "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure)",
+          "/whidbey/sonarr_config 10.0.1.0/24(rw,sync,no_root_squash,insecure)",
+          "/whidbey/radarr_config 10.0.1.0/24(rw,sync,no_root_squash,insecure)",
+          "/whidbey/ombi_config 10.0.1.0/24(rw,sync,no_root_squash,insecure)",
+          "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt)"
           ]
         tags:
           - nfs
