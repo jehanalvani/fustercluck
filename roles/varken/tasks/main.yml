@@ -64,7 +64,6 @@
         hostname: varken
         image: boerderij/varken
         restart_policy: always
-        network_mode: host
         state: started
         ports: 9090:9090
         mounts:
