@@ -1,42 +1,41 @@
 ---
 # tasks file for roles/radarr
 
-    
+  - name: Ensures /container_data/radarr_config exists, creates it if not
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ local_config_path }}"
 
 
-  - name: "Creates named docker volume media"
+
+  - name: "Creates named docker volume: media"
     docker_volume:
-        volume_name: media
+        volume_name: "{{ media_volume_name }}"
         state: present
         driver_options: 
             type: nfs
             o: "addr={{ nfs_server }},rw"
             device: ":{{ media_nfs_path }}"
 
-  - name: "Creates named docker volume radarr_config"
-    docker_volume:     
-        volume_name: radarr_config
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ radarr_config_nfs_path }}"
 
            
   - name: "Deploy Radarr container"
     docker_container:
         name: radarr
         hostname: radarr
-        image: linuxserver/radarr
-        restart_policy: always
+        image: linuxserver/radarr:nightly-version-3.0.2.4460
+        restart_policy: unless-stopped
         state: started
         ports: 7878:7878
         mounts:
-          - source: radarr_config
+          - source: "{{ local_config_path }}"
             target: /config
             read_only: no
-            type: volume
-          - source: media
+            type: bind
+          - source: "{{ media_volume_name }}"
             target: /media
             read_only: no
             type: volume

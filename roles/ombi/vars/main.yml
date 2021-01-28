@@ -1,6 +1,4 @@
 ---
 # vars file for roles/ombi
 
-nfs_server: starman.local
-
-ombi_config_nfs_path: /volume1/ombi_persist
+local_config_path: /container_data/ombi_config

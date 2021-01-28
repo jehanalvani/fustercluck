@@ -1,7 +1,8 @@
 ---
 # vars file for roles/sonarr
 
-nfs_server: starman.local
-media_nfs_path: /volume1/media
-sonarr_config_nfs_path: /volume1/sonarr_config
+nfs_server: 20-size.local
+media_volume_name: media
+media_nfs_path: /seatac/media
+local_config_path: /container_data/sonarr_config
 
