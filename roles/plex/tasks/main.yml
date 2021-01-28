@@ -73,7 +73,7 @@
             PUID: "1001"
             PGID: "997"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            ADVERTISE_IP: "https://plex.alvani.me/"
+            ADVERTISE_IP: "10.0.1.217"
         device_requests: 
           - device_ids: 0            
             driver: nvidia
