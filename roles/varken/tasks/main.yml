@@ -32,7 +32,7 @@
         group: users
         
 
-  - name: "Mount nfs drive for Homebridge filesystem"
+  - name: "Mount nfs drive for varken filesystem"
     mount: 
         path: "{{ varken_mount_path }}"
         src: "{{ nfs_server }}:{{ varken_nfs_path }}"
@@ -43,7 +43,7 @@
     template: 
         src: varken.ini.j2
         dest: "{{ varken_mount_path }}/varken.ini"
-    notify: Restart varken
+    notify: Restart varken container
 
 
   - name: "Creates named docker volume for varken persistent data"

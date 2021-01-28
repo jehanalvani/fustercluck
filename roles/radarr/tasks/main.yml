@@ -26,7 +26,7 @@
     docker_container:
         name: radarr
         hostname: radarr
-        image: linuxserver/radarr:nightly-version-3.0.2.4460
+        image: linuxserver/radarr
         restart_policy: unless-stopped
         state: started
         ports: 7878:7878
