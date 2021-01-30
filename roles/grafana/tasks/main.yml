@@ -2,13 +2,6 @@
 # tasks file for roles/grafana
 
 
-  - name: Mount grafana data NFS Share to host
-    mount:
-        src: "{{ nfs_server }}:{{ grafana_data_nfs_path }}"
-        path: "{{ grafana_data_mnt_path }}"
-        fstype: nfs
-        state: mounted
-
 
   - name: Mount grafana config NFS Share to host
     mount:
@@ -35,15 +28,6 @@
             o: "addr={{ nfs_server }},rw"
             device: ":{{ grafana_config_nfs_path }}"        
             
-  - name: Creates named docker volume 'grafana_data' 
-    docker_volume:
-        volume_name: grafana_data
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ grafana_data_nfs_path }}"        
-
 
   - name: "Deploy grafana container"
     docker_container:
@@ -62,10 +46,10 @@
             GF_PLUGINS_ENABLE_ALPHA: "true"   
             
         mounts:
-          - source: grafana_data
+          - source: "/container_data/grafana/data"
             target: "/var/lib/grafana"
             read_only: no
-            type: volume     
+            type: bind     
           - source: grafana_config
             target: "/config"
             read_only: no
