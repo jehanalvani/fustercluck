@@ -1,5 +1,4 @@
 ---
 # vars file for roles/statping
 
-nfs_server: starman.local
-statping_nfs_path: /volume1/statping_persist
+statping_data_path: /container_data/statping/

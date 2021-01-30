@@ -1,36 +1,6 @@
 ---
 # tasks file for roles/statping
-
-  - name: "Install python-pip, virtualenv if they aren't already"
-    apt: 
-        name:
-            - python-pip
-            - virtualenv
-            - python-setuptools
-            - nfs-common
-        state: present
-        update_cache: yes
-
-  - name: "Remove python-configparser due to incompatibilities with ARM"
-    apt:
-        name: python-configparser
-        state: absent
-    
-  - name: "Install Python docker pkg via pip if not already installed"
-    pip:
-        name: 
-           - docker
-        state: present
-
-  - name: "Creates named docker volume"
-    docker_volume:
-        volume_name: statping_persist
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ statping_nfs_path }}"
-            
+         
 
   - name: "Deploy statping container"
     docker_container:
@@ -40,9 +10,9 @@
         restart_policy: always
         ports: 8080:8080
         mounts:
-          - source: statping_persist
+          - source: "{{ statping_data_path }}"
             target: "/app"
             read_only: no
-            type: volume
+            type: bind
         comparisons:        
             env: strict
