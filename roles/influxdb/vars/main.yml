@@ -2,8 +2,8 @@
 # vars file for roles/influxdb
 
 
-nfs_server: starman.local
-influxdb_nfs_path: /volume1/influxdb_persist
+nfs_server: 20-size.local
+influxdb_nfs_path: /whidbey/influxDB/
 influxdb_mnt_path: /mnt/influxdb_persist
 influxdb_admin_user: admin
 influxdb_admin_password: !vault |

@@ -1,27 +1,6 @@
 ---
 # tasks file for roles/influxdb
 
-  - name: "Install python-pip, virtualenv if they aren't already"
-    apt: 
-        name:
-            - python-pip
-            - virtualenv
-            - python-setuptools
-            - nfs-common
-        state: present
-        update_cache: yes
-
-  - name: "Remove python-configparser due to incompatibilities with ARM"
-    apt:
-        name: python-configparser
-        state: absent
-    
-  - name: "Install Python docker pkg via pip if not already installed"
-    pip:
-        name: 
-           - docker
-        state: present
-        
   - name: Mount InfluxDB NFS Share to host
     mount:
         src: "{{ nfs_server }}:{{ influxdb_nfs_path }}"
