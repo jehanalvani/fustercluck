@@ -1,12 +1,6 @@
 ---
 # tasks file for homebridge
-
-  - name: "Modify ownership of /config directory"
-    file:
-       path: /config
-       group: users
-       state: directory
-    
+   
   - name: "Create mountpoint"
     file: 
         path: "{{ homebridge_mount_path }}"
