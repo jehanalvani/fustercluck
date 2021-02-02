@@ -1,0 +1,8 @@
+---
+# vars file for roles/nzbhydra
+
+
+nfs_server: 20-size.local
+media_nfs_path: /snoqualmie/media
+
+hydra_local_config_path: /container_data/nzbhydra2/config

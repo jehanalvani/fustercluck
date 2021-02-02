@@ -49,6 +49,9 @@
       - role: zcube-cadvisor
         tags:
           - cadvisor
+      - role: nzbhydra
+        tags:
+          - nzbhydra
       - role: statping
         tags:
           - statping
