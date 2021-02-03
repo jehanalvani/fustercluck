@@ -28,8 +28,8 @@
         path: "{{ varken_mount_path }}"
         state: directory
         mode: 0777
-        owner: root
-        group: users
+        owner: ansible
+        group: docker
         
 
   - name: "Mount nfs drive for varken filesystem"
