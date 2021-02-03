@@ -1,10 +1,10 @@
 ---
 # vars file for roles/varken
 
-nfs_server: starman.local
+nfs_server: 20-size.local
 
 
-varken_nfs_path: /volume1/varken_persist
+varken_nfs_path: /whidbey/varken/config
 varken_mount_path: /mnt/varken
 maxmind_license_key: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
