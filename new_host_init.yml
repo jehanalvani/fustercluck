@@ -13,8 +13,9 @@
 
 
 ---
- - hosts: displaypi.local,20-size.local
-#   remote_user: pi
+# - hosts: displaypi.local,20-size.local,artpi.local
+ - hosts: artpi.local
+   remote_user: pi
    become: yes
    gather_facts: true
    

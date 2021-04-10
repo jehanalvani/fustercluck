@@ -22,7 +22,9 @@ all:
                         cluster0.local:
                         cluster1.local:
                         cluster2.local:
-            
+        toys:  
+            hosts:
+                artpi.local:                            
                     
         
     

@@ -14,6 +14,7 @@
     user:
         name: "{{ interactive_uname }}"
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
+        #uid: 1000
         append: yes
         password: "{{ interactive_user_pass | password_hash('sha512') }}"
         create_home: true
@@ -22,14 +23,11 @@
     user:
         name: "{{ ansible_uname }}"
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
+        #uid: 1001
         append: yes
         password: "{{ ansible_user_pass | password_hash('sha512') }}"
         create_home: true    
         
-#  - name: Check ansible_lsb.id on systems
-#    debug:
-#        msg: "{{ ansible_lsb.id }}"
-#    tags: debug
 
   - name: Add {{ ansible_uname }} user as system user only if Ubuntu system
     template:
