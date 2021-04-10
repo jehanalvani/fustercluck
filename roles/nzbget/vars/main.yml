@@ -10,9 +10,6 @@ nzbget_config_path: /etc/nzbget
 
 nzbget_maindir_path: /media/nzb_downloads
 
-nzbget_movies_dst_path: /media/movies
-nzbget_series_dst_path: /media/series
-nzbget_anime_dst_path: /media/anime
 
 # nzbget_config_nfs_path: /volume1/nzbget_config
 

@@ -12,9 +12,7 @@
   - hosts: database
     remote_user: ansible
     become: yes
-#    vars_files:
-#       - vars/external_variables.yml
-   
+
 
 
     pre_tasks:
@@ -34,7 +32,7 @@
                - cryptography 
                - pyOpenSSL  # required for OpenSSL cert creation
             state: present
-
+       
        
     roles:
       - role: common
@@ -49,6 +47,9 @@
       - role: influxdb
         tags: 
           - influxdb
+      - role: promlens
+        tags:
+          - promlens
       - role: zcube-cadvisor
         tags:
           - cadvisor
@@ -56,4 +57,4 @@
         tags:
           - node-exporter
         
-
+    

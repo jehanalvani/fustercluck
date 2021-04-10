@@ -16,14 +16,7 @@
         path: "{{ hydra_local_config_path }}"
         state: directory
         mode: '0775'     
-    
-#  - name: "Create nzbget.conf in {{ nzbget_config_path }} from template"
-#    template: 
-#        src: nzbget.conf.j2
-#        dest: "{{ nzbget_config_path }}/nzbget.conf"
-#    tags: deploy_prom_config
-#    notify: 
-#      - Restart nzbget container       
+     
             
   - name: "Deploy nzbHydra2 container"
     docker_container:
@@ -43,6 +36,6 @@
         env:
           TZ: "America/Los_Angeles"
           PUID: "1002"
-          PGID: "995"
+          PGID: "100"
         comparisons:        
             env: strict

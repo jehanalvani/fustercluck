@@ -55,8 +55,8 @@
           - "{{ nzbget_config_path }}:/config"
         env:
           TZ: "America/Los_Angeles"
-          PUID: "1002"
-          PGID: "995"
-          UMASK: "003"
+          PUID: "1001"
+          PGID: "100"
+          UMASK: "000"
         comparisons:        
             env: strict
