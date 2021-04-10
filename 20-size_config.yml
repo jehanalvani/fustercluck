@@ -37,7 +37,7 @@
       # `insecure` option required for NFS to be mountable via MacOS' finder
         nfs_exports: 
           [
-          "/snoqualmie/media 10.0.1.0/24(rw,async,no_root_squash,insecure,insecure_locks,no_subtree_check,anonuid=1024,anongid=100)", 
+          "/snoqualmie/media 10.0.1.0/24(rw,async,no_root_squash,insecure,insecure_locks)", 
           "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",

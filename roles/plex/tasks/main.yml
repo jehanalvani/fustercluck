@@ -23,7 +23,7 @@
     docker_container:
         name: plex
         hostname: plex
-        image: plexinc/pms-docker:plexpass
+        image: plexinc/pms-docker
         restart_policy: unless-stopped
         state: started
         network_mode: host
@@ -73,6 +73,8 @@
             TZ: "America/Los_Angeles"
             PUID: "1001"
             PGID: "997"
+            PLEX_UID: "1001"
+            PLEX_GID: "997"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
             ADVERTISE_IP: "10.0.1.217"
         device_requests: 
