@@ -9,13 +9,17 @@
 
   - name: Verify that we have the key with the fingerprint
     apt_key:
-      id: AC1160CD 
+      id: C95B321B61E88C180F759DDCAE044F796ECB0
       state: present
+      
+## Add automation to parse repos from https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
+## and install repos appropriately
  
   - name: Install nvidia's container toolkit
     apt:
         name: 
-            - nvidia-container-toolkit
+            #- nvidia-container-toolkit
+            - nvidia-docker2
         state: present
         update_cache: yes
            
@@ -23,7 +27,7 @@
     docker_container:
         name: plex
         hostname: plex
-        image: plexinc/pms-docker
+        image: plexinc/pms-docker:plexpass
         restart_policy: unless-stopped
         state: started
         network_mode: host
