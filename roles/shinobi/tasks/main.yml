@@ -1,0 +1,70 @@
+---
+# tasks file for shinobi
+
+# docker run -d --name='Shinobi' -p '8080:8080/tcp' \
+#   -v "/dev/shm/Shinobi/streams":'/dev/shm/streams':'rw' \
+#   -v "$HOME/Shinobi/config":'/config':'rw' \
+#   -v "$HOME/Shinobi/customAutoLoad":'/home/Shinobi/libs/customAutoLoad':'rw' \
+#   -v "$HOME/Shinobi/database":'/var/lib/mysql':'rw' \
+#   -v "$HOME/Shinobi/videos":'/home/Shinobi/videos':'rw' \
+#   -v "$HOME/Shinobi/plugins":'/home/Shinobi/plugins':'rw' \ 
+#   -v '/etc/localtime':'/etc/localtime':'ro' \
+#   shinobisystems/shinobi:dev
+
+
+  - name: "Deploy shinobi container"
+    docker_container:
+        name: shinobi
+        hostname: shinobi
+        image: shinobisystems/shinobi:dev
+        restart_policy: unless-stopped
+        state: started
+        ports: 8080:8081
+        mounts:
+          - source: /dev/shm/Shinobi/streams
+            target: /dev/shm/streams
+            read_only: no
+            type: volume
+          - source: /whidbey/shinobi/customAutoLoad
+            target: /home/Shinobi/libs/customAutoLoad
+            read_only: no
+            type: volume
+          - source: /whidbey/shinobi/database
+            target: /var/lib/mysql
+            read_only: no
+            type: volume
+          - source: /snoqualmie/media/security_cam_recordings
+            target: /home/Shinobi/videos
+            read_only: no
+            type: volume
+          - source: /whidbey/shinobi/plugins
+            target: /home/Shinobi/plugins
+            read_only: no
+            type: volume
+          - source: /etc/localtime
+            target: /etc/localtime
+            read_only: yes
+            type: volume       
+
+# docker run -d --name='shinobi-tensorflow' -e PLUGIN_HOST='[shinobi container host IP]' \
+#   -e PLUGIN_PORT='8080' -v "$HOME/Shinobi/docker-plugins/tensorflow":'/config':'rw'\
+#   shinobisystems/shinobi-tensorflow:latest
+
+  - name: "Deploy shinobi TensorFlow plugin container"
+    docker_container:
+        name: shinobi-tensorflow
+        hostname: shinobi-tensorflow
+        image: shinobisystems/shinobi-tensorflow
+        restart_policy: unless-stopped
+        state: started
+        mounts:
+          - source: /whidbey/shinobi/docker-plugins/tensorflow
+            target: /config
+            read_only: no
+            type: bind
+        env:
+          PLUGIN_HOST: "10.0.1.203"
+          PLUGIN_PORT: "8081"
+          CUDA_VISIBLE_DEVICES: "1"
+        comparisons:        
+            env: strict
