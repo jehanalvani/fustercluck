@@ -59,6 +59,9 @@
       - role: plex
         tags:
           - plex
+      - role: shinobi
+        tags:
+          - shinobi        
       - role: tautulli
         tags:
           - tautulli
