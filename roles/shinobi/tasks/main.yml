@@ -11,6 +11,14 @@
 #   -v '/etc/localtime':'/etc/localtime':'ro' \
 #   shinobisystems/shinobi:dev
 
+  - name: "Create shinobi stream ramdisk mount"
+    mount:
+        state: mounted
+        fstype: tmpfs
+        path: "/mnt/shinobi_streams/"
+        src: tmpfs
+        
+
 
   - name: "Deploy shinobi container"
     docker_container:
@@ -19,52 +27,57 @@
         image: shinobisystems/shinobi:dev
         restart_policy: unless-stopped
         state: started
-        ports: 8080:8081
+        ports: 8082:8080
         mounts:
-          - source: /dev/shm/Shinobi/streams
-            target: /dev/shm/streams
+          - source: "/mnt/shinobi_streams"
+            target: "/dev/shm/streams"
             read_only: no
-            type: volume
-          - source: /whidbey/shinobi/customAutoLoad
-            target: /home/Shinobi/libs/customAutoLoad
+            type: bind
+          - source: "/whidbey/shinobi/customAutoLoad"
+            target: "/home/Shinobi/libs/customAutoLoad"
             read_only: no
-            type: volume
-          - source: /whidbey/shinobi/database
-            target: /var/lib/mysql
+            type: bind
+          - source: "/whidbey/shinobi/database"
+            target: "/var/lib/mysql"
             read_only: no
-            type: volume
-          - source: /snoqualmie/media/security_cam_recordings
-            target: /home/Shinobi/videos
+            type: bind
+          - source: "/snoqualmie/media/security_cam_recordings"
+            target: "/home/Shinobi/videos"
             read_only: no
-            type: volume
-          - source: /whidbey/shinobi/plugins
-            target: /home/Shinobi/plugins
+            type: bind
+          - source: "/whidbey/shinobi/plugins"
+            target: "/home/Shinobi/plugins"
             read_only: no
-            type: volume
-          - source: /etc/localtime
-            target: /etc/localtime
+            type: bind
+          - source: "/etc/localtime"
+            target: "/etc/localtime"
             read_only: yes
-            type: volume       
+            type: bind       
 
 # docker run -d --name='shinobi-tensorflow' -e PLUGIN_HOST='[shinobi container host IP]' \
 #   -e PLUGIN_PORT='8080' -v "$HOME/Shinobi/docker-plugins/tensorflow":'/config':'rw'\
 #   shinobisystems/shinobi-tensorflow:latest
 
-  - name: "Deploy shinobi TensorFlow plugin container"
-    docker_container:
-        name: shinobi-tensorflow
-        hostname: shinobi-tensorflow
-        image: shinobisystems/shinobi-tensorflow
-        restart_policy: unless-stopped
-        state: started
-        mounts:
-          - source: /whidbey/shinobi/docker-plugins/tensorflow
-            target: /config
-            read_only: no
-            type: bind
-        env:
-          PLUGIN_HOST: "10.0.1.203"
-          PLUGIN_PORT: "8081"
-          CUDA_VISIBLE_DEVICES: "1"
-        comparisons:        
-            env: strict
+
+# once Shinobi TF container is started, admin needs to `docker log -f shinobi-tensorflow` 
+# to find the relevant tensorflow key generated, which will be added to Shinobi's config
+# at shinobi admin > configuration > plugin keys
+
+#  - name: "Deploy shinobi TensorFlow plugin container"
+#    docker_container:
+#        name: shinobi-tensorflow
+#        hostname: shinobi-tensorflow
+#        image: shinobisystems/shinobi-tensorflow
+#        restart_policy: unless-stopped
+#        state: started
+#        mounts:
+#          - source: "/whidbey/shinobi/docker-plugins/tensorflow"
+#            target: "/config"
+#            read_only: no
+#            type: bind
+#        env:
+#          PLUGIN_HOST: "10.0.1.203"
+#          PLUGIN_PORT: "8082"
+#          CUDA_VISIBLE_DEVICES: "1"
+#        comparisons:        
+#            env: strict
