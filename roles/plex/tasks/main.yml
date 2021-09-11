@@ -12,8 +12,24 @@
       id: C95B321B61E88C180F759DDCAE044F796ECB0
       state: present
       
-## Add automation to parse repos from https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html
-## and install repos appropriately
+  - name: Debug URL used below
+    debug: 
+        msg: "{{ nvidia_repos }}"
+
+ 
+  - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
+    apt_repository:
+        repo: "{{ item }}"
+        state: present
+        filename: nvidia-docker
+    with_items: "{{ nvidia_repos }}"
+    when: item is match("deb\s.*")
+    
+  - name: Restart service cron on centos, in all cases, also issue daemon-reload to pick up config changes
+    ansible.builtin.systemd:
+        state: restarted
+        daemon_reload: yes
+        name: docker.service
  
   - name: Install nvidia's container toolkit
     apt:

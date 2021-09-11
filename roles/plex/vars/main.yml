@@ -3,3 +3,5 @@
 
 media_path: "/snoqualmie/media"
 plex_config_path: "/seatac/plex"
+
+nvidia_repos: "{{ lookup('url', 'https://nvidia.github.io/nvidia-docker/{{ ansible_distribution | lower | urlencode }}{{ ansible_distribution_version | lower | urlencode }}/nvidia-docker.list').split(',') }}"
