@@ -47,9 +47,6 @@
       - role: influxdb
         tags: 
           - influxdb
-      - role: promlens
-        tags:
-          - promlens
       - role: zcube-cadvisor
         tags:
           - cadvisor
