@@ -18,6 +18,16 @@
         path: "/mnt/shinobi_streams/"
         src: tmpfs
         
+  - name: Create Shinobi Required Directories
+    ansible.builtin.file:
+        state: directory
+        dest: "{{ item }}"
+    loop:
+        - /mnt/shinobi_streams
+        - /whidbey/shinobi/customAutoLoad
+        - /whidbey/shinobi/database
+        - /whidbey/shinobi/plugins       
+        - /snoqualmie/media/security_cam_recordings
 
 
   - name: "Deploy shinobi container"
