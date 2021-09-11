@@ -1,13 +1,13 @@
 ---
 # tasks file for roles/tautulli
 
- - name: "Create Tautulli Required Directories"
+  - name: "Create Tautulli Required Directories"
     ansible.builtin.file:
         state: directory
         dest: "{{ item }}"
     loop:
-        - /seatac/plex/config/Library/Application Support/Plex Media Server/Logs
-        - /whidbey/tautulli_config
+        - "/seatac/plex/config/Library/Application Support/Plex Media Server/Logs"
+        - "/whidbey/tautulli_config"
 
   - name: "Deploy tautulli container"
     docker_container:
