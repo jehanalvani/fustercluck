@@ -4,6 +4,7 @@
 nfs_server: 20-size.local
 homebridge_mount_path: /mnt/homebridge
 homebridge_nfs_path: /whidbey/homebridge
+homebridge_ui_port: "8080"
 open_garage_key: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
           65326630316336356435653165646666643762646164376466313437313465636339646637623365

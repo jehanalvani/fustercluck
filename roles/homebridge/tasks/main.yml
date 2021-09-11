@@ -42,9 +42,14 @@
             PGID: "995"
             PUID: "1002"
             HOMEBRIDGE_CONFIG_UI: "1"
-            HOMEBRIDGE_CONFIG_UI_PORT: "8080"
+            HOMEBRIDGE_CONFIG_UI_PORT: "{{ homebridge_ui_port }}"
         volumes:
             - "{{ homebridge_mount_path }}:/homebridge"
         comparisons:
             '*': ignore
             env: strict
+            
+  - name: "Homebridge Success Notification"
+    debug:
+        msg: "Homebridge is now accessible at http://{{ ansible_hostname }}.local:{{ homebridge_ui_port }}"
+        
