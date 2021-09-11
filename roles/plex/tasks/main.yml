@@ -51,7 +51,6 @@
         - /seatac/plex/backups
         - /seatac/plex/certs
 
-           
   - name: "Deploy Plex container"
     docker_container:
         name: plex
@@ -109,7 +108,7 @@
             PLEX_UID: "1001"
             PLEX_GID: "997"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            ADVERTISE_IP: "10.0.1.203"
+            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
         device_requests: 
           - device_ids: '0'
             # count: '-1' 
@@ -123,3 +122,8 @@
               - utility
         comparisons:        
             env: strict
+            
+            
+  - name: Inform availability
+    debug: 
+        msg: "Plex should be accessible locally at http://{{ ansible_default_ipv4.address }}:32400/web/"
