@@ -24,20 +24,33 @@
         filename: nvidia-docker
     with_items: "{{ nvidia_repos }}"
     when: item is match("deb\s.*")
-    
-  - name: Restart service cron on centos, in all cases, also issue daemon-reload to pick up config changes
+     
+  - name: Install nvidia's container toolkit
+    apt:
+        name:             
+            #- nvidia-container-runtime
+            - nvidia-docker2
+        state: present
+        install_recommends: yes
+        update_cache: yes
+
+  - name: Restart docker also issue daemon-reload to pick up config changes
     ansible.builtin.systemd:
         state: restarted
         daemon_reload: yes
-        name: docker.service
- 
-  - name: Install nvidia's container toolkit
-    apt:
-        name: 
-           # - nvidia-container-runtime
-            - nvidia-docker2
-        state: present
-        update_cache: yes
+        name: docker
+        
+  - name: "Create Plex Required Directories"
+    ansible.builtin.file:
+        state: directory
+        dest: "{{ item }}"
+    loop:
+        - /snoqualmie/media
+        - /seatac/plex/config
+        - /seatac/plex/transcode
+        - /seatac/plex/backups
+        - /seatac/plex/certs
+
            
   - name: "Deploy Plex container"
     docker_container:
@@ -96,11 +109,13 @@
             PLEX_UID: "1001"
             PLEX_GID: "997"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            ADVERTISE_IP: "10.0.1.217"
+            ADVERTISE_IP: "10.0.1.203"
         device_requests: 
-          - device_ids: 0            
+          - device_ids: '0'
+            # count: '-1' 
+            #(Can't specify device IDs and set count)
             driver: nvidia
-            #count: -1
+            
             capabilities: 
               - gpu
               - compute
