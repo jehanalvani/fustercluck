@@ -5,6 +5,8 @@ nfs_server: 20-size.local
 
 
 varken_nfs_path: /whidbey/varken/config
+varken_ui_port: 9090
+
 varken_mount_path: /mnt/varken
 maxmind_license_key: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck

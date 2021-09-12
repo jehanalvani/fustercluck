@@ -108,7 +108,8 @@
             - /whidbey/influxDB/db
             # NZBGet
             - /whidbey/nzbget/intermediate
-           
+            # Varken
+            - /whidbey/varken/config           
     roles:
       - role: common
         tags:
