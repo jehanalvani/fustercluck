@@ -4,6 +4,7 @@
 nfs_server: 20-size.local
 media_nfs_path: /snoqualmie/media
 nzb_intermediate_nfs_path: /whidbey/nzbget/intermediate
+nzbget_ui_port: 6789
 
 nzbget_config_path: /etc/nzbget
 

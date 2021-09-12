@@ -41,7 +41,7 @@
         image: linuxserver/nzbget
         restart_policy: unless-stopped
         state: started
-        ports: 6789:6789
+        ports: "{{ nzbget_ui_port }}:6789"
         mounts:
           - source: nzbget_intermediate
             target: /intermediate
@@ -60,3 +60,7 @@
           UMASK: "000"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "NZBGet is now accessible at http://{{ ansible_hostname }}.local:{{ nzbget_ui_port | string }}"

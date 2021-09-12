@@ -106,6 +106,8 @@
             - /whidbey/grafana/config
             # InfluxDB
             - /whidbey/influxDB/db
+            # NZBGet
+            - /whidbey/nzbget/intermediate
            
     roles:
       - role: common
