@@ -25,7 +25,7 @@
         image: linuxserver/nzbhydra2
         restart_policy: unless-stopped
         state: started
-        ports: 5076:5076
+        ports: "{{ nzbhydra_ui_port }}:5076"
         mounts:
           - source: media
             target: /media
@@ -39,3 +39,7 @@
           PGID: "100"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "NZBHydra is now accessible at http://{{ ansible_hostname }}.local:{{ nzbhydra_ui_port | string }}"
