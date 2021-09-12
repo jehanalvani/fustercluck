@@ -1,0 +1,50 @@
+# Playbook to setup proxy role
+---
+
+ - hosts: proxy
+   remote_user: ansible
+   become: yes
+
+   pre_tasks:
+       
+      - name: "Install pip, setuptools, virtualenv if not already"
+        apt: 
+           name:
+                - python-pip
+                - python-setuptools
+                - virtualenv
+           state: present
+           update_cache: yes
+    
+      - name: "Install pyOpenSSL if not already"
+        pip:
+           name:
+               - cryptography 
+               - pyOpenSSL  # required for OpenSSL cert creation
+           state: present
+
+   
+   roles:
+      - role: common
+        tags:
+          - common
+      - role: docker
+        tags:
+          - docker
+      - role: cloudalchemy.node-exporter
+        tags:
+          - node-exporter
+      - role: zcube-cadvisor
+        tags:
+          - cadvisor
+      - role: traefik
+        tags:
+          - traefik
+              
+          
+
+   
+
+
+
+       
