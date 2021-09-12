@@ -2,6 +2,7 @@
 # vars file for roles/radarr
 
 nfs_server: 20-size.local
+radarr_ui_port: 7878
 media_volume_name: media
 media_nfs_path: /seatac/media
 local_config_path: /container_data/radarr_config

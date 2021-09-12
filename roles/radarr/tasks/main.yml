@@ -29,7 +29,7 @@
         image: linuxserver/radarr
         restart_policy: unless-stopped
         state: started
-        ports: 7878:7878
+        ports: "{{ radarr_ui_port }}:7878"
         mounts:
           - source: "{{ local_config_path }}"
             target: /config
@@ -45,3 +45,7 @@
           PGID: "995"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Radarr is now accessible at http://{{ ansible_hostname }}.local:{{ radarr_ui_port | string }}"
