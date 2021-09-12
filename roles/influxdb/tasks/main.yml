@@ -22,7 +22,7 @@
        driver_options: 
            type: nfs
            o: "addr={{ nfs_server }},rw"
-           device: ":{{ influxdb_nfs_path }}db"
+           device: ":{{ influxdb_nfs_path }}"
 
     
   - name: "Deploy InfluxDB container"
@@ -33,7 +33,7 @@
         restart_policy: always
         state: started
         ports: 
-          - 8086:8086
+          - "{{ influxdb_ui_port }}:8086"
         volumes:
           - "{{ influxdb_mnt_path }}/influxdb.conf:/etc/influxdb/influxdb.conf"
         mounts:
@@ -45,3 +45,6 @@
             INFLUXDB_CONFIG_PATH: "/etc/influxdb/influxdb.conf"
 
             
+  - name: "Success Notification"
+    debug:
+        msg: "InfluxDB is now accessible at http://{{ ansible_hostname }}.local:{{ prometheus_ui_port | string }}"
