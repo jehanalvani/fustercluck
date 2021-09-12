@@ -138,10 +138,10 @@ entryPoints:
 
     # Default host rule.
     #
-    # Optional
-    # Default: "Host(`{{ normalize .Name }}`)"
+    # Section omitted due to Ansible parsing issue - JA
+    # https://github.com/ansible/ansible/issues/58835
     #
-#    defaultRule: Host(`{{ normalize .Name }}.docker.localhost`)
+#    See traefik_example.yaml in this directory.
 
     # Expose containers by default in traefik
     #

@@ -1,7 +1,7 @@
 ---
 # tasks file for roles/traefik
 
- - name: Ensures /container_data/traefik_config exists, creates it if not
+  - name: Ensures /container_data/traefik_config exists, creates it if not
     ansible.builtin.file:
         group: docker
         mode: 0755
@@ -9,7 +9,7 @@
         state: directory
         path: "{{ local_config_path }}"
 
-  - name: "Create config.json in mountpoint from template"
+  - name: "Create traefik.yaml in {{ local_config_path }} from template"
     template: 
         src: traefik.yaml.j2
         dest: "{{ local_config_path }}/traefik.yaml"
@@ -24,7 +24,7 @@
         restart_policy: unless-stopped
         state: started
         ports: 
-          - {{ traefik_ui_port }}:8080
+          - "{{ traefik_ui_port }}:8080"
           - 80:80
           - 443:443
         mounts:
@@ -35,10 +35,14 @@
           - source: /var/run/docker.sock
             target: /var/run/docker.sock
             read_only: no
-            type: volume
+            type: bind
         env:
           TZ: "America/Los_Angeles"
           PUID: "1001"
           PGID: "997"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Traefik is now accessible at http://{{ ansible_hostname }}.local:{{ traefik_ui_port | string }}"
