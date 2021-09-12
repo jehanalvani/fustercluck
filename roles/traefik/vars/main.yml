@@ -1,0 +1,4 @@
+---
+# vars file for roles/traefik
+
+local_config_path: /container_data/traefik_config

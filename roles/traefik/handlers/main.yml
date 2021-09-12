@@ -1,0 +1,9 @@
+---
+# handlers file for roles/traefik
+
+
+- name: Restart traefik container
+  docker_container:
+    name: traefik
+    state: started
+    restart: yes

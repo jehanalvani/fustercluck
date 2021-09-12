@@ -8,6 +8,9 @@ all:
     children:
         lab:
             children:
+                proxy:
+                    hosts:
+                        cluster0.local:
                 homebridge:
                     hosts: 
                         cluster0.local:
