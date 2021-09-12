@@ -36,7 +36,7 @@
         restart_policy: always
         network_mode: host
         state: started
-        ports: 3000:3000
+        ports: "{{ grafana_ui_port }}:3000"
         env:
             GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"  
             GF_PATHS_CONFIG: "/config/grafana.ini"
@@ -56,3 +56,7 @@
             type: volume     
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Grafana is now accessible at http://{{ ansible_hostname }}.local:{{ grafana_ui_port | string }}"

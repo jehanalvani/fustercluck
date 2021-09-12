@@ -2,6 +2,7 @@
 # vars file for roles/grafana
 
 nfs_server: 20-size.local
+grafana_ui_port: 3000
 grafana_plugins: "grafana-clock-panel,grafana-simple-json-datasource,grafana-synthetic-monitoring-app,innius-video-panel,grafana-strava-datasource,yesoreyeram-boomtheme-panel,grafana-piechart-panel"
 grafana_data_nfs_path: /whidbey/grafana/data
 
