@@ -54,9 +54,6 @@
       - role: nzbhydra
         tags:
           - nzbhydra
-      - role: statping
-        tags:
-          - statping
       - role: varken
         tags:
           - varken

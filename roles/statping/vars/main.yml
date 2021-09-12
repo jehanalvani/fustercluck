@@ -1,4 +1,0 @@
----
-# vars file for roles/statping
-
-statping_data_path: /container_data/statping/
