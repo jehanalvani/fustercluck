@@ -2,3 +2,5 @@
 # vars file for roles/ombi
 
 local_config_path: /container_data/ombi_config
+
+ombi_ui_port: 3579
