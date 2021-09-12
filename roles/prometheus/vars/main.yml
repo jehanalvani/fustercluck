@@ -5,3 +5,4 @@ nfs_server: 20-size.local
 prometheus_mnt_path: /mnt/prometheus
 prometheus_config_path: /container_data/prometheus/config
 prometheus_nfs_path: /whidbey/prometheus/database/
+prometheus_ui_port: 9090

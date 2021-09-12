@@ -38,7 +38,7 @@
         restart_policy: always
         network_mode: host
         state: started
-        ports: 9090:9090
+        ports: "{{ prometheus_ui_port }}:9090"
         volumes:
           - "{{ prometheus_config_path }}:/etc/prometheus"
         mounts:
@@ -52,3 +52,7 @@
         command: '"--storage.tsdb.no-lockfile" "--config.file=/etc/prometheus/prometheus.yml" "--storage.tsdb.path=/prometheus" "--web.console.libraries=/usr/share/prometheus/console_libraries" "--web.console.templates=/usr/share/prometheus/consoles"'
         comparisons:        
             env: strict
+            
+  - name: "Success Notification"
+    debug:
+        msg: "Prometheus is now accessible at http://{{ ansible_hostname }}.local:{{ prometheus_ui_port | string }}"
