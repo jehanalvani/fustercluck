@@ -93,6 +93,19 @@
 #         community.general.zfs: 
 #           name: whidbey/nzbget
 #           state: present        
+
+       - name: Creating directories for consumption by NFS clients
+         ansible.builtin.file:
+            state: directory
+            dest: "{{ item }}"
+         loop:
+            # Prometheus
+            - /whidbey/prometheus/database/
+            # Grafana
+            - /whidbey/grafana/data
+            - /whidbey/grafana/config
+            # InfluxDB
+            - /whidbey/influxDB/db
            
     roles:
       - role: common

@@ -22,7 +22,7 @@
        driver_options: 
            type: nfs
            o: "addr={{ nfs_server }},rw"
-           device: ":{{ influxdb_nfs_path }}/db"
+           device: ":{{ influxdb_nfs_path }}db"
 
     
   - name: "Deploy InfluxDB container"
