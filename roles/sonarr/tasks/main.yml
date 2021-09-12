@@ -41,7 +41,7 @@
         image: linuxserver/sonarr
         restart_policy: unless-stopped
         state: started
-        ports: 8989:8989
+        ports: "{{ sonarr_ui_port }}:8989"
         mounts:
           - source: "{{ local_config_path }}"
             target: /config
@@ -57,3 +57,8 @@
           PGID: "995"
         comparisons:        
             env: strict
+
+
+  - name: "Success Notification"
+    debug:
+        msg: "Sonarr is now accessible at http://{{ ansible_hostname }}.local:{{ sonarr_ui_port | string }}"
