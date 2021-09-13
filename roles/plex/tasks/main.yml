@@ -16,8 +16,7 @@
     debug: 
         msg: "{{ nvidia_repos }}"
 
- 
-  - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
+   - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
     apt_repository:
         repo: "{{ item }}"
         state: present
@@ -33,8 +32,9 @@
         state: present
         install_recommends: yes
         update_cache: yes
+    notify: Restart docker service
 
-  - name: Restart docker also issue daemon-reload to pick up config changes
+  - name: Restart docker service
     ansible.builtin.systemd:
         state: restarted
         daemon_reload: yes

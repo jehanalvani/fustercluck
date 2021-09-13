@@ -27,7 +27,7 @@ entryPoints:
 
   websecure:
     address: :443
-
+          
 ################################################################
 # Traefik logs configuration
 ################################################################
@@ -94,13 +94,13 @@ entryPoints:
 #
 # Optional
 #
-#api:
+api:
   # Enable the API in insecure mode
   #
   # Optional
   # Default: false
   #
-#  insecure: true
+  insecure: true
 
   # Enabled Dashboard
   #
@@ -114,7 +114,7 @@ entryPoints:
 ################################################################
 
 # Enable ping
-#ping:
+ping:
   # Name of the related entry point
   #
   # Optional
@@ -126,16 +126,18 @@ entryPoints:
 # Docker configuration backend
 ################################################################
 
-#providers:
+providers:
   # Enable Docker configuration backend
-#  docker:
+  docker:
     # Docker server endpoint. Can be a tcp or a unix socket endpoint.
     #
     # Required
     # Default: "unix:///var/run/docker.sock"
     #
-#    endpoint: tcp://10.10.10.10:2375
-
+    endpoint: unix:///var/run/docker.sock
+    endpoint: tcp://10.0.1.201:2375
+    endpoint: tcp://10.0.1.252:2375
+    
     # Default host rule.
     #
     # Section omitted due to Ansible parsing issue - JA
