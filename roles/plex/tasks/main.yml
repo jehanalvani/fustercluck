@@ -1,5 +1,6 @@
----
 # tasks file for plex
+---
+
 
 
   - name: Add Nvidia's official GPG key
@@ -16,7 +17,7 @@
     debug: 
         msg: "{{ nvidia_repos }}"
 
-   - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
+  - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
     apt_repository:
         repo: "{{ item }}"
         state: present
@@ -34,11 +35,6 @@
         update_cache: yes
     notify: Restart docker service
 
-  - name: Restart docker service
-    ansible.builtin.systemd:
-        state: restarted
-        daemon_reload: yes
-        name: docker
         
   - name: "Create Plex Required Directories"
     ansible.builtin.file:
