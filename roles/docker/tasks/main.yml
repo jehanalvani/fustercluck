@@ -29,7 +29,6 @@
   - include_tasks: setup-ubuntu.yml
     when: ansible_lsb.id == "Ubuntu" 
 
-
   - name: Install docker
     apt:
       name: 
@@ -38,6 +37,19 @@
       state: present
       update_cache: yes
 #    notify: Start docker on boot
+
+  - name: Backup existing docker.service to docker.service.bak
+    copy:
+        src: "/lib/systemd/system/docker.service"
+        remote_src: yes
+        dest: "/lib/systemd/system/docker.service.{{ ansible_date_time['iso8601'] }}.bak"
+
+  - name: Drop docker.service into /lib/systemd/system/
+    template: 
+        src: docker.service.j2
+        dest: "/lib/systemd/system/docker.service"
+    notify: Restart docker service
+
                 
   - name: "Add {{ ansible_uname }} to 'docker' group"
     user:
