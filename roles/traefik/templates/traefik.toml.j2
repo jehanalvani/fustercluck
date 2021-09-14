@@ -9,25 +9,25 @@
 ################################################################
 # Global configuration
 ################################################################
-global:
-  checkNewVersion: true
-  sendAnonymousUsage: true
+[global]
+  checkNewVersion = true
+  sendAnonymousUsage = true
 
 ################################################################
-# EntryPoints configuration
+# Entrypoints configuration
 ################################################################
 
-# EntryPoints definition
+# Entrypoints definition
 #
 # Optional
-#
-entryPoints:
-  web:
-    address: :80
+# Default:
+[entryPoints]
+  [entryPoints.web]
+    address = ":80"
 
-  websecure:
-    address: :443
-          
+  [entryPoints.websecure]
+    address = ":443"
+
 ################################################################
 # Traefik logs configuration
 ################################################################
@@ -37,13 +37,14 @@ entryPoints:
 #
 # Optional
 #
-#log:
+[log]
+
   # Log level
   #
   # Optional
   # Default: "ERROR"
   #
-#  level: DEBUG
+  # level = "DEBUG"
 
   # Sets the filepath for the traefik log. If not specified, stdout will be used.
   # Intermediate directories are created if necessary.
@@ -51,14 +52,14 @@ entryPoints:
   # Optional
   # Default: os.Stdout
   #
-#  filePath: log/traefik.log
+  # filePath = "log/traefik.log"
 
   # Format is either "json" or "common".
   #
   # Optional
   # Default: "common"
   #
-#  format: json
+  # format = "json"
 
 ################################################################
 # Access logs configuration
@@ -70,101 +71,87 @@ entryPoints:
 #
 # Optional
 #
-#accessLog:
+# [accessLog]
+
   # Sets the file path for the access log. If not specified, stdout will be used.
   # Intermediate directories are created if necessary.
   #
   # Optional
   # Default: os.Stdout
   #
-#  filePath: /path/to/log/log.txt
+  # filePath = "/path/to/log/log.txt"
 
   # Format is either "json" or "common".
   #
   # Optional
   # Default: "common"
   #
-#  format: json
+  # format = "json"
 
 ################################################################
 # API and dashboard configuration
 ################################################################
 
 # Enable API and dashboard
-#
-# Optional
-#
-api:
+[api]
+
   # Enable the API in insecure mode
   #
   # Optional
   # Default: false
   #
-  insecure: true
+  # insecure = true
 
   # Enabled Dashboard
   #
   # Optional
   # Default: true
   #
-#  dashboard: false
+  # dashboard = false
 
 ################################################################
 # Ping configuration
 ################################################################
 
 # Enable ping
-ping:
+[ping]
+
   # Name of the related entry point
   #
   # Optional
   # Default: "traefik"
   #
-#  entryPoint: traefik
+  # entryPoint = "traefik"
 
 ################################################################
 # Docker configuration backend
 ################################################################
 
-providers:
-  # Enable Docker configuration backend
-  docker:
-    # Docker server endpoint. Can be a tcp or a unix socket endpoint.
-    #
-    # Required
-    # Default: "unix:///var/run/docker.sock"
-    #
-    endpoint: unix:///var/run/docker.sock
-    endpoint: tcp://10.0.1.201:4243
-    endpoint: tcp://10.0.1.252:4243
-    endpoint: tcp://10.0.1.203:4243
-    
-    # Default host rule.
-    #
-    # Section omitted due to Ansible parsing issue - JA
-    # https://github.com/ansible/ansible/issues/58835
-    #
-#    defaultRule: "Host(`{{ '{{' }} normalize .Name {{ '}}' }}.alvani.me`)"
-    useBindPortIP: true
-    swarmMode: false
-    watch: true
-#    See traefik_example.yaml in this directory.
-  
-    # Expose containers by default in traefik
-    #
-    # Optional
-    # Default: true
-    #
-#    exposedByDefault: false
+# Enable Docker configuration backend
+[providers.docker]
 
-################################################################
-# Rules configuration 
-################################################################
+  # Docker server endpoint. Can be a tcp or a unix socket endpoint.
+  #
+  # Required
+  # Default: "unix:///var/run/docker.sock"
+  #
+  # endpoint = "tcp://10.10.10.10:2375"
 
-## Dynamic configuration
-http:
-  routers:
-    plex-router:
-      # By default, routers listen to every entry points
-      rule: "Host(`plex.alvani.me`)"
-      service: "plex@docker"
+    endpoint = unix:///var/run/docker.sock
+    endpoint = tcp://10.0.1.201:4243
+    endpoint = tcp://10.0.1.252:4243
+    endpoint = tcp://10.0.1.203:4243
+
+  # Default host rule.
+  #
+  # Optional
+  # Default: "Host(`{{ normalize .Name }}`)"
+  #
+   defaultRule = "Host(`{{ normalize .Name }}.alvani.me`)"
+
+  # Expose containers by default in traefik
+  #
+  # Optional
+  # Default: true
+  #
+  # exposedByDefault = false

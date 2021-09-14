@@ -1,7 +1,23 @@
 ---
 # vars file for roles/plex
 
+app_name: plex
+
 media_path: "/snoqualmie/media"
 plex_config_path: "/seatac/plex"
+plex_ui_port: 32400
 
 nvidia_repos: "{{ lookup('url', 'https://nvidia.github.io/nvidia-docker/{{ ansible_distribution | lower | urlencode }}{{ ansible_distribution_version | lower | urlencode }}/nvidia-docker.list').split(',') }}"
+
+
+#traefik_labels: >-
+#  {{
+#    {
+#      "traefik.enable": "true",
+#      "traefik.http.routers.plex.entrypoints".format(item): "web",
+#      "traefik.http.routers.plex.rule".format(item): {{ ansible_hostname }}.local,
+#      "traefik.http.routers.plex-sec.entrypoints".format(item): "websecure",
+#      "traefik.http.routers.plex-sec.rule".format(item): "{{ ansible_hostname }}.local",
+#      "traefik.http.services.plex.loadbalancer.server.port".format(item): "{{ plex_ui_port }}"
+#    }
+#  }}

@@ -1,8 +1,6 @@
 # tasks file for plex
 ---
 
-
-
   - name: Add Nvidia's official GPG key
     apt_key:
       url: https://nvidia.github.io/nvidia-docker/gpgkey
@@ -47,31 +45,48 @@
         - /seatac/plex/backups
         - /seatac/plex/certs
 
-  - name: "Deploy Plex container"
+  - name: Create Traefik labels dictionary
+    set_fact:
+      traefik_labels: "{{ traefik_labels | default([]) | combine ({ item.key : item.value }) }}"
+    with_items:
+       - { 'key': 'traefik.enable' , 'value': 'true' }
+       - { 'key': 'traefik.http.routers.{{ app_name | string }}.entrypoints' , 'value': 'web' }
+#       - { 'key': 'traefik.http.routers.{{ app_name | string }}.rule' , 'value': '{{ ansible_hostname | string }}.local' }
+       - { 'key': 'traefik.http.services.{{ app_name | string }}.loadbalancer.server.port' , 'value': '{{ plex_ui_port | string }}' }
+    
+#       - { 'key': 'traefik.enable' , 'value': 'true' }
+#       - { 'key': 'traefik.http.routers.{{ app_name }}.entrypoints' , 'value': 'http' }
+#       - { 'key': 'traefik.http.routers.{{ app_name }}.rule' , 'value': '{{ ansible_hostname }}.local' }
+#       - { 'key': 'traefik.http.services.{{ app_name }}.loadbalancer.server.port' , 'value': '{{ plex_ui_port }}' }
+
+  - name: Debug Traefik labels dictionary
+    debug: var=traefik_labels
+    
+  - name: "Deploy {{ app_name }} container"
     docker_container:
         name: plex
         hostname: plex
         image: plexinc/pms-docker:plexpass
         restart_policy: unless-stopped
         state: started
-        network_mode: host
-#        ports: 
-#          - 32400:32400
-#          - 32400:32400/udp
-#          - 3005:3005
-#          - 8324:8324
-#          - 32469:32469
-#          - 32469:32469/udp
-#          - 1900:1900
-#          - 1900:1900/udp
-#          - 32410:32410
-#          - 32410:32410/udp
-#          - 32412:32412
-#          - 32412:32412/udp
-#          - 32413:32413
-#          - 32413:32413/udp
-#          - 32414:32414
-#          - 32414:32414/udp
+#        network_mode: host
+        ports: 
+         - "{{ plex_ui_port }}:32400"
+         - 32400:32400/udp
+         - 3005:3005
+         - 8324:8324
+         - 32469:32469
+         - 32469:32469/udp
+         - 1900:1900
+         - 1900:1900/udp
+         - 32410:32410
+         - 32410:32410/udp
+         - 32412:32412
+         - 32412:32412/udp
+         - 32413:32413
+         - 32413:32413/udp
+         - 32414:32414
+         - 32414:32414/udp
         mounts:
           - source: /snoqualmie/media
             target: /media
@@ -96,15 +111,7 @@
           - source: /seatac/plex/certs
             target: /data/certs
             read_only: no
-            type: bind
-        env:
-            TZ: "America/Los_Angeles"
-            PUID: "1001"
-            PGID: "997"
-            PLEX_UID: "1001"
-            PLEX_GID: "997"
-            PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
+            type: bind        
         device_requests: 
           - device_ids: '0'
             # count: '-1' 
@@ -116,10 +123,25 @@
               - compute
               - video
               - utility
+        labels: "{{ traefik_labels }}"
+#             "traefik.enable": "true"
+#             "traefik.http.routers.{{ app_name }}.entrypoints": "http"
+#             "traefik.http.routers.{{ app_name }}.rule": "{{ ansible_hostname }}.local"
+#             "traefik.http.services.{{ app_name }}.loadbalancer.server.port": "{{ plex_ui_port }}"
+             
+        env:
+            TZ: "America/Los_Angeles"
+            PUID: "1001"
+            PGID: "997"
+            PLEX_UID: "1001"
+            PLEX_GID: "997"
+            PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
+            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
         comparisons:        
             env: strict
+        
             
             
-  - name: Inform availability
+  - name: Success message
     debug: 
-        msg: "Plex should be accessible locally at http://{{ ansible_default_ipv4.address }}:32400/web/"
+        msg: "Plex should be accessible locally at http://{{ ansible_hostname }}.local:{{ plex_ui_port | string }}/web/"

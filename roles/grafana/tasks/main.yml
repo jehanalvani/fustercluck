@@ -34,7 +34,7 @@
         name: grafana
         image: grafana/grafana
         restart_policy: always
-        network_mode: host
+        #network_mode: host
         state: started
         ports: "{{ grafana_ui_port }}:3000"
         env:

@@ -9,7 +9,9 @@
         state: directory
         path: "{{ local_config_path }}"
 
-  - name: "Create traefik.yaml in {{ local_config_path }} from template"
+
+
+  - name: "Create traefik.yanl in {{ local_config_path }} from template"
     template: 
         src: traefik.yaml.j2
         dest: "{{ local_config_path }}/traefik.yaml"
