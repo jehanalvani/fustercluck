@@ -51,7 +51,7 @@
     with_items:
        - { 'key': 'traefik.enable' , 'value': 'true' }
        - { 'key': 'traefik.http.routers.{{ app_name | string }}.entrypoints' , 'value': 'web' }
-#       - { 'key': 'traefik.http.routers.{{ app_name | string }}.rule' , 'value': '{{ ansible_hostname | string }}.local' }
+       - { 'key': 'traefik.http.routers.{{ app_name | string }}.rule' , 'value': "Host(`{{ app_name | string }}.alvani.me`)" }
        - { 'key': 'traefik.http.services.{{ app_name | string }}.loadbalancer.server.port' , 'value': '{{ plex_ui_port | string }}' }
     
 #       - { 'key': 'traefik.enable' , 'value': 'true' }
@@ -69,24 +69,26 @@
         image: plexinc/pms-docker:plexpass
         restart_policy: unless-stopped
         state: started
-#        network_mode: host
-        ports: 
-         - "{{ plex_ui_port }}:32400"
-         - 32400:32400/udp
-         - 3005:3005
-         - 8324:8324
-         - 32469:32469
-         - 32469:32469/udp
-         - 1900:1900
-         - 1900:1900/udp
-         - 32410:32410
-         - 32410:32410/udp
-         - 32412:32412
-         - 32412:32412/udp
-         - 32413:32413
-         - 32413:32413/udp
-         - 32414:32414
-         - 32414:32414/udp
+        network_mode: host
+#        networks:
+#         - web
+#        ports: 
+#         - "{{ plex_ui_port }}:32400"
+#         - 32400:32400/udp
+#         - 3005:3005
+#         - 8324:8324
+#         - 32469:32469
+#         - 32469:32469/udp
+#         - 1900:1900
+#         - 1900:1900/udp
+#         - 32410:32410
+#         - 32410:32410/udp
+#         - 32412:32412
+#         - 32412:32412/udp
+#         - 32413:32413
+#         - 32413:32413/udp
+#         - 32414:32414
+#         - 32414:32414/udp
         mounts:
           - source: /snoqualmie/media
             target: /media

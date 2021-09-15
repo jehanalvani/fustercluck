@@ -25,6 +25,9 @@
         image: traefik
         restart_policy: unless-stopped
         state: started
+        network_mode: default
+#        networks: 
+#          - name: "web"
         ports: 
           - "{{ traefik_ui_port }}:8080"
           - 80:80
