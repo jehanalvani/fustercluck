@@ -1,0 +1,83 @@
+# Playbook to setup swarm cluster role
+---
+
+  - name: Ensure prereqs are installed
+    hosts: cluster
+    remote_user: ansible
+    become: yes
+
+    pre_tasks:     
+       - name: "Install pip, setuptools, virtualenv if not already"
+         apt: 
+            name:
+#                 - python-pip
+                 - python-setuptools
+                 - virtualenv
+            state: present
+            update_cache: yes
+     
+       - name: "Install pyOpenSSL if not already"
+         pip:
+            name:
+                - cryptography 
+                - pyOpenSSL  # required for OpenSSL cert creation
+            state: present
+       
+
+       
+    roles:
+       - role: common
+         tags:
+           - common
+       - role: docker
+         tags:
+           - docker
+
+# Creates a dictionary with            
+  
+  - name: Join workers to the swarm
+    hosts: cluster
+    tags: 
+      - swarm
+      - manager
+      - workers
+    tasks: 
+       
+       - name: "Clear swarm_ips dictionary"
+         set_fact:
+            swarm_ips: "{{ swarm_ips | default([]) }}"
+       
+       
+       - name: "Create dictionary with enp42s0 IP and hostname of 20-size"
+         set_fact:
+            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
+         with_items:
+            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.enp42s0.ipv4.address | string }}' }
+         when: (ansible_facts.hostname == "20-size") 
+
+            
+       - name: "Add eth0 IP and hostname of cluster[1,2] to swarm_ips"
+         set_fact:
+            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
+         with_items:
+            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.eth0.ipv4.address | string }}' }
+         when: (ansible_facts.hostname == "cluster1") or 
+               (ansible_facts.hostname == "cluster2") 
+
+       - name: "Add eth0 IP and hostname of cluster0 to swarm_ips dictionary"
+         set_fact:
+            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
+         with_items:
+            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.br0.ipv4.address | string }}' }
+         when: (ansible_facts.hostname == "cluster0")
+
+       - name: "Echo eth0 IP for all nodes"
+         debug: 
+            var: swarm_ips
+
+#       - name: "Init a Docker Swarm on 20-size"
+#         community.docker.docker_swarm:
+#             state: join
+#             advertise_adder: "{{ hostvars.eth0.ipv4.addr }}"
+#             join_token: "{{ manager_return.swarm_facts.JoinTokens.Worker }}"
+#             remote_addrs: 
