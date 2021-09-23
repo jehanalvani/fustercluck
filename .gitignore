@@ -1,4 +1,4 @@
 .DS_Store
 passfile.txt
 facts
-20-size.facts
+*.facts

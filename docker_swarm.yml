@@ -1,83 +1,80 @@
 # Playbook to setup swarm cluster role
 ---
 
-  - name: Ensure prereqs are installed
+  - name: Setup Swarm Cluster
     hosts: cluster
     remote_user: ansible
     become: yes
+    tags: 
+      - swarm
+      - manager
+      - workers
 
     pre_tasks:     
-       - name: "Install pip, setuptools, virtualenv if not already"
-         apt: 
+      - name: "Install pip, setuptools, virtualenv if not already"
+        apt: 
             name:
 #                 - python-pip
                  - python-setuptools
                  - virtualenv
             state: present
             update_cache: yes
-     
-       - name: "Install pyOpenSSL if not already"
-         pip:
-            name:
-                - cryptography 
-                - pyOpenSSL  # required for OpenSSL cert creation
-            state: present
-       
+         
+      - name: "Install pyOpenSSL if not already"
+        pip:
+           name:
+               - cryptography 
+               - pyOpenSSL  # required for OpenSSL cert creation
+           state: present
+
+ 
 
        
     roles:
-       - role: common
-         tags:
-           - common
-       - role: docker
-         tags:
-           - docker
+      - role: common
+        tags:
+         - common
+      - role: docker
+        tags:
+         - docker
+    
 
-# Creates a dictionary with            
-  
-  - name: Join workers to the swarm
-    hosts: cluster
-    tags: 
-      - swarm
-      - manager
-      - workers
-    tasks: 
-       
-       - name: "Clear swarm_ips dictionary"
-         set_fact:
-            swarm_ips: "{{ swarm_ips | default([]) }}"
-       
-       
-       - name: "Create dictionary with enp42s0 IP and hostname of 20-size"
-         set_fact:
-            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
-         with_items:
-            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.enp42s0.ipv4.address | string }}' }
-         when: (ansible_facts.hostname == "20-size") 
+    tasks:
 
-            
-       - name: "Add eth0 IP and hostname of cluster[1,2] to swarm_ips"
-         set_fact:
-            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
-         with_items:
-            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.eth0.ipv4.address | string }}' }
-         when: (ansible_facts.hostname == "cluster1") or 
-               (ansible_facts.hostname == "cluster2") 
+      - name: Set manager_ip to 20-size's enp42s0 ipv4 address
+        set_fact: 
+            manager_ip: "{{ hostvars['20-size.local']['ansible_facts']['enp42s0']['ipv4']['address'] | string }}"
+        
+         
+#      - name: debug manager_ip
+#        debug:
+#            var: manager_ip
+                      
 
-       - name: "Add eth0 IP and hostname of cluster0 to swarm_ips dictionary"
-         set_fact:
-            swarm_ips: "{{ swarm_ips | combine ({item.key : item.value}) }}"
-         with_items:
-            - { 'key': '{{ ansible_facts.hostname | string }}' , 'value': '{{ ansible_facts.br0.ipv4.address | string }}' }
-         when: (ansible_facts.hostname == "cluster0")
+      - name: Init a Docker Swarm on 20-size
+        community.docker.docker_swarm:
+            state: present
+            advertise_addr: "{{ manager_ip }}"
+        register: swarm_init_output
+        delegate_to: 20-size.local
+        delegate_facts: true
 
-       - name: "Echo eth0 IP for all nodes"
-         debug: 
-            var: swarm_ips
-
-#       - name: "Init a Docker Swarm on 20-size"
-#         community.docker.docker_swarm:
-#             state: join
-#             advertise_adder: "{{ hostvars.eth0.ipv4.addr }}"
-#             join_token: "{{ manager_return.swarm_facts.JoinTokens.Worker }}"
-#             remote_addrs: 
+#      - name: debug which hosts will be joined to swarm
+#        debug:
+#            msg: "{{ item }} IP:     {{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+#        delegate_to: "{{ item }}"
+#        run_once: true
+#        loop: "{{ groups.workers }}"
+      
+      
+      - name: Add hosts to swarm
+        community.docker.docker_swarm:
+            state: join
+            advertise_addr: "{{ hostvars[item]['ansible_default_ipv4']['address'] }}"
+            join_token: "{{ swarm_init_output.swarm_facts.JoinTokens.Worker }}"
+            remote_addrs: "{{ manager_ip }}"
+        delegate_to: "{{ item }}"
+        delegate_facts: true
+        run_once: true
+        loop: "{{ groups.workers }}"
+        
