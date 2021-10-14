@@ -27,6 +27,9 @@ entryPoints:
 
   websecure:
     address: ":443"
+  
+  traefik:
+    address: ":8080"
           
 ################################################################
 # Traefik logs configuration
@@ -137,7 +140,7 @@ providers:
     endpoint: unix:///var/run/docker.sock
     endpoint: tcp://10.0.1.201:4243
     endpoint: tcp://10.0.1.252:4243
-#    endpoint: tcp://10.0.1.203:4243
+    endpoint: tcp://10.0.1.203:4243
     endpoint: tcp://10.0.1.42:4243
     
     # Default host rule.
@@ -146,8 +149,8 @@ providers:
     # https://github.com/ansible/ansible/issues/58835
     #
 #    defaultRule: "Host(`{{ '{{' }} normalize .Name {{ '}}' }}.alvani.me`)"
-    useBindPortIP: true
-    swarmMode: true
+#    useBindPortIP: true
+#    swarmMode: true
     watch: true
     network: traefik_private
 #    See traefik_example.yaml in this directory.

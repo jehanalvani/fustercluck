@@ -38,16 +38,10 @@
     community.docker.docker_network:
         name: traefik_private
         driver: overlay
+        attachable: yes
         state: present
         internal: no
 
-
-#  - name: Create Docker overlay network traefik_private
-#    community.docker.docker_network:
-#        name: web
-#        driver: overlay
-#        state: present
-#        internal: no
 
 
 #  - name: "Deploy traefik container as a swarm service"
@@ -84,18 +78,22 @@
             target: /var/run/docker.sock
             readonly: no
             type: bind
+        placement:
+            constraints:
+              - node.role == manager
         env:
           TZ: "America/Los_Angeles"
           PUID: "1001"
           PGID: "997"
         labels:
-          # These
-#          traefik.docker.network: "traefik_private"
+          # Global configurations are in templates/traefik.yaml.j2
+          # This config adjusts the dashboard and API specifically
           traefik.enable: "true" # <== Enable traefik on itself to view dashboard and assign subdomain to view it
-          traefik.http.routers.api.entrypoints: "web"
-          traefik.http.routers.api.rule: "Host(`traefik.alvani.me`)" # <== Setting the domain for the dashboard
-          traefik.http.routers.api.service: "api@internal" # <== Enabling the api to be a service to access
-          traefik.http.services.api.loadbalancer.server.port: "8180"
+          traefik.http.routers.traefik.entrypoints: "web, traefik"
+          traefik.http.routers.traefik.rule: "Host(`traefik.alvani.me`)" # <== Setting the domain for the dashboard
+          traefik.http.routers.traefik.service: "api@internal" # <== Enabling the api to be a service to access
+          traefik.http.routers.traefik.service: "dashboard@internal" # <== Enabling the dashboard to be a service to access
+
 
 
   - name: "Success Notification"

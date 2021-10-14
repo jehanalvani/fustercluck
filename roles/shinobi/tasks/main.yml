@@ -37,7 +37,9 @@
         image: shinobisystems/shinobi:dev
         restart_policy: unless-stopped
         state: started
-        ports: 8082:8080
+#        ports: 8082:8080
+        networks: 
+          - name: traefik_private
         mounts:
           - source: "/mnt/shinobi_streams"
             target: "/dev/shm/streams"
@@ -63,6 +65,11 @@
             target: "/etc/localtime"
             read_only: yes
             type: bind       
+        labels: 
+          traefik.enable: "true" # <== Enable traefik on itself to view dashboard and assign subdomain to view it
+          traefik.http.routers.shinobi.entrypoints: "web"
+          traefik.http.routers.shinobi.rule: "Host(`shinobi.alvani.me`)" # <== Setting the domain for the dashboard
+
 
 # docker run -d --name='shinobi-tensorflow' -e PLUGIN_HOST='[shinobi container host IP]' \
 #   -e PLUGIN_PORT='8080' -v "$HOME/Shinobi/docker-plugins/tensorflow":'/config':'rw'\
