@@ -15,11 +15,9 @@ all:
                                 cluster0.local:
                                 cluster1.local:
                                 cluster2.local:
-                    hosts:
-                        20-size.local:               
-                proxy:
-                    hosts:
-                        cluster0.local:
+                        manager:
+                            hosts:
+                                20-size.local:               
                 homebridge:
                     hosts: 
                         cluster0.local:

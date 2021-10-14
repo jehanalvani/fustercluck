@@ -1,7 +1,7 @@
 # Playbook to setup proxy role
 ---
 
- - hosts: proxy
+ - hosts: manager
    remote_user: ansible
    become: yes
 
@@ -10,7 +10,7 @@
       - name: "Install pip, setuptools, virtualenv if not already"
         apt: 
            name:
-                - python-pip
+#                - python-pip
                 - python-setuptools
                 - virtualenv
            state: present

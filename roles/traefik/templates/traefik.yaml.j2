@@ -23,10 +23,10 @@ global:
 #
 entryPoints:
   web:
-    address: :80
+    address: ":80"
 
   websecure:
-    address: :443
+    address: ":443"
           
 ################################################################
 # Traefik logs configuration
@@ -137,7 +137,8 @@ providers:
     endpoint: unix:///var/run/docker.sock
     endpoint: tcp://10.0.1.201:4243
     endpoint: tcp://10.0.1.252:4243
-    endpoint: tcp://10.0.1.203:4243
+#    endpoint: tcp://10.0.1.203:4243
+    endpoint: tcp://10.0.1.42:4243
     
     # Default host rule.
     #
@@ -146,8 +147,9 @@ providers:
     #
 #    defaultRule: "Host(`{{ '{{' }} normalize .Name {{ '}}' }}.alvani.me`)"
     useBindPortIP: true
-    swarmMode: false
+    swarmMode: true
     watch: true
+    network: traefik_private
 #    See traefik_example.yaml in this directory.
   
     # Expose containers by default in traefik
@@ -155,7 +157,7 @@ providers:
     # Optional
     # Default: true
     #
-#    exposedByDefault: false
+    exposedByDefault: false
 
 ################################################################
 # Rules configuration 

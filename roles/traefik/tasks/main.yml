@@ -11,42 +11,92 @@
 
 
 
-  - name: "Create traefik.yanl in {{ local_config_path }} from template"
+  - name: "Create traefik.yanl in {{ local_config_path }} from template"      
     template: 
         src: traefik.yaml.j2
         dest: "{{ local_config_path }}/traefik.yaml"
-    notify: Restart traefik container
+#    notify: Restart traefik container
 
 
-  - name: "Deploy traefik container"
-    docker_container:
-        name: traefik
-        hostname: traefik
-        image: traefik
-        restart_policy: unless-stopped
-        state: started
-        network_mode: default
+#  - name: Create traefik Docker swarm service
+#    community.docker.docker_swarm_service:
+#        name: traefik
+#        image: 
 #        networks: 
-#          - name: "web"
-        ports: 
-          - "{{ traefik_ui_port }}:8080"
-          - 80:80
-          - 443:443
+#          - "traefik_private"
+#        mounts:
+#          - source: "{{ local_config_path }}"
+#            target: /etc/traefik/
+#            read_only: no
+#            type: bind
+#          - source: /var/run/docker.sock
+#            target: /var/run/docker.sock
+#            read_only: no
+#            type: bind
+  
+  - name: Create Docker overlay network traefik_private
+    community.docker.docker_network:
+        name: traefik_private
+        driver: overlay
+        state: present
+        internal: no
+
+
+#  - name: Create Docker overlay network traefik_private
+#    community.docker.docker_network:
+#        name: web
+#        driver: overlay
+#        state: present
+#        internal: no
+
+
+#  - name: "Deploy traefik container as a swarm service"
+  - name: "Deploy traefik container as a swarm service"
+    tags: swarm    
+    community.docker.docker_swarm_service:
+        name: traefik
+#        hostname: traefik
+        image: traefik
+        restart_config: 
+            condition: on-failure
+            delay: 10m
+            max_attempts: 5
+        state: present
+#        network_mode: default
+        networks: 
+          - traefik_private
+        publish: 
+         - target_port: 8080
+           published_port: "{{ traefik_ui_port }}"
+#           mode: host
+         - target_port:  80
+           published_port: 80
+#            mode: host
+         - target_port: 443
+           published_port: 443
+#            mode: host
         mounts:
           - source: "{{ local_config_path }}"
             target: /etc/traefik/
-            read_only: no
+            readonly: no
             type: bind
           - source: /var/run/docker.sock
             target: /var/run/docker.sock
-            read_only: no
+            readonly: no
             type: bind
         env:
           TZ: "America/Los_Angeles"
           PUID: "1001"
           PGID: "997"
-        comparisons:        
-            env: strict
+        labels:
+          # These
+#          traefik.docker.network: "traefik_private"
+          traefik.enable: "true" # <== Enable traefik on itself to view dashboard and assign subdomain to view it
+          traefik.http.routers.api.entrypoints: "web"
+          traefik.http.routers.api.rule: "Host(`traefik.alvani.me`)" # <== Setting the domain for the dashboard
+          traefik.http.routers.api.service: "api@internal" # <== Enabling the api to be a service to access
+          traefik.http.services.api.loadbalancer.server.port: "8180"
+
 
   - name: "Success Notification"
     debug:

@@ -78,3 +78,10 @@
         run_once: true
         loop: "{{ groups.workers }}"
         
+      - name: Create Docker overlay network traefik_private
+        community.docker.docker_network:
+            name: traefik_private
+            driver: overlay
+            state: present
+            internal: no
+
