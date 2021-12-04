@@ -23,93 +23,6 @@
                - docker
                - pyOpenSSL  # required for OpenSSL cert creation
             state: present
-#       - name: "Create Media ZFS filesystem on Snoqualmie zpool"
-#         tags: 
-#           - zfs
-#           - snoqualmie
-#         community.general.zfs: 
-#           name: snoqualmie/media
-#           state: present
-#       - name: "Create Plex ZFS filesystem on Seatac zpool"
-#         tags: 
-#           - zfs
-#           - seatac
-#         community.general.zfs: 
-#           name: seatac/plex
-#           state: present
-#       - name: "Create backups ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/backups
-#           state: present
-#       - name: "Create homebridge ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/homebridge
-#           state: present
-#       - name: "Create homebridge ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/homebridge
-#           state: present
-#       - name: "Create grafana ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/grafana
-#           state: present
-#       - name: "Create varken ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/varken
-#           state: present
-#       - name: "Create prometheus ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/prometheus
-#           state: present
-#       - name: "Create influxDB ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/influxDB
-#           state: present
-#       - name: "Create znbget ZFS filesystem on Whidbey zpool"
-#         tags: 
-#           - zfs
-#           - whidbey
-#         community.general.zfs: 
-#           name: whidbey/nzbget
-#           state: present        
-
-       - name: Creating directories for consumption by NFS clients
-         ansible.builtin.file:
-            state: directory
-            dest: "{{ item }}"
-         loop:
-            # Prometheus
-            - /whidbey/prometheus/database/
-            # Grafana
-            - /whidbey/grafana/data
-            - /whidbey/grafana/config
-            # InfluxDB
-            - /whidbey/influxDB/db
-            # NZBGet
-            - /whidbey/nzbget/intermediate
-            # Varken
-            - /whidbey/varken/config           
 
     roles:
       - role: common
@@ -124,6 +37,7 @@
           [
           "/snoqualmie/media 10.0.1.0/24(rw,async,no_root_squash,insecure,insecure_locks)", 
           "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
+          "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
