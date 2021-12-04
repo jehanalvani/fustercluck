@@ -12,8 +12,8 @@
   - hosts: application
     remote_user: ansible
     become: yes
-#    vars_files:
-#       - vars/external_variables.yml
+    vars_files:
+       - vars/vars.yml
    
 
 
@@ -66,6 +66,9 @@
       - role: sonarr
         tags:
           - sonarr
+      - role: nginx_pm
+        tags:
+          - nginx_pm
       - role: ombi
         tags:
           - ombi

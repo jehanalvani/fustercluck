@@ -1,64 +1,46 @@
 ---
-# tasks file for roles/sonarr
-
-    
-  - name: Ensures /container_data/sonarr_config exists, creates it if not
-    ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+# tasks file for homebridge
+   
+  - name: "Create mountpoint"
+    file: 
+        path: "{{ configs_mount_path }}"
         state: directory
-        path: "{{ local_config_path }}"
+        mode: 0777
+        owner: root
+        group: users
         
-# May be able to build a handler that responds if the above is empty and copies,
-# rsyncs, or restores from backup. 
 
-  - name: "Creates named docker volume: media"
-    docker_volume:
-        volume_name: "{{ media_volume_name }}"
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ media_nfs_path }}"
+  - name: "Mount nfs for configs filesystem"
+    mount: 
+        path: "{{ configs_mount_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}"
+        state: mounted
+        fstype: nfs
+       
 
-# Creating a named volume would be nice and would make data migration among
-# containers easier. Should figured out a shared volume first. 
-#  - name: "Creates named docker volume sonarr_config"
-#    docker_volume:     
-#        volume_name: sonarr_config
-#        state: present
-#        driver_options: 
-##            type: ext4
-##           o: "addr={{ nfs_server }},rw"
-#            device: "{{ local_config_dir }}"
-
-           
-  - name: "Deploy Sonarr container"
+       
+  - name: "Deploy Nginx Proxy Manager container"
     docker_container:
-        name: sonarr
-        hostname: sonarr
-        image: linuxserver/sonarr
-        restart_policy: unless-stopped
+        name: nginx_pm
+        image: 'jc21/nginx-proxy-manager:latest'
+        restart_policy: always
         state: started
-        ports: "{{ sonarr_ui_port }}:8989"
-        mounts:
-          - source: "{{ local_config_path }}"
-            target: /config
-            read_only: no
-            type: bind
-          - source: "{{ media_volume_name }}"
-            target: /media
-            read_only: no
-            type: volume
+        ports: 
+          - "{{ role_ui_port }}:81"
+          - "80:80"
+          - "443:443"
         env:
-          TZ: "America/Los_Angeles"
-          PUID: "1002"
-          PGID: "995"
-        comparisons:        
+        # might need to replace PGIO and PUID with user parameter
+            PGID: "995"
+            PUID: "1002"
+        volumes:
+          - "{{ configs_mount_path }}{{ role_subdir }}:/data"
+          - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/letsencrypt"
+        comparisons:
+            '*': ignore
             env: strict
-
-
-  - name: "Success Notification"
+            
+  - name: "Nginx Proxy Manager Success Notification"
     debug:
-        msg: "Sonarr is now accessible at http://{{ ansible_hostname }}.local:{{ sonarr_ui_port | string }}"
+        msg: "Nginx Proxy Manager is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port }}"
+        
