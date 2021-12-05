@@ -1,10 +1,8 @@
 ---
 # vars file for roles/sonarr
 
-nfs_server: 20-size.local
-sonarr_ui_port: 8989
 
-media_volume_name: media
-media_nfs_path: /seatac/media
-local_config_path: /container_data/sonarr_config
+role_ui_port: "8989"
+
+role_local_config_path: /container_data/sonarr_config
 

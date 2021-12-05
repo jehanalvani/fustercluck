@@ -8,30 +8,22 @@
         mode: 0755
         owner: ansible
         state: directory
-        path: "{{ local_config_path }}"
+        path: "{{ role_local_config_path }}"
+
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ media_mount_path }}"
         
-# May be able to build a handler that responds if the above is empty and copies,
-# rsyncs, or restores from backup. 
-
-  - name: "Creates named docker volume: media"
-    docker_volume:
-        volume_name: "{{ media_volume_name }}"
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ media_nfs_path }}"
-
-# Creating a named volume would be nice and would make data migration among
-# containers easier. Should figured out a shared volume first. 
-#  - name: "Creates named docker volume sonarr_config"
-#    docker_volume:     
-#        volume_name: sonarr_config
-#        state: present
-#        driver_options: 
-##            type: ext4
-##           o: "addr={{ nfs_server }},rw"
-#            device: "{{ local_config_dir }}"
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
 
            
   - name: "Deploy Sonarr container"
@@ -41,16 +33,16 @@
         image: linuxserver/sonarr
         restart_policy: unless-stopped
         state: started
-        ports: "{{ sonarr_ui_port }}:8989"
+        ports: "{{ role_ui_port }}:8989"
         mounts:
-          - source: "{{ local_config_path }}"
+          - source: "{{ role_local_config_path }}"
             target: /config
             read_only: no
             type: bind
-          - source: "{{ media_volume_name }}"
+          - source: "{{ media_mount_path }}"
             target: /media
             read_only: no
-            type: volume
+            type: bind
         env:
           TZ: "America/Los_Angeles"
           PUID: "1002"
@@ -61,4 +53,4 @@
 
   - name: "Success Notification"
     debug:
-        msg: "Sonarr is now accessible at http://{{ ansible_hostname }}.local:{{ sonarr_ui_port | string }}"
+        msg: "Sonarr is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
