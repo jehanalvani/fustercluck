@@ -36,9 +36,9 @@
       - role: cloudalchemy.node-exporter
         tags:
           - node-exporter
-#      - role: zcube-cadvisor
-#        tags:
-#          - cadvisor
+      - role: zcube-cadvisor
+        tags:
+          - cadvisor
       - role: homebridge
         tags:
           - homebridge
