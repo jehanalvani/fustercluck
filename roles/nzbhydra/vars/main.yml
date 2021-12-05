@@ -1,9 +1,6 @@
 ---
 # vars file for roles/nzbhydra
 
+role_ui_port: 5076
 
-nfs_server: 20-size.local
-media_nfs_path: /snoqualmie/media
-nzbhydra_ui_port: 5076
-
-hydra_local_config_path: /container_data/nzbhydra2/config
+role_local_config_path: /container_data/nzbhydra2/config

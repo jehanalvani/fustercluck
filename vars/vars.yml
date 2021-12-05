@@ -5,7 +5,6 @@ nfs_server: 20-size.local
 server_config_path: /whidbey/configs/
 
 server_media_path: /snoqualmie/media/
-media_volume_name: media
 media_mount_path: /mnt/media/
 
 configs_mount_path: /mnt/configs/
