@@ -7,7 +7,7 @@
         dest: "{{ item }}"
     loop:
         - "/seatac/plex/config/Library/Application Support/Plex Media Server/Logs"
-        - "/whidbey/tautulli_config"
+        - "/whidbey/configs/tautulli_config"
 
   - name: "Deploy tautulli container"
     docker_container:
@@ -16,11 +16,9 @@
         image: tautulli/tautulli
         restart_policy: unless-stopped
         state: started
-#        ports: 8181:8181
-        networks: 
-          - name: traefik_private
+        ports: 8181:8181
         mounts:
-          - source: /whidbey/tautulli_config
+          - source: /whidbey/configs/tautulli_config
             target: /config
             read_only: no
             type: bind
@@ -34,7 +32,3 @@
           PGID: "997"
         comparisons:        
             env: strict
-        labels: 
-          traefik.enable: "true" # <== Enable traefik on itself to view dashboard and assign subdomain to view it
-          traefik.http.routers.tautulli.entrypoints: "web"
-          traefik.http.routers.tautulli.rule: "Host(`tautulli.alvani.me`)" # <== Setting the domain for the dashboard

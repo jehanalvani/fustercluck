@@ -2,50 +2,60 @@
 # tasks file for roles/prometheus---
  
    
-  - name: "Create `/container_data/prometheus` if it does not exist"
+  - name: "Create {{ role_local_config_path }} if it does not exist"
     file:
-        path: "{{ prometheus_config_path }}"
+        path: "{{ role_local_config_path }}"
         state: directory
         mode: '0775'
         
-  - name: "Create `/container_data/promtetheus/prometheus.yml` from template"
+  - name: "Create {{ role_local_config_path }}/prometheus.yml` from template"
     template: 
         src: prometheus.yml.j2
-        dest: "{{ prometheus_config_path }}/prometheus.yml"
+        dest: "{{ role_local_config_path }}/prometheus.yml"
     tags: deploy_prom_config
     notify: Restart prometheus container
 
+  - name: "Ensures {{ configs_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ configs_mount_path }}"
+        
+  - name: "Mount {{ nfs_server }}:{{server_config_path}} to {{configs_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_config_path}}"
+        path: "{{ configs_mount_path }}"
+        state: mounted
+        fstype: nfs          
 
-  - name: "Creates named docker volume prometheus_persist"
-    docker_volume:
-        debug: yes
-        volume_name: prometheus_persist
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ prometheus_nfs_path }}"
-            
-
+  - name: "Create `{{ configs_mount_path }}{{ server_config_suffix }}` if it does not exist"
+    file:
+        path: "{{ configs_mount_path }}{{ server_config_suffix }}"
+        state: directory
+        owner: ansible
+        group: users
+        mode: '0777'
             
             
   - name: "Deploy prometheus container"
     docker_container:
-        debug: yes
         name: prometheus
         hostname: prometheus
         image: prom/prometheus
         restart_policy: always
-        network_mode: host
         state: started
-        ports: "{{ prometheus_ui_port }}:9090"
+        ports: "{{ role_ui_port }}:9090"
         volumes:
-          - "{{ prometheus_config_path }}:/etc/prometheus"
+          - "{{ role_local_config_path }}:/etc/prometheus"
         mounts:
-          - source: prometheus_persist
+        # In this configuration, the "configs" mount path on the NFS server actually houses the
+        # TDSDB
+          - source: "{{ configs_mount_path }}{{ server_config_suffix }}"            
             target: /prometheus
             read_only: no
-            type: volume      
+            type: bind
         env:
           PUID: "1002"
           PGID: "995"
@@ -55,4 +65,4 @@
             
   - name: "Success Notification"
     debug:
-        msg: "Prometheus is now accessible at http://{{ ansible_hostname }}.local:{{ prometheus_ui_port | string }}"
+        msg: "Prometheus is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
