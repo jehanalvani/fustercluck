@@ -35,7 +35,7 @@
             PUID: "1002"
         volumes:
           - "{{ configs_mount_path }}{{ role_subdir }}:/data"
-          - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/letsencrypt"
+          - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/etc/letsencrypt"
         comparisons:
             '*': ignore
             env: strict
