@@ -1,13 +1,11 @@
 ---
 # vars file for roles/varken
 
-nfs_server: 20-size.local
 
+role_config_suffix: varken/
+role_ui_port: 9090
 
-varken_nfs_path: /whidbey/varken/config
-varken_ui_port: 9090
-
-varken_mount_path: /mnt/varken
+role_mount_path: /mnt/varken
 maxmind_license_key: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
           64303263366431613464356130336335613836366630346230386137373061383166623935386133
