@@ -5,28 +5,48 @@
 
   - name: Mount grafana config NFS Share to host
     mount:
-        src: "{{ nfs_server }}:{{ grafana_config_nfs_path }}"
-        path: "{{ grafana_config_mnt_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}{{ role_config_suffix }}"
+        path: "{{ configs_mount_path }}" #/mnt/configs/
         fstype: nfs
         state: mounted
 
+  - name: "Create `{{ configs_mount_path }}grafana` if it does not exist"
+    file:
+        path: "{{ configs_mount_path }}grafana" #/mnt/configs/grafana/config
+        state: directory
+        recurse: yes
+        owner: ansible
+        group: users
+        mode: '0775'
+        
+
+
+        
+ # - name: "Create `/container_data/grafana/data` if it does not exist"
+#    file:
+#        path: "/container_data/grafana/data" #/mnt/configs/grafana/config
+#        state: directory
+#        recurse: yes
+#        owner: "472"
+#        group: users
+#        mode: '0775'
 
   - name: "Deploy grafana.ini from template"
     template: 
         src: grafana.ini.j2
-        dest: "{{ grafana_config_mnt_path }}/grafana.ini"
+        dest: "{{ configs_mount_path }}{{ role_config_suffix }}/grafana.ini"
     notify: 
       - Restart grafana container
         
 
-  - name: Creates named docker volume 'grafana_config' 
-    docker_volume:
-        volume_name: grafana_config
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ grafana_config_nfs_path }}"        
+#  - name: Creates named docker volume 'grafana_config' 
+#    docker_volume:
+#        volume_name: grafana_config
+#        state: present
+#        driver_options: 
+#            type: nfs
+#            o: "addr={{ nfs_server }},rw"
+#            device: ":{{ server_config_path }}{{ grafana_config_nfs_suffix }}"        
             
 
   - name: "Deploy grafana container"
@@ -36,7 +56,7 @@
         restart_policy: always
         #network_mode: host
         state: started
-        ports: "{{ grafana_ui_port }}:3000"
+        ports: "{{ role_ui_port }}:3000"
         env:
             GF_INSTALL_PLUGINS: "{{ grafana_plugins }}"  
             GF_PATHS_CONFIG: "/config/grafana.ini"
@@ -44,19 +64,18 @@
             GF_PATHS_PROVISIONING: "/config/provisioning"
             GF_STRAVA_DS_DATA_PATH: "/var/lib/grafana/strava"    
             GF_PLUGINS_ENABLE_ALPHA: "true"   
-            
         mounts:
-          - source: "/container_data/grafana/data"
+          - source: "{{ configs_mount_path }}{{ role_data_suffix }}"
             target: "/var/lib/grafana"
             read_only: no
             type: bind     
-          - source: grafana_config
+          - source: "{{ configs_mount_path }}{{ role_config_suffix }}"
             target: "/config"
             read_only: no
-            type: volume     
+            type: bind
         comparisons:        
             env: strict
 
   - name: "Success Notification"
     debug:
-        msg: "Grafana is now accessible at http://{{ ansible_hostname }}.local:{{ grafana_ui_port | string }}"
+        msg: "Grafana is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
