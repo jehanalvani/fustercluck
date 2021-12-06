@@ -7,7 +7,7 @@
         mode: 0755
         owner: ansible
         state: directory
-        path: "{{ local_config_path }}"
+        path: "{{ role_local_config_path }}"
 
 
        
@@ -18,9 +18,9 @@
         image: linuxserver/ombi
         restart_policy: unless-stopped
         state: started
-        ports: 3579:3579
+        ports: "{{ role_ui_port }}:3579"
         mounts:
-          - source: "{{ local_config_path }}"
+          - source: "{{ role_local_config_path }}"
             target: /config
             read_only: no
             type: bind
@@ -30,3 +30,7 @@
           PGID: "995"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Ombi is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"

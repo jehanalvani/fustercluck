@@ -65,7 +65,7 @@
         image: boerderij/varken
         restart_policy: always
         state: started
-        ports: 9090:9090
+        ports: "{{ varken_ui_port }}:9090"
         mounts:
           - source: varken_persist
             target: /config
@@ -78,3 +78,8 @@
 #            PGID: "995"
         comparisons:        
             env: strict    
+            
+            
+  - name: "Success Notification"
+    debug:
+        msg: "Varken is now accessible at http://{{ ansible_hostname }}.local:{{ varken_ui_port | string }}"

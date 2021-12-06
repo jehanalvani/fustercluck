@@ -1,6 +1,5 @@
----
 # tasks file for plex
-
+---
 
   - name: Add Nvidia's official GPG key
     apt_key:
@@ -16,7 +15,6 @@
     debug: 
         msg: "{{ nvidia_repos }}"
 
- 
   - name: Add Nvidia repository into sources list using "nvidia-docker.list" as filename
     apt_repository:
         repo: "{{ item }}"
@@ -33,12 +31,8 @@
         state: present
         install_recommends: yes
         update_cache: yes
+    notify: Restart docker service
 
-  - name: Restart docker also issue daemon-reload to pick up config changes
-    ansible.builtin.systemd:
-        state: restarted
-        daemon_reload: yes
-        name: docker
         
   - name: "Create Plex Required Directories"
     ansible.builtin.file:
@@ -51,7 +45,11 @@
         - /seatac/plex/backups
         - /seatac/plex/certs
 
-  - name: "Deploy Plex container"
+
+  - name: Debug Traefik labels dictionary
+    debug: var=traefik_labels
+    
+  - name: "Deploy {{ app_name }} container"
     docker_container:
         name: plex
         hostname: plex
@@ -59,23 +57,6 @@
         restart_policy: unless-stopped
         state: started
         network_mode: host
-#        ports: 
-#          - 32400:32400
-#          - 32400:32400/udp
-#          - 3005:3005
-#          - 8324:8324
-#          - 32469:32469
-#          - 32469:32469/udp
-#          - 1900:1900
-#          - 1900:1900/udp
-#          - 32410:32410
-#          - 32410:32410/udp
-#          - 32412:32412
-#          - 32412:32412/udp
-#          - 32413:32413
-#          - 32413:32413/udp
-#          - 32414:32414
-#          - 32414:32414/udp
         mounts:
           - source: /snoqualmie/media
             target: /media
@@ -100,7 +81,16 @@
           - source: /seatac/plex/certs
             target: /data/certs
             read_only: no
-            type: bind
+            type: bind        
+        device_requests: 
+          - device_ids: '0'
+            driver: nvidia
+            
+            capabilities: 
+              - gpu
+              - compute
+              - video
+              - utility
         env:
             TZ: "America/Los_Angeles"
             PUID: "1001"
@@ -109,21 +99,11 @@
             PLEX_GID: "997"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
             ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
-        device_requests: 
-          - device_ids: '0'
-            # count: '-1' 
-            #(Can't specify device IDs and set count)
-            driver: nvidia
-            
-            capabilities: 
-              - gpu
-              - compute
-              - video
-              - utility
         comparisons:        
             env: strict
+        
             
             
-  - name: Inform availability
+  - name: Success message
     debug: 
-        msg: "Plex should be accessible locally at http://{{ ansible_default_ipv4.address }}:32400/web/"
+        msg: "Plex should be accessible locally at http://{{ ansible_hostname }}.local:{{ plex_ui_port | string }}/web/"

@@ -1,0 +1,8 @@
+---
+# vars file for nginx proxy manager
+
+
+role_subdir: nginx_pm/
+letsencrypt_subdir: letsencrypt/
+
+role_ui_port: "81"

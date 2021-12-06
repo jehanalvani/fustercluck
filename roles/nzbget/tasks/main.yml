@@ -1,35 +1,58 @@
 ---
 # tasks file for roles/nzbget
 
-  - name: "Creates named docker volume media"
-    docker_volume:
-        volume_name: media
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ media_nfs_path }}"
+## Media Volume Creation
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ media_mount_path }}"
 
+## Mediu volume mount
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
 
-  - name: "Creates named docker volume at {{ nzbget_intermediate }}"
-    docker_volume:
-        volume_name: nzbget_intermediate
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ nzb_intermediate_nfs_path }}"
+## Intermediate volume creation
+  - name: "Ensures {{ intermediate_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ intermediate_mount_path }}"
+        
+  - name: "Mount {{ nfs_server }}:{{server_intermediate_path}} to {{intermediate_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_intermediate_path}}"
+        path: "{{intermediate_mount_path}}"
+        state: mounted
+        fstype: nfs
 
-  - name: "Create {{ nzbget_config_path }} if it does not exist"
+#  - name: "Creates named docker volume at {{ nzbget_intermediate }}"
+#    docker_volume:
+#        volume_name: nzbget_intermediate
+#        state: present
+#        driver_options: 
+#            type: nfs
+#            o: "addr={{ nfs_server }},rw"
+#            device: ":{{ nzb_intermediate_nfs_path }}"
+
+  - name: "Create {{ role_local_config_path }} if it does not exist"
     file:
-        path: "{{ nzbget_config_path }}"
+        path: "{{ role_local_config_path }}"
         state: directory
         mode: '0775'     
     
-  - name: "Create nzbget.conf in {{ nzbget_config_path }} from template"
+  - name: "Create nzbget.conf in {{ role_local_config_path }} from template"
     template: 
         src: nzbget.conf.j2
-        dest: "{{ nzbget_config_path }}/nzbget.conf"
+        dest: "{{ role_local_config_path }}/nzbget.conf"
     tags: deploy_prom_config
     notify: 
       - Restart nzbget container       
@@ -41,18 +64,19 @@
         image: linuxserver/nzbget
         restart_policy: unless-stopped
         state: started
-        ports: 6789:6789
+        ports: "{{ role_ui_port }}:6789"
         mounts:
-          - source: nzbget_intermediate
-            target: /intermediate
-            read_only: no
-            type: volume
-          - source: media
+          - source: "{{ media_mount_path }}"
             target: /media
             read_only: no
-            type: volume
+            type: bind        
+        
+          - source: "{{ intermediate_mount_path }}"
+            target: /intermediate
+            read_only: no
+            type: bind
         volumes:
-          - "{{ nzbget_config_path }}:/config"
+          - "{{ role_local_config_path }}:/config"
         env:
           TZ: "America/Los_Angeles"
           PUID: "1001"
@@ -60,3 +84,7 @@
           UMASK: "000"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "NZBGet is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"

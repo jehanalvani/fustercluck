@@ -1,9 +1,9 @@
 ---
 # vars file for roles/influxdb
 
+role_ui_port: 8086
 
-nfs_server: 20-size.local
-influxdb_nfs_path: /whidbey/influxDB/
+role_nfs_db_suffix: influxDB/db
 influxdb_mnt_path: /mnt/influxdb_persist
 influxdb_admin_user: admin
 influxdb_admin_password: !vault |

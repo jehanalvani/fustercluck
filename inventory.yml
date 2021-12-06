@@ -3,11 +3,21 @@
 all:
     hosts: 
         displaypi.local:
-        20-size.local:
+#        20-size.local:
 #        raspberrypi.local:
     children:
         lab:
             children:
+                cluster:
+                    children: 
+                        workers:
+                            hosts:
+                                cluster0.local:
+                                cluster1.local:
+                                cluster2.local:
+                        manager:
+                            hosts:
+                                20-size.local:               
                 homebridge:
                     hosts: 
                         cluster0.local:

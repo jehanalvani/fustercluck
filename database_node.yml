@@ -12,7 +12,9 @@
   - hosts: database
     remote_user: ansible
     become: yes
-
+    vars_files:
+       - vars/vars.yml
+ 
 
 
     pre_tasks:

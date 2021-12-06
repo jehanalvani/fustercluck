@@ -1,21 +1,28 @@
 ---
 # tasks file for roles/nzbhydra
 
-  - name: "Creates named docker volume media"
-    docker_volume:
-        volume_name: media
-        state: present
-        driver_options: 
-            type: nfs
-            o: "addr={{ nfs_server }},rw"
-            device: ":{{ media_nfs_path }}"
-
-
-  - name: "Create {{ hydra_local_config_path }} if it does not exist"
+  - name: "Create {{ role_local_config_path }} if it does not exist"
     file:
-        path: "{{ hydra_local_config_path }}"
+        path: "{{ role_local_config_path }}"
         state: directory
         mode: '0775'     
+
+
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ media_mount_path }}"
+        
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
+
      
             
   - name: "Deploy nzbHydra2 container"
@@ -25,17 +32,21 @@
         image: linuxserver/nzbhydra2
         restart_policy: unless-stopped
         state: started
-        ports: 5076:5076
+        ports: "{{ role_ui_port }}:5076"
         mounts:
-          - source: media
+          - source: "{{ media_mount_path }}"
             target: /media
             read_only: no
-            type: volume
+            type: bind
         volumes:
-          - "{{ hydra_local_config_path }}:/config"
+          - "{{ role_local_config_path }}:/config"
         env:
           TZ: "America/Los_Angeles"
           PUID: "1002"
           PGID: "100"
         comparisons:        
             env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "NZBHydra is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"

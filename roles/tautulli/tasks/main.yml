@@ -7,7 +7,7 @@
         dest: "{{ item }}"
     loop:
         - "/seatac/plex/config/Library/Application Support/Plex Media Server/Logs"
-        - "/whidbey/tautulli_config"
+        - "/whidbey/configs/tautulli_config"
 
   - name: "Deploy tautulli container"
     docker_container:
@@ -18,7 +18,7 @@
         state: started
         ports: 8181:8181
         mounts:
-          - source: /whidbey/tautulli_config
+          - source: /whidbey/configs/tautulli_config
             target: /config
             read_only: no
             type: bind

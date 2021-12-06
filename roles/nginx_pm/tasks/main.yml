@@ -1,0 +1,46 @@
+---
+# tasks file for homebridge
+   
+  - name: "Create mountpoint"
+    file: 
+        path: "{{ configs_mount_path }}"
+        state: directory
+        mode: 0777
+        owner: root
+        group: users
+        
+
+  - name: "Mount nfs for configs filesystem"
+    mount: 
+        path: "{{ configs_mount_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}"
+        state: mounted
+        fstype: nfs
+       
+
+       
+  - name: "Deploy Nginx Proxy Manager container"
+    docker_container:
+        name: nginx_pm
+        image: 'jc21/nginx-proxy-manager:latest'
+        restart_policy: always
+        state: started
+        ports: 
+          - "{{ role_ui_port }}:81"
+          - "80:80"
+          - "443:443"
+        env:
+        # might need to replace PGIO and PUID with user parameter
+            PGID: "995"
+            PUID: "1002"
+        volumes:
+          - "{{ configs_mount_path }}{{ role_subdir }}:/data"
+          - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/etc/letsencrypt"
+        comparisons:
+            '*': ignore
+            env: strict
+            
+  - name: "Nginx Proxy Manager Success Notification"
+    debug:
+        msg: "Nginx Proxy Manager is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port }}"
+        

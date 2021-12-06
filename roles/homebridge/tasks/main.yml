@@ -3,33 +3,33 @@
    
   - name: "Create mountpoint"
     file: 
-        path: "{{ homebridge_mount_path }}"
+        path: "{{ configs_mount_path }}"
         state: directory
         mode: 0777
         owner: root
         group: users
         
 
-  - name: "Mount nfs drive for Homebridge filesystem"
+  - name: "Mount nfs for configs filesystem"
     mount: 
-        path: "{{ homebridge_mount_path }}"
-        src: "{{ nfs_server }}:{{ homebridge_nfs_path }}"
+        path: "{{ configs_mount_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}"
         state: mounted
         fstype: nfs
         
   - name: "Create config.json in mountpoint from template"
     template: 
         src: homebridge.config.json.j2
-        dest: "{{ homebridge_mount_path }}/config.json"
+        dest: "{{ configs_mount_path }}{{ role_subdir }}config.json"
     notify: Restart homebridge container
 
   - name: "Create startup.sh in mountpoint from template"
     template: 
         src: homebridge.startup.sh.j2
-        dest: "{{ homebridge_mount_path }}/startup.sh"
+        dest: "{{ configs_mount_path }}{{ role_subdir }}startup.sh"
     notify: Restart homebridge container
-    
-        
+
+       
   - name: "Deploy Homebridge container"
     docker_container:
         name: homebridge
@@ -37,6 +37,8 @@
         restart_policy: always
         state: started
         network_mode: host
+        ports: 
+          - "{{ homebridge_ui_port }}:8080"
         env:
         # might need to replace PGIO and PUID with user parameter
             PGID: "995"
@@ -44,7 +46,7 @@
             HOMEBRIDGE_CONFIG_UI: "1"
             HOMEBRIDGE_CONFIG_UI_PORT: "{{ homebridge_ui_port }}"
         volumes:
-            - "{{ homebridge_mount_path }}:/homebridge"
+          - "{{ configs_mount_path }}{{ role_subdir }}:/homebridge"
         comparisons:
             '*': ignore
             env: strict
