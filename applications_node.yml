@@ -45,9 +45,9 @@
       - role: docker
         tags:
           - docker
-      - role: grafana
-        tags:
-          - grafana
+#      - role: grafana
+#        tags:
+#          - grafana
       - role: zcube-cadvisor
         tags:
           - cadvisor
