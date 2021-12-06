@@ -40,41 +40,31 @@
        
     roles:
       - role: common
-        tags:
-          - common
+        tags: common
       - role: docker
-        tags:
-          - docker
+        tags: docker
 #      - role: grafana
-#        tags:
-#          - grafana
+#        tags: grafana
       - role: zcube-cadvisor
-        tags:
-          - cadvisor
+        tags: cadvisor
       - role: nzbhydra
-        tags:
-          - nzbhydra
+        tags: nzbhydra
 #      - role: varken
-#        tags:
-#          - varken
+#        tags: varken
       - role: nzbget
-        tags:
-          - nzbget
+        tags: nzbget
       - role: radarr
-        tags:
-          - radarr
+        tags: radarr
       - role: sonarr
-        tags:
-          - sonarr
+        tags: sonarr
       - role: nginx_pm
-        tags:
-          - nginx_pm
+        tags: nginx_pm
       - role: ombi
-        tags:
-          - ombi
+        tags: ombi
       - role: cloudalchemy.node-exporter
-        tags:
-          - node-exporter
+        tags: node-exporter
       - role: prowlarr
         tags: prowlarr
+      - role: fresh-rss
+        tags: fresh-rss
 

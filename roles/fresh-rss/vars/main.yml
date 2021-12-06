@@ -1,0 +1,10 @@
+---
+# vars file for roles/fresh-rss
+
+
+role_ui_port: "8082"
+
+role_config_suffix: fresh-rss/
+
+
+
