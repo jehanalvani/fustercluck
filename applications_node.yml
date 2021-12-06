@@ -75,4 +75,6 @@
       - role: cloudalchemy.node-exporter
         tags:
           - node-exporter
+      - role: prowlarr
+        tags: prowlarr
 

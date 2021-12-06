@@ -1,0 +1,10 @@
+---
+# vars file for roles/sonarr
+
+
+role_ui_port: "9696"
+
+role_local_config_path: /container_data/prowlarr_config
+role_config_suffix: prowlarr/
+
+
