@@ -29,6 +29,7 @@
           - "{{ role_ui_port }}:81"
           - "80:80"
           - "443:443"
+          - "32400:32400"
         env:
         # might need to replace PGIO and PUID with user parameter
             PGID: "995"
@@ -37,7 +38,7 @@
           - "{{ configs_mount_path }}{{ role_subdir }}:/data"
           - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/etc/letsencrypt"
         comparisons:
-            '*': ignore
+#            '*': ignore
             env: strict
             
   - name: "Nginx Proxy Manager Success Notification"
