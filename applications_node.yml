@@ -67,4 +67,6 @@
         tags: prowlarr
       - role: fresh-rss
         tags: fresh-rss
+      - role: heimdall
+        tags: heimdall
 
