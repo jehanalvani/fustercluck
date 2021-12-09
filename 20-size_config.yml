@@ -40,12 +40,12 @@
           "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
           "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
 #          "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
-          "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-          "/whidbey/varken 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-          "/whidbey/prometheus 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-          "/whidbey/influxDB 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
+#          "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#          "/whidbey/varken 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#          "/whidbey/prometheus 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#          "/whidbey/influxDB 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
 #          "/whidbey/ombi_config 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
-          "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)"
+#          "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)"
           ]
         tags:
           - nfs

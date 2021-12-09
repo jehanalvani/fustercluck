@@ -24,9 +24,9 @@
         dest: "{{ item }}"
     loop:
         - /mnt/shinobi_streams
-        - /whidbey/shinobi/customAutoLoad
-        - /whidbey/shinobi/database
-        - /whidbey/shinobi/plugins       
+        - /whidbey/configs/shinobi/customAutoLoad
+        - /whidbey/configs/shinobi/database
+        - /whidbey/configs/shinobi/plugins       
         - /snoqualmie/media/security_cam_recordings
 
 
@@ -37,19 +37,17 @@
         image: shinobisystems/shinobi:dev
         restart_policy: unless-stopped
         state: started
-#        ports: 8082:8080
-        networks: 
-          - name: traefik_private
+        ports: 8082:8080
         mounts:
           - source: "/mnt/shinobi_streams"
             target: "/dev/shm/streams"
             read_only: no
             type: bind
-          - source: "/whidbey/shinobi/customAutoLoad"
+          - source: "/whidbey/configs/shinobi/customAutoLoad"
             target: "/home/Shinobi/libs/customAutoLoad"
             read_only: no
             type: bind
-          - source: "/whidbey/shinobi/database"
+          - source: "/whidbey/configs/shinobi/database"
             target: "/var/lib/mysql"
             read_only: no
             type: bind
@@ -57,7 +55,7 @@
             target: "/home/Shinobi/videos"
             read_only: no
             type: bind
-          - source: "/whidbey/shinobi/plugins"
+          - source: "/whidbey/configs/shinobi/plugins"
             target: "/home/Shinobi/plugins"
             read_only: no
             type: bind
@@ -65,10 +63,15 @@
             target: "/etc/localtime"
             read_only: yes
             type: bind       
+        device_requests: 
+          - device_ids: '0'
+            driver: nvidia    
+            capabilities: 
+              - gpu
+              - compute
+              - video
+              - utility
         labels: 
-          traefik.enable: "true" # <== Enable traefik on itself to view dashboard and assign subdomain to view it
-          traefik.http.routers.shinobi.entrypoints: "web"
-          traefik.http.routers.shinobi.rule: "Host(`shinobi.alvani.me`)" # <== Setting the domain for the dashboard
 
 
 # docker run -d --name='shinobi-tensorflow' -e PLUGIN_HOST='[shinobi container host IP]' \
