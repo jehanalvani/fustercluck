@@ -1,0 +1,10 @@
+---
+# vars file for roles/sonarr
+
+
+role_ui_port: "8005"
+
+#rrole_local_config_path: /container_data/rss-bridge_config
+role_config_suffix: rss-bridge/
+
+
