@@ -6,6 +6,14 @@ global:
   external_labels:
     monitor: 'codelab-monitor'
 
+
+remote_write:
+  - url: https://prometheus-prod-10-prod-us-central-0.grafana.net/api/prom/push
+    basic_auth:
+        username: 270792
+        password: {{ grafana_com_API_key }}
+
+
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:
@@ -19,11 +27,6 @@ scrape_configs:
       - targets: ['localhost:9090']
       
      
-  - job_name: 'statping'
-    bearer_token: 'd0b3875a76473018409a4b2ace29a8f1cce785694bfecd312812769e15d33f0a'
-    static_configs:
-      - targets: ['statping.alvani.me']
-
   - job_name: 'node-exporter'
     static_configs:
       - targets: ['10.0.1.42:9100']
@@ -41,7 +44,7 @@ scrape_configs:
             hostname: "cluster2"
             class: "raspberry pi"
             environment: "cluster"
-      - targets: ['10.0.1.217:9100']
+      - targets: ['10.0.1.203:9100']
         labels: 
             hostname: "20-size"
             class: "nas server"
@@ -61,7 +64,7 @@ scrape_configs:
         labels:
             hostname: "cluster2"    
             environment: "cluster"
-      - targets: ['10.0.1.217:8000']
+      - targets: ['10.0.1.203:8000']
         labels:
             hostname: "20-size"
             environment: "storage"
