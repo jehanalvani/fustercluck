@@ -26,7 +26,7 @@
   - name: Install nvidia's container toolkit
     apt:
         name:             
-            #- nvidia-container-runtime
+            - nvidia-container-runtime
             - nvidia-docker2
         state: present
         install_recommends: yes
@@ -85,7 +85,6 @@
         device_requests: 
           - device_ids: '0'
             driver: nvidia
-            
             capabilities: 
               - gpu
               - compute
@@ -97,6 +96,7 @@
             PGID: "997"
             PLEX_UID: "1001"
             PLEX_GID: "997"
+            NVIDIA_VISIBLE_DEVICES: "0"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
             ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
         comparisons:        
