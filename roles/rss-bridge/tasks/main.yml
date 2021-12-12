@@ -17,6 +17,12 @@
         owner: ansible
         state: directory
         path: "{{configs_mount_path}}{{role_config_suffix}}"
+        
+  - name: "Create whitelist.txt in mountpoint from template"
+    template: 
+        src: whitelist.txt.j2
+        dest: "{{ configs_mount_path }}{{ role_config_suffix }}app/whitelist.txt"
+    notify: Restart rss-bridge container
 
            
   - name: "Deploy rss-bridge container"
@@ -30,6 +36,14 @@
         mounts:
           - source: "{{ configs_mount_path }}{{role_config_suffix}}"
             target: /config
+            read_only: no
+            type: bind
+          - source: "{{ configs_mount_path }}{{role_config_suffix}}app/bridges"
+            target: /app/bridges
+            read_only: no
+            type: bind
+          - source: "{{ configs_mount_path }}{{role_config_suffix}}app/whitelist.txt"
+            target: /app/whitelist.txt
             read_only: no
             type: bind
         env:
