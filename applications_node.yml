@@ -70,4 +70,6 @@
         tags: fresh-rss
       - role: heimdall
         tags: heimdall
+      - role: rss-bridge
+        tags: rss-bridge
 

@@ -1,5 +1,5 @@
 ---
-# tasks file for roles/fresh-rss
+# tasks file for roles/rss-bridge
 
     
         
@@ -17,19 +17,33 @@
         owner: ansible
         state: directory
         path: "{{configs_mount_path}}{{role_config_suffix}}"
+        
+  - name: "Create whitelist.txt in mountpoint from template"
+    template: 
+        src: whitelist.txt.j2
+        dest: "{{ configs_mount_path }}{{ role_config_suffix }}app/whitelist.txt"
+    notify: Restart rss-bridge container
 
            
-  - name: "Deploy Fresh-RSS container"
+  - name: "Deploy rss-bridge container"
     docker_container:
-        name: freshrss
-        hostname: freshrss
-        image: linuxserver/freshrss
+        name: rss-bridge
+        hostname: rss-bridge
+        image: rssbridge/rss-bridge
         restart_policy: unless-stopped
         state: started
         ports: "{{ role_ui_port }}:80"
         mounts:
           - source: "{{ configs_mount_path }}{{role_config_suffix}}"
             target: /config
+            read_only: no
+            type: bind
+          - source: "{{ configs_mount_path }}{{role_config_suffix}}app/bridges"
+            target: /app/bridges
+            read_only: no
+            type: bind
+          - source: "{{ configs_mount_path }}{{role_config_suffix}}app/whitelist.txt"
+            target: /app/whitelist.txt
             read_only: no
             type: bind
         env:
@@ -42,4 +56,4 @@
 
   - name: "Success Notification"
     debug:
-        msg: "Fresh-rss is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
+        msg: "rss-bridge is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
