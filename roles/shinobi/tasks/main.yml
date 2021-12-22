@@ -71,7 +71,13 @@
               - compute
               - video
               - utility
-        labels: 
+        env:
+            TZ: "America/Los_Angeles"
+            PUID: "1001"
+            PGID: "997"
+            NVIDIA_VISIBLE_DEVICES: "0"
+        comparisons:        
+            env: strict
 
 
 # docker run -d --name='shinobi-tensorflow' -e PLUGIN_HOST='[shinobi container host IP]' \

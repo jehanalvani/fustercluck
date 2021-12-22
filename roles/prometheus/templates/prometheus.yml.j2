@@ -6,6 +6,14 @@ global:
   external_labels:
     monitor: 'codelab-monitor'
 
+
+#remote_write:
+#  - url: https://prometheus-prod-10-prod-us-central-0.grafana.net/api/prom/push
+#    basic_auth:
+#        username: 270792
+#        password: {{ grafana_com_API_key }}
+
+
 # A scrape configuration containing exactly one endpoint to scrape:
 # Here it's Prometheus itself.
 scrape_configs:

@@ -1,0 +1,9 @@
+---
+# handlers file for roles/rss-bridge
+
+
+- name: Restart rss-bridge container
+  docker_container:
+    name: rss-bridge
+    state: started
+    restart: yes
