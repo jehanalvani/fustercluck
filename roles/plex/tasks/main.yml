@@ -94,11 +94,12 @@
         env:
             TZ: "America/Los_Angeles"
             PUID: "1001"
-            PGID: "997"
+            PGID: "100"
             PLEX_UID: "1001"
-            PLEX_GID: "997"
+            PLEX_GID: "100"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
+            
+#            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
         comparisons:        
             env: strict
         
