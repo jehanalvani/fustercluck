@@ -57,8 +57,8 @@
             read_only: no
             type: bind
         env:
-          PUID: "1002"
-          PGID: "995"
+          PUID: "1001"
+          PGID: "100"
         command: '"--storage.tsdb.no-lockfile" "--config.file=/etc/prometheus/prometheus.yml" "--storage.tsdb.path=/prometheus" "--web.console.libraries=/usr/share/prometheus/console_libraries" "--web.console.templates=/usr/share/prometheus/consoles"'
         comparisons:        
             env: strict
