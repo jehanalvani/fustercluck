@@ -1,7 +1,7 @@
 ---
 # tasks file for roles/radarr
 
-  - name: Ensures /container_data/radarr_config exists, creates it if not
+  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
     ansible.builtin.file:
         group: docker
         mode: 0755
@@ -44,7 +44,7 @@
             type: bind
         env:
           TZ: "America/Los_Angeles"
-          PUID: "1001"
+          PUID: "1002"
           PGID: "100"
         comparisons:        
             env: strict
