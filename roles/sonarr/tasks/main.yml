@@ -2,13 +2,38 @@
 # tasks file for roles/sonarr
 
     
-  - name: Ensures /container_data/sonarr_config exists, creates it if not
+  - name: "Create mountpoint"
+    file: 
+        path: "{{ configs_mount_path }}"
+        state: directory
+        mode: 0777
+        owner: root
+        group: users
+        
+
+  - name: "Mount nfs for configs filesystem"
+    mount: 
+        path: "{{ configs_mount_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}"
+        state: mounted
+        fstype: nfs    
+    
+#  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
+#    ansible.builtin.file:
+#        group: docker
+#        mode: 0755
+#        owner: ansible
+#        state: directory
+#        path: "{{ role_local_config_path }}"
+
+  - name: "Ensures {{ configs_mount_path }}sonarr exists, creates it if not"
     ansible.builtin.file:
         group: docker
         mode: 0755
         owner: ansible
         state: directory
-        path: "{{ role_local_config_path }}"
+        path: "{{ configs_mount_path }}sonarr"
+
 
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
@@ -35,7 +60,7 @@
         state: started
         ports: "{{ role_ui_port }}:8989"
         mounts:
-          - source: "{{ role_local_config_path }}"
+          - source: "{{ configs_mount_path }}sonarr"
             target: /config
             read_only: no
             type: bind
