@@ -37,8 +37,7 @@
         restart_policy: always
         state: started
         network_mode: host
-        ports: 
-          - "{{ homebridge_ui_port }}:8080"
+        ports: "{{ homebridge_ui_port }}:8080"
         env:
         # might need to replace PGIO and PUID with user parameter
             PGID: "995"

@@ -6,7 +6,7 @@ role_subdir: homebridge/
 server_homebridge_path: "{{ server_config_path }}{{ server_config_subdir }}"
 
 
-homebridge_ui_port: "8080"
+homebridge_ui_port: "8081"
 open_garage_key: !vault |
         $ANSIBLE_VAULT;1.2;AES256;fustercluck
         65326630316336356435653165646666643762646164376466313437313465636339646637623365
