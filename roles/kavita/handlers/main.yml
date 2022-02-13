@@ -1,0 +1,7 @@
+---
+# handlers file for roles/sonarr
+
+
+#  - name: copy Sonarr config data
+#    ansible.builtin.command:
+#        cmd: "cp {{ role_local_config_path }}/* {{ configs_mount_path }}/sonarr/"

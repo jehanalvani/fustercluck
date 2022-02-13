@@ -1,0 +1,9 @@
+---
+# vars file for roles/kavita
+
+role_name: kavita
+role_ui_port: "5000"
+
+role_config_suffix: "{{role_name}}/"
+role_local_config_path: "/container_data/{{role_name}}_config"
+

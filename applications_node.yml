@@ -72,4 +72,6 @@
         tags: heimdall
       - role: rss-bridge
         tags: rss-bridge
+      - role: kavita
+        tags: kavita
 

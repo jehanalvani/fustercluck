@@ -1,0 +1,81 @@
+---
+# tasks file for roles/kavita
+
+    
+  - name: "Create mountpoint"
+    file: 
+        path: "{{ configs_mount_path }}"
+        state: directory
+        mode: 0777
+        owner: root
+        group: users
+        
+
+  - name: "Mount nfs for configs filesystem"
+    mount: 
+        path: "{{ configs_mount_path }}"
+        src: "{{ nfs_server }}:{{ server_config_path }}"
+        state: mounted
+        fstype: nfs    
+    
+#  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
+#    ansible.builtin.file:
+#        group: docker
+#        mode: 0755
+#        owner: ansible
+#        state: directory
+#        path: "{{ role_local_config_path }}"
+
+  - name: "Ensures {{ configs_mount_path }}{{role_name}} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ configs_mount_path }}{{role_name}}"
+
+
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ media_mount_path }}"
+        
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
+
+           
+  - name: "Deploy kavita container"
+    docker_container:
+        name: kavita
+        hostname: kavita
+        image: kizaing/kavita:latest
+        restart_policy: unless-stopped
+        state: started
+        ports: "{{ role_ui_port }}:5000"
+        mounts:
+          - source: "{{ configs_mount_path }}{{role_name}}"
+            target: /kavita/config
+            read_only: no
+            type: bind
+          - source: "{{ media_mount_path }}"
+            target: /media
+            read_only: no
+            type: bind
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1001"
+          PGID: "100"
+        comparisons:        
+            env: strict
+
+
+  - name: "Success Notification"
+    debug:
+        msg: "kavita is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
