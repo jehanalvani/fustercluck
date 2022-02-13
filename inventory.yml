@@ -12,7 +12,6 @@ all:
                     children: 
                         workers:
                             hosts:
-                                cluster0.local:
                                 cluster1.local:
                                 cluster2.local:
                         manager:
@@ -20,7 +19,7 @@ all:
                                 20-size.local:               
                 homebridge:
                     hosts: 
-                        cluster0.local:
+                        cluster2.local:
                 application:
                     hosts:
                         cluster1.local:
@@ -29,7 +28,6 @@ all:
                         cluster2.local:
                 cAdvisor:
                     hosts:
-                        cluster0.local:
                         cluster1.local:
                         cluster2.local:
         toys:  
