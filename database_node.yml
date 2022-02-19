@@ -34,7 +34,10 @@
                - cryptography 
                - pyOpenSSL  # required for OpenSSL cert creation
             state: present
-       
+     
+
+            
+
     roles:
       - role: common
         tags:
@@ -45,9 +48,9 @@
       - role: prometheus
         tags:
           - prometheus
-      - role: influxdb
-        tags: 
-          - influxdb
+#      - role: influxdb
+#        tags: 
+#          - influxdb
       - role: zcube-cadvisor
         tags:
           - cadvisor
