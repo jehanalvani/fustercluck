@@ -1,12 +1,48 @@
 ---
 # tasks file for roles/influxdb
 
-  - name: Mount InfluxDB NFS Share to host
+  - name: Unmount InfluxDB NFS Share from host
     mount:
         src: "{{ nfs_server }}:{{ server_config_path }}{{role_nfs_db_suffix}}"
-        path: "{{ influxdb_mnt_path }}"
+        path: "/mnt/influxdb_persist/"
         fstype: nfs
+        state: unmounted
+
+  - name: "Create a new ext4 primary partition on /dev/sda"
+    community.general.parted:
+        device: /dev/sda
+        number: 1
+        name: tsdb
+        label: gpt
+        state: present
+        fs_type: ext4
+            
+  - name: Create a ext2 filesystem on /dev/sda1
+    community.general.filesystem:
+        fstype: ext4
+        dev: /dev/sda1
+
+  - name: "Create mountpoint for TSDB"
+    ansible.builtin.file:
+        path: /mnt/tsdb
+        state: directory
+        mode: '0777'
+
+  - name: "Mount /dev/sda1 to /mnt/tsdb"
+    ansible.posix.mount: 
+        path: /mnt/tsdb
+        src: /dev/sda1
+        fstype: ext4
         state: mounted
+        
+  - name: "Ensures {{ influxdb_mnt_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: users
+        mode: 0777
+        owner: ansible
+        state: directory
+        path: "{{ influxdb_mnt_path }}"
+
 
   - name: "Create influxdb.conf in mountpoint from template"
     template: 
@@ -29,7 +65,7 @@
     docker_container:
         name: influxDB
         hostname: influxdb
-        image: arm32v7/influxdb
+        image: influxdb:1.8
         restart_policy: always
         state: started
         ports: 
