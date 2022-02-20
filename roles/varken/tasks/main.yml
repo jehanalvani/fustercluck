@@ -5,7 +5,6 @@
   - name: "Install python-pip, virtualenv if they aren't already"
     apt: 
         name:
-            - python-pip
             - virtualenv
             - python-setuptools
             - nfs-common

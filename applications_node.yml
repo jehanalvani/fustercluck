@@ -50,8 +50,8 @@
         tags: cadvisor
       - role: nzbhydra
         tags: nzbhydra
-#      - role: varken
-#        tags: varken
+      - role: varken
+        tags: varken
       - role: nzbget
         tags: nzbget
       - role: radarr
