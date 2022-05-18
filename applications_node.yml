@@ -48,8 +48,8 @@
 #        tags: grafana
       - role: zcube-cadvisor
         tags: cadvisor
-      - role: nzbhydra
-        tags: nzbhydra
+#      - role: nzbhydra
+#        tags: nzbhydra
       - role: varken
         tags: varken
       - role: nzbget
