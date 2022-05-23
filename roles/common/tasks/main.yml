@@ -4,6 +4,14 @@
 
 - import_tasks: user_setup.yml
 
+- name: Install docker prerequisites and iptables-persistent
+  apt:
+      name: 
+          - tar
+          - unzip
+      state: present
+      update_cache: yes
+
 
 - name: "Include Raspbian (32-bit) libseccomp2 workaround if Raspbian 32-bit installed."
   include_tasks: raspbian_32_focal_alpine3.13.yml
