@@ -13,6 +13,7 @@
                 - python3-pip
                 - python-setuptools
                 - virtualenv
+                - smartmontools
             state: present
             update_cache: yes
     
