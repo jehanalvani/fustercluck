@@ -1,5 +1,21 @@
 # Playbook to setup homebridge role
 ---
+  - name: Configure NFS Server
+    hosts: 20-size.local
+    remote_user: ansible
+    become: yes
+    
+    
+    tasks: 
+      - name: Create folder in /whidbey/configs for each role
+        file:
+          path: "/whidbey/configs/{{item}}"
+          state: directory
+          mode: 0775
+          owner: ansible
+          group: docker
+        loop:
+          - homebridge
 
   - hosts: homebridge
     remote_user: ansible
