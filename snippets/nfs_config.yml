@@ -1,0 +1,55 @@
+############# NFS Example #############################################
+# Pulled from roles/sonarr/tasks/main.yml when that role was
+# adjusted to look more like other roles and config was kept on
+# the node. This will be useful in the future for many things, but
+# especially useful for creating an NFS mount to backup local config
+######################################################################
+#    
+#  - name: "Create mountpoint"
+#    file: 
+#        path: "{{ configs_mount_path }}"
+#        state: directory
+#        mode: 0777
+#        owner: root
+#        group: users
+#        
+#
+#  - name: "Mount nfs for configs filesystem"
+#    mount: 
+#        path: "{{ configs_mount_path }}"
+#        src: "{{ nfs_server }}:{{ server_config_path }}"
+#        state: mounted
+#        fstype: nfs    
+#    
+##  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
+##    ansible.builtin.file:
+##        group: docker
+##        mode: 0755
+##        owner: ansible
+##        state: directory
+##        path: "{{ role_local_config_path }}"
+#
+#  - name: "Ensures {{ configs_mount_path }}sonarr exists, creates it if not"
+#    ansible.builtin.file:
+#        group: docker
+#        mode: 0755
+#        owner: ansible
+#        state: directory
+#        path: "{{ configs_mount_path }}sonarr"
+#
+#
+#  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+#    ansible.builtin.file:
+#        group: docker
+#        mode: 0755
+#        owner: ansible
+#        state: directory
+#        path: "{{ media_mount_path }}"
+#        
+#  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+#    mount:
+#        src: "{{nfs_server}}:{{server_media_path}}"
+#        path: "{{media_mount_path}}"
+#        state: mounted
+#        fstype: nfs
+#
