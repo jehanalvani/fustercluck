@@ -9,7 +9,7 @@
     tasks: 
       - name: Create folder in /whidbey/configs for each role
         file:
-          path: "/whidbey/configs/{{item}}"
+          path: "{{server_config_path}}{{item}}"
           state: directory
           mode: 0775
           owner: ansible
