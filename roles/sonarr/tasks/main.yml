@@ -1,39 +1,13 @@
 ---
 # tasks file for roles/sonarr
 
-    
-  - name: "Create mountpoint"
-    file: 
-        path: "{{ configs_mount_path }}"
-        state: directory
-        mode: 0777
-        owner: root
-        group: users
-        
-
-  - name: "Mount nfs for configs filesystem"
-    mount: 
-        path: "{{ configs_mount_path }}"
-        src: "{{ nfs_server }}:{{ server_config_path }}"
-        state: mounted
-        fstype: nfs    
-    
-#  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
-#    ansible.builtin.file:
-#        group: docker
-#        mode: 0755
-#        owner: ansible
-#        state: directory
-#        path: "{{ role_local_config_path }}"
-
-  - name: "Ensures {{ configs_mount_path }}sonarr exists, creates it if not"
+  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
     ansible.builtin.file:
         group: docker
         mode: 0755
         owner: ansible
         state: directory
-        path: "{{ configs_mount_path }}sonarr"
-
+        path: "{{ role_local_config_path }}"
 
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
@@ -60,7 +34,7 @@
         state: started
         ports: "{{ role_ui_port }}:8989"
         mounts:
-          - source: "{{ configs_mount_path }}sonarr"
+          - source: "{{ role_local_config_path }}"
             target: /config
             read_only: no
             type: bind
@@ -79,3 +53,4 @@
   - name: "Success Notification"
     debug:
         msg: "Sonarr is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
+
