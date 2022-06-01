@@ -3,21 +3,53 @@
     hosts: 20-size.local
     remote_user: ansible
     become: yes
+    vars_files:
+     - vars/vars.yml
+
     
     
     tasks: 
-      - name: Create folder in /whidbey/configs for each role
+      - name: "Create folder in {{server_config_path}} for each role"
         file:
-          path: "{{servcer_config_path}}{{item}}"
+          path: "{{server_config_path}}{{item}}"
           state: directory
           mode: 0775
           owner: ansible
-          group: docker
+          group: users
         loop:
           - varken
           - nzbget/intermediate
           - rss-bridge
           - rss-bridge/app/bridges
+        tags: nfs
+
+      - name: "Create folder in {{ server_media_path }} for each media type"
+        file:
+          path: "{{server_media_path}}{{item}}"
+          state: directory
+          mode: 0775
+          owner: ansible
+          group: users
+        loop:
+          - adult_audio
+          - adult_books
+          - adult_manga
+          - adult_videos
+          - anime
+          - books
+          - comics
+          - manga
+          - misc
+          - movies
+          - music
+          - nzb_downloads
+          - photos
+          - security_cam_recordings
+          - series
+          - textbooks
+          - videos
+        tags: nfs
+          
 
 
   - name: Configure Application node 
@@ -65,6 +97,8 @@
          tags: radarr
        - role: sonarr
          tags: sonarr
+       - role: lidarr
+         tags: lidarr
        - role: nginx_pm
          tags: nginx_pm
        - role: ombi
