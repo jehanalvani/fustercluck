@@ -1,7 +1,7 @@
 ---
   - include_vars: ../vars/vault.yml
 
-  - name: If on raspbian, change `pi` user password
+  - name: "If on raspbian, change `pi` user password"
     user:
         name: pi
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
@@ -10,43 +10,43 @@
     when: ansible_lsb.id == "Raspbian"
        
 
-  - name: Add the user '{{ interactive_uname }}' with default admin groups  
+  - name: "Add the user {{ interactive_uname }} with default admin groups"  
     user:
         name: "{{ interactive_uname }}"
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
-        #uid: 1000
+        uid: 1001
         append: yes
         password: "{{ interactive_user_pass | password_hash('sha512') }}"
         create_home: true
 
-  - name: Add the user '{{ ansible_uname }}' user with default admin groups
+  - name: "Add the user {{ ansible_uname }} user with default admin groups"
     user:
         name: "{{ ansible_uname }}"
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
-        # uid: 1001
+        uid: 1002
         append: yes
         password: "{{ ansible_user_pass | password_hash('sha512') }}"
         create_home: true    
         
 
-  - name: Add {{ ansible_uname }} user as system user only if Ubuntu system
+  - name: "Add {{ ansible_uname }} user as system user only if Ubuntu system"
     template:
         src: service_acct.j2
         dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
     when: ansible_lsb.id == "Ubuntu"
 
-  - name: Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation
+  - name: "Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation"
     template:
         src: sudoers.d.j2
         dest: "/etc/sudoers.d/{{ ansible_uname }}"
 
-  - name: Set authorized keys taken from url
+  - name: "Set authorized keys taken from url for {{ interactive_uname }}"
     authorized_key:
         user: "{{ interactive_uname }}"
         state: present
         key: https://github.com/jehanalvani.keys
             
-  - name: Set authorized keys taken from url
+  - name: "Set authorized keys taken from url for {{ ansible_uname }}"
     authorized_key:
         user: "{{ ansible_uname }}"
         state: present
