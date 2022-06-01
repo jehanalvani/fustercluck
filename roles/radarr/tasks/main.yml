@@ -12,7 +12,7 @@
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
         group: docker
-        mode: 0755
+        mode: 0775
         owner: ansible
         state: directory
         path: "{{ media_mount_path }}"

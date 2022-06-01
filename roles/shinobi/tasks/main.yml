@@ -73,8 +73,8 @@
               - utility
         env:
             TZ: "America/Los_Angeles"
-            PUID: "1001"
-            PGID: "997"
+            PUID: "1002"
+            PGID: "100"
             NVIDIA_VISIBLE_DEVICES: "0"
         comparisons:        
             env: strict

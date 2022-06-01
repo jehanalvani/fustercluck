@@ -32,7 +32,7 @@
           - "32400:32400"
         env:
         # might need to replace PGIO and PUID with user parameter
-            PGID: "995"
+            PGID: "100"
             PUID: "1002"
         volumes:
           - "{{ configs_mount_path }}{{ role_subdir }}:/data"

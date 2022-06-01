@@ -28,7 +28,7 @@
             type: bind
         env:
           TZ: "America/Los_Angeles"
-          PUID: "1001"
-          PGID: "997"
+          PUID: "1002"
+          PGID: "100"
         comparisons:        
             env: strict

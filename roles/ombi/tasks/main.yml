@@ -27,7 +27,7 @@
         env:
           TZ: "America/Los_Angeles"
           PUID: "1002"
-          PGID: "995"
+          PGID: "100"
         comparisons:        
             env: strict
 
