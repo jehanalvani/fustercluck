@@ -5,8 +5,8 @@
     file: 
         path: "{{ configs_mount_path }}"
         state: directory
-        mode: 0777
-        owner: root
+        mode: 0775
+        owner: ansible
         group: users
         
 
@@ -23,7 +23,8 @@
     docker_container:
         name: nginx_pm
         image: 'jc21/nginx-proxy-manager:latest'
-        restart_policy: always
+        network_mode: host
+        restart_policy: unless-stopped
         state: started
         ports: 
           - "{{ role_ui_port }}:81"
