@@ -21,6 +21,7 @@
           - nzbget/intermediate
           - rss-bridge
           - rss-bridge/app/bridges
+          - transmission/config
         tags: nfs
 
       - name: "Create folder in {{ server_media_path }} for each media type"
@@ -43,6 +44,8 @@
           - movies
           - music
           - nzb_downloads
+          - torrents/watch
+          - torrents/downloads/complete
           - photos
           - security_cam_recordings
           - series
@@ -89,10 +92,12 @@
          tags: cadvisor
 #      - role: nzbhydra
 #        tags: nzbhydra
-       - role: varken
-         tags: varken
+#       - role: varken
+#         tags: varken
        - role: nzbget
          tags: nzbget
+       - role: transmission
+         tags: transmission
        - role: radarr
          tags: radarr
        - role: sonarr
