@@ -1,0 +1,62 @@
+---
+# tasks file for roles/transmission
+
+## Media Volume Creation
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        group: docker
+        mode: 0755
+        owner: ansible
+        state: directory
+        path: "{{ media_mount_path }}"
+
+## Mediu volume mount
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
+
+
+  - name: "Create {{ role_local_config_path }} if it does not exist"
+    file:
+        path: "{{ role_local_config_path }}"
+        state: directory
+        mode: 0775     
+            
+  - name: "Deploy Transmission container"
+    docker_container:
+        name: transmission
+        hostname: transmission
+        image: linuxserver/transmission
+        restart_policy: unless-stopped
+        state: started
+        ports: "{{ role_ui_port }}:9091"
+        mounts:
+          - source: "{{ media_mount_path }}{{torrent_watchdir_suffix}}"
+            target: /watch
+            read_only: no
+            type: bind        
+          - source: "{{ media_mount_path }}{{torrent_downloadsdir_suffix}}"
+            target: /downloads
+            read_only: no
+            type: bind        
+          - source: "{{ role_local_config_path }}"
+            target: /config
+            read_only: no
+            type: bind
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1002"
+          PGID: "100"
+          UMASK: "000"
+          TRANSMISSION_WEB_HOME: "/combustion-release/"
+          USER: "{{ transmission_username }}"
+          PASS: "{{ transmission_user_pswd }}"
+        comparisons:        
+            env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Transmission is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"

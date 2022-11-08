@@ -1,0 +1,210 @@
+# Config
+## Global
+MainDir={{ nzbget_maindir_path }}
+DestDir=${MainDir}/completed
+InterDir=/intermediate
+NzbDir=${MainDir}/nzb
+QueueDir=${MainDir}/queue
+TempDir=${MainDir}/tmp
+WebDir=${AppDir}/webui
+ScriptDir=${MainDir}/scripts
+LockFile=${MainDir}/nzbget.lock
+LogFile=${MainDir}/nzbget.log
+ConfigTemplate=${AppDir}/webui/nzbget.conf.template
+RequiredDir=
+CertStore=${AppDir}/cacert.pem
+
+## Administration
+ControlIP=0.0.0.0
+ControlPort=6789
+ControlUsername={{ nzbget_control_username }}
+ControlPassword={{ nzbget_control_password }}
+RestrictedUsername=
+RestrictedPassword=
+AddUsername=
+AddPassword=
+FormAuth=yes
+SecureControl=no
+SecurePort=6791
+SecureCert=
+SecureKey=
+AuthorizedIP=127.0.0.1
+CertCheck=yes
+UpdateCheck=stable
+DaemonUsername=root
+UMask=1000
+
+# Servers
+## Server 1
+Server1.Active=yes
+Server1.Name=NewsDemon
+Server1.Level=0
+Server1.Optional=no
+Server1.Group=0
+Server1.Host={{ nzbget_server1_host }}
+Server1.Port={{ nzbget_server1_port }}
+Server1.Username={{ nzbget_server1_username }}
+Server1.Password={{ nzbget_server1_password }} 
+Server1.JoinGroup=no
+Server1.Encryption=yes
+Server1.Cipher=AES256-SHA
+Server1.Connections=15
+Server1.Retention=4487
+Server1.IpVersion=auto
+Server1.Notes=Highwinds/Omicron-Backed
+
+## Server 2
+Server2.Active=yes
+Server2.Name=SuperNews
+Server2.Level=0
+Server2.Optional=no
+Server2.Group=0
+Server2.Host={{ nzbget_server2_host }}
+Server2.Port={{ nzbget_server2_port }}
+Server2.Username={{ nzbget_server2_username }}
+Server2.Password={{ nzbget_server2_password }}
+Server2.JoinGroup=no
+Server2.Encryption=no
+Server2.Cipher=AES256-SHA 
+Server2.Connections=15
+Server2.Retention=0
+Server2.IpVersion=auto
+Server2.Notes=Giganews-Backed
+
+## Server 3
+Server3.Active=yes
+Server3.Name={{ nzbget_server3_name }}
+Server3.Level=1
+Server3.Optional=no
+Server3.Group=0
+Server3.Host={{ nzbget_server3_host }}
+Server3.Port={{ nzbget_server3_port }}
+Server3.Username={{ nzbget_server3_username }}
+Server3.Password={{ nzbget_server3_password }}
+Server3.JoinGroup=no
+Server3.Encryption=yes
+Server3.Cipher=AES256-SHA
+Server3.Connections=40
+Server3.Retention=0
+Server3.IpVersion=auto
+Server3.Notes=Uzo Reto-backed
+
+# Categories
+
+AppendCategoryDir=yes
+
+## Category 1
+Category1.Name=Movies
+Category1.DestDir=
+Category1.Unpack=yes
+Category1.Extensions=
+Category1.Aliases=movies
+
+## Category 2
+Category2.Name=Series
+Category2.DestDir=
+Category2.Unpack=yes
+Category2.Extensions=
+Category2.Aliases=series,tv
+
+## Category 3
+Category3.Name=Anime
+Category3.DestDir=
+Category3.Unpack=yes
+Category3.Extensions=
+Category3.Aliases=anime
+
+## Category 4
+Category4.Name=Music
+Category4.DestDir=
+Category4.Unpack=yes
+Category4.Aliases=music
+
+## Category 5
+Category5.Name=Misc
+Category5.DestDir=
+Category5.Unpack=yes
+Category5.Aliases=misc,xxx,XXX
+
+
+# Unpack
+NzbDirInterval=5
+NzbDirFileAge=60
+DupeCheck=yes
+FlushQueue=yes
+ContinuePartial=yes
+PropagationDelay=0
+ArticleCache=0
+DirectWrite=yes
+WriteBuffer=0
+FileNaming=auto
+ReorderFiles=yes
+PostStrategy=balanced
+DiskSpace=250
+NzbCleanupDisk=yes
+KeepHistory=30
+FeedHistory=7
+SkipWrite=no
+RawArticle=no
+ArticleRetries=3
+ArticleInterval=10
+ArticleTimeout=60
+UrlRetries=3
+UrlInterval=10
+UrlTimeout=60
+RemoteTimeout=90
+DownloadRate=0
+UrlConnections=4
+UrlForce=yes
+MonthlyQuota=0
+QuotaStartDay=1
+DailyQuota=0
+WriteLog=append
+RotateLog=3
+ErrorTarget=both
+WarningTarget=both
+InfoTarget=both
+DetailTarget=log
+DebugTarget=log
+LogBuffer=1000
+NzbLog=yes
+CrashTrace=yes
+CrashDump=no
+TimeCorrection=0
+OutputMode=curses
+CursesNzbName=yes
+CursesGroup=no
+CursesTime=no
+UpdateInterval=200
+CrcCheck=yes
+ParCheck=auto
+ParRepair=yes
+ParScan=extended
+ParQuick=yes
+ParBuffer=16
+ParThreads=0
+ParIgnoreExt=.sfv, .nzb, .nfo
+ParRename=yes
+RarRename=yes
+DirectRename=no
+HealthCheck=park
+ParTimeLimit=0
+ParPauseQueue=no
+Unpack=yes
+DirectUnpack=no
+UnpackPauseQueue=no
+UnpackCleanupDisk=yes
+UnrarCmd=${AppDir}/unrar x -ai
+SevenZipCmd=${AppDir}/7za
+ExtCleanupDisk=.par2, .sfv
+UnpackIgnoreExt=.cbr
+UnpackPassFile=
+
+# Extensions
+Extensions=
+ScriptOrder=
+ScriptPauseQueue=no
+ShellOverride=
+EventInterval=0
+
+
