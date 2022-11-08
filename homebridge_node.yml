@@ -3,6 +3,8 @@
   - name: Configure NFS Server
     hosts: 20-size.local
     remote_user: ansible
+    vars_files:
+     - vars/vars.yml
     become: yes
     
     
