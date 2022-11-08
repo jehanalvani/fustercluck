@@ -53,7 +53,7 @@
     docker_container:
         name: plex
         hostname: plex
-        image: plexinc/pms-docker:plexpass
+        image: plexinc/pms-docker
         restart_policy: unless-stopped
         state: started
         network_mode: host
