@@ -38,6 +38,24 @@
           PGID: "100"
         comparisons:        
             env: strict
+            
+  - name: "Pull Extensions to {{ configs_mount_path }}{{role_config_suffix}}{{ extensions_subdir }}"
+    ansible.builtin.git:
+        repo: "{{ item.repo }}"
+        dest: "{{ configs_mount_path }}{{role_config_suffix}}{{ extensions_subdir }}{{ item.name }}"
+    loop:
+      - { name: 'AutoRefresh', repo: 'https://github.com/Eisa01/FreshRSS---Auto-Refresh-Extension'}
+        
+        
+#   - name: add several users
+#     user:
+#      name: "{{ item.name }}"
+#      state: present
+#      groups: "{{ item.groups }}"
+#     loop:
+#      - { name: 'testuser1', groups: 'wheel' }
+#      - { name: 'testuser2', groups: 'root' }
+
 
 
   - name: "Success Notification"

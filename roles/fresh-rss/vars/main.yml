@@ -5,6 +5,6 @@
 role_ui_port: "8082"
 
 role_config_suffix: fresh-rss/
-
+extensions_subdir: www/freshrss/extensions/
 
 
