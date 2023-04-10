@@ -10,7 +10,7 @@
         {
             "accessory": "OpenGarage",
             "name": "Garage",
-            "ip": "10.0.1.137",
+            "ip": "10.0.1.9",
             "key": "{{ open_garage_key }}",
             "openCloseDurationSecs": 25,
             "pollFrequencySecs": 60
@@ -21,8 +21,7 @@
             "name": "Camera FFmpeg",
             "cameras": [
                 {
-                    "name": "Front Porch",
-                    "unbridge": false,
+                    "name": "Garage Door",
                     "videoConfig": {
                         "source": "-i rtsp://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.164:554/cam/realmonitor?channel=1&subtype=0",
                         "stillImageSource": "-i http://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.164/cgi-bin/snapshot.cgi?1",
@@ -34,7 +33,7 @@
                     }
                 },
                 {
-                    "name": "Garage Door",
+                    "name": "Front Porch",
                     "videoConfig": {
                         "source": "-i rtsp://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.163:554/cam/realmonitor?channel=1&subtype=0",
                         "stillImageSource": "-i http://{{ camera_username }}:{{ camera_user_pass }}@10.0.1.163/cgi-bin/snapshot.cgi?1",
@@ -60,7 +59,7 @@
         },
         {
             "bridgeConnection": {
-                "host": "10.0.1.117"
+                "host": "10.0.1.11"
             },
             "accessories": [
                 {
