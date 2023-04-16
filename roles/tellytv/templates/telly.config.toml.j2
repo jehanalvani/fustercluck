@@ -25,7 +25,7 @@
                             # Vaders provides 5
   Starting-Channel = 10000  # When telly assigns channel numbers it will start here
   XMLTV-Channels = true     # if true, any channel numbers specified in your M3U file will be used.
-# FFMpeg = true             # if this is uncommented, streams are buffered through ffmpeg; 
+  FFMpeg = true             # if this is uncommented, streams are buffered through ffmpeg; 
                             # ffmpeg must be installed and on your $PATH
                             # if you want to use this with Docker, be sure you use the correct docker image
 # if you DO NOT WANT TO USE FFMPEG leave this commented; DO NOT SET IT TO FALSE
@@ -49,13 +49,13 @@
 # AT LEAST ONE SOURCE IS REQUIRED #################################################################
 # NONE OF THESE EXAMPLES WORK AS-IS; IF YOU DON'T CHANGE IT, DELETE IT ############################
 [[Source]]
-  Name = ""                 # Name is optional and is used mostly for logging purposes
+  Name = "PremierIPTV"                 # Name is optional and is used mostly for logging purposes
   Provider = "Custom"       # DO NOT CHANGE THIS IF YOU ARE ENTERING URLS OR FILE PATHS
                             # "Custom" is telly's internal identifier for this 'Provider'
                             # If you change it to "NAMEOFPROVIDER" telly's reaction will be
                             # "I don't recognize a provider called 'NAMEOFPROVIDER'."
-  M3U = "http://myprovider.com/playlist.m3u"  # These can be either URLs or fully-qualified paths.
-  EPG = "http://myprovider.com/epg.xml"
+  M3U = "http://portal.ottcst.org/get.php?username=parsley&password=TE1JKXCVUC&output=ts&type=m3u"  # These can be either URLs or fully-qualified paths.
+  EPG = "http://crystal.ottc.pro/xmltv.php?username=jalvani&password=BTHKDCKT2P"
   # THE FOLLOWING KEYS ARE OPTIONAL IN THEORY, REQUIRED IN PRACTICE
   Filter = "Sports|Premium Movies|United States.*|USA"
   FilterKey = "group-title" # FilterKey normally defaults to whatever the provider file says is best, 
