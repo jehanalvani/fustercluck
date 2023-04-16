@@ -99,8 +99,8 @@
          tags: nzbget
        - role: transmission
          tags: transmission
-       - role: xteve
-         tags: xteve
+#       - role: xteve
+#         tags: xteve
        - role: radarr
          tags: radarr
        - role: sonarr

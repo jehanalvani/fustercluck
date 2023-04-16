@@ -27,11 +27,9 @@
 
     roles:
       - role: common
-        tags:
-          - common
+        tags: common
       - role: cloudalchemy.node-exporter
-        tags:
-          - node-exporter
+        tags: node-exporter
       - role: geerlingguy.nfs
       # `insecure` option required for NFS to be mountable via MacOS' finder
         nfs_exports: 
@@ -48,22 +46,18 @@
 #          "/whidbey/ombi_config 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
 #          "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)"
           ]
-        tags:
-          - nfs
+        tags: nfs          
       - role: docker
-        tags:
-          - docker
+        tags: docker
       - role: zcube-cadvisor
-        tags:
-          - cadvisor
+        tags: cadvisor
       - role: plex
-        tags:
-          - plex
+        tags: plex
       - role: shinobi
-        tags:
-          - shinobi        
+        tags: shinobi        
+      - role: xteve
+        tags: xteve
       - role: tautulli
-        tags:
-          - tautulli
+        tags: tautulli
 
 
