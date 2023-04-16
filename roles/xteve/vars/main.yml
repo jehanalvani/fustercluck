@@ -1,0 +1,7 @@
+---
+# vars file for roles/xteve
+
+role_ui_port: 34400
+role_container_image: dnsforge/xteve
+role_local_config_path: /container_data/xteve_config
+
