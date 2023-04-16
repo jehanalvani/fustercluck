@@ -51,6 +51,7 @@
           - series
           - textbooks
           - videos
+          - xteve
         tags: nfs
           
 
@@ -98,6 +99,8 @@
          tags: nzbget
        - role: transmission
          tags: transmission
+#       - role: xteve
+#         tags: xteve
        - role: radarr
          tags: radarr
        - role: sonarr
@@ -120,4 +123,5 @@
          tags: rss-bridge
        - role: kavita
          tags: kavita
+         
   
