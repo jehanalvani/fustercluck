@@ -1,0 +1,16 @@
+---
+# tasks file for microk8s role
+
+
+- name: Install microk8s prerequisites 
+  apt:
+      name: 
+          - snapd
+      state: present
+      update_cache: yes
+      notify: 
+
+
+- name: reboot
+  
+
