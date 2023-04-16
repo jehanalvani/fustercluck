@@ -17,12 +17,12 @@
 #        state: directory
 #        path: "{{ media_mount_path }}"
         
-  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
-    mount:
-        src: "{{nfs_server}}:{{server_media_path}}"
-        path: "{{media_mount_path}}"
-        state: mounted
-        fstype: nfs
+#  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+#    mount:
+#        src: "{{nfs_server}}:{{server_media_path}}"
+#        path: "{{media_mount_path}}"
+#        state: mounted
+#       fstype: nfs
 
            
   - name: "Deploy xTeVe container"
@@ -35,7 +35,8 @@
         ports: "{{ role_ui_port }}:34400"
         mounts:
           - source: "{{ role_local_config_path }}"
-            target: /home/xteve/conf
+#            target: /home/xteve/conf
+            target: /home/xteve
             read_only: no
             type: bind
         env:
