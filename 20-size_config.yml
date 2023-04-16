@@ -55,6 +55,8 @@
         tags: plex
       - role: shinobi
         tags: shinobi        
+      - role: tellytv
+        tags: tellytv
       - role: xteve
         tags: xteve
       - role: tautulli

@@ -1,0 +1,7 @@
+---
+# vars file for roles/tellytv
+
+role_ui_port: 6077
+role_container_image: tellytv/telly:dev-ffmpeg
+role_local_config_path: /whidbey/configs/tellytv
+
