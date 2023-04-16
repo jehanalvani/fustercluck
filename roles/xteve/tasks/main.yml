@@ -37,8 +37,7 @@
         ports: "{{ role_ui_port }}:34400"
         mounts:
           - source: "{{ role_local_config_path }}"
-#            target: /home/xteve/conf
-            target: /home/xteve
+            target: /home/xteve/conf
             read_only: no
             type: bind
         env:
