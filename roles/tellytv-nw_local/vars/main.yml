@@ -1,0 +1,48 @@
+---
+# vars file for roles/tellytv
+
+role_ui_port: 6077
+role_identifier: nw_local
+
+############################################################################################
+
+provider_hostname: portal.ottcst.org
+# crystal.ottc.pro
+# sitepremier.ottcst.org
+# line.crystalott.net
+# line.ottcst.org 
+
+## Use double forwardslash as escape characters in regex filter ############################
+ 
+roleChannelFilter: '(\\|){0,1}(US|USA)\\|.*(\\(SEATTLE\\)|ROOT|NORTHWEST)'
+
+filterKey: group-title              # Must be one of tvg-id, tvg-name, tvg-logo, group-title           
+filterRaw: true                      #true/false 
+
+role_container_image: tellytv/telly:dev-ffmpeg
+role_local_config_path: /whidbey/configs/tellytv/{{role_identifier}}
+
+############################################################################################
+
+
+provider_username: !vault |
+          $ANSIBLE_VAULT;1.2;AES256;fustercluck
+          33653536303632323339333434306134623365643862326238333264323263313639643363323633
+          3730646430633561653632366337656234303663636361660a666665313663333031636238373634
+          36663135656334313237633831353233616332336264386633363033313464373662323230373036
+          3362393461666662360a366235616130343737616162353962616266303565653030613136626666
+          3335
+
+
+provider_password: !vault |
+          $ANSIBLE_VAULT;1.2;AES256;fustercluck
+          32333639633537363433343862373730336363393363346562373138396264633734613330336262
+          3339393965613130333938386638356631353833306339370a616336653761646562633765653835
+          37663436363132623431643534356435663063373635313533336338346637356233663931303962
+          3832666132373737340a613335393434376263313135653130393436343465363936633235623061
+          3061
+
+
+m3u_url: http://{{provider_hostname}}/get.php?username={{provider_username}}&password={{provider_password}}&output=ts&type=m3u_plus
+xml_url: http://{{provider_hostname}}/xmltv.php?username={{provider_username}}&password={{provider_password}}
+
