@@ -14,7 +14,7 @@ provider_hostname: portal.ottcst.org
 
 ## Use double forwardslash as escape characters in regex filter ############################
  
-roleChannelFilter: '\\US\\| MLB \\|'
+roleChannelFilter: 'US\\| MLB \\|'
 
 filterKey: group-title              # Must be one of tvg-id, tvg-name, tvg-logo, group-title           
 filterRaw: true                      #true/false 
