@@ -1,9 +1,0 @@
----
-# handlers file for roles/rss-bridge
-
-
-- name: Restart TellyTV container
-  docker_container:
-    name: tellytv
-    state: started
-    restart: yes
