@@ -55,10 +55,10 @@
         tags: plex
       - role: shinobi
         tags: shinobi        
-      - role: tellytv
-        tags: tellytv
-      - role: xteve
-        tags: xteve
+      - role: tellytv-nw_local
+        tags: tellytv-nw_local
+#      - role: xteve
+#        tags: xteve
       - role: tautulli
         tags: tautulli
 
