@@ -57,6 +57,8 @@
         tags: shinobi        
       - role: tellytv-nw_local
         tags: tellytv-nw_local
+      - role: tellytv-mlb
+        tags: tellytv-mlb
 #      - role: xteve
 #        tags: xteve
       - role: tautulli
