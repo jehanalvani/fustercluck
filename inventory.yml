@@ -13,7 +13,6 @@ all:
                         workers:
                             hosts:
                                 cluster1.local:
-                                cluster2.local:
                         manager:
                             hosts:
                                 20-size.local:               
