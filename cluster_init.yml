@@ -4,7 +4,7 @@
 # 3. Boot controller from SD
 # 4. ssh to  controller using default username/pw and change hostname
 # 4. Copy pi user ID `ssh-copy-id [pi user id file] pi@[hostname]`
-# 5. Run playbook with one of the following, for example
+# 5. Run playbook with one of the following:
 #    ansible-playbook -u pi --private-key ~/.ssh/pi_id_ecdsa new_host_init.yml -K
 # or
 #    ansible-playbook -u jehan --private-key ~/.ssh/jehan_personal_id_ecdsa new_host_init.yml -K
