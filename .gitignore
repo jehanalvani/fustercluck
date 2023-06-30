@@ -2,3 +2,5 @@
 passfile.txt
 facts
 *.facts
+*facts*
+.op
