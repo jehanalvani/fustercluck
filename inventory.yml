@@ -30,11 +30,9 @@ all:
                         cluster1.local:
                 database:
                     hosts:
-                        cluster2.local:
                 cAdvisor:
                     hosts:
                         cluster1.local:
-                        cluster2.local:
                         kube01.local:
                         kube02.local:
                         kube03.local:
