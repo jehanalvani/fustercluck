@@ -29,11 +29,11 @@
         create_home: true    
         
 
-  - name: "Add {{ ansible_uname }} user as system user only if Ubuntu system"
+  - name: "Add {{ ansible_uname }} user as system user only on 20-size"
     template:
         src: service_acct.j2
         dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
-    when: ansible_lsb.id == "Ubuntu"
+    when: ansible_nodename == "20-size"
 
   - name: "Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation"
     template:
