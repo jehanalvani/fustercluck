@@ -35,6 +35,9 @@ all:
                     hosts:
                         cluster1.local:
                         cluster2.local:
+                        kube01.local:
+                        kube02.local:
+                        kube03.local:
         toys:  
             hosts:
                 artpi.local:                            
