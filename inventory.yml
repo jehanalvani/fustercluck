@@ -17,6 +17,11 @@ all:
                         manager:
                             hosts:
                                 20-size.local:               
+                kube:
+                    hosts:
+                        kube01.local:
+                        kube02.local:
+                        kube03.local:
                 homebridge:
                     hosts: 
                         cluster1.local:
