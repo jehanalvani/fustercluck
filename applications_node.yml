@@ -111,8 +111,8 @@
          tags: nginx_pm
        - role: ombi
          tags: ombi
-       - role: cloudalchemy.node-exporter
-         tags: node-exporter
+#       - role: cloudalchemy.node-exporter
+#        tags: node-exporter
        - role: prowlarr
          tags: prowlarr
        - role: fresh-rss

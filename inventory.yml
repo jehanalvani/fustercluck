@@ -19,7 +19,7 @@ all:
                                 20-size.local:               
                 homebridge:
                     hosts: 
-                        cluster2.local:
+                        cluster1.local:
                 application:
                     hosts:
                         cluster1.local:

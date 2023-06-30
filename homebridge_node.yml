@@ -30,7 +30,7 @@
       - name: "Install pip, setuptools, virtualenv if not already"
         apt: 
            name:
-                - python-pip
+#                 - python-pip
                 - python-setuptools
                 - virtualenv
            state: present
@@ -46,20 +46,13 @@
    
     roles:
       - role: common
-        tags:
-          - common
+        tags: common
       - role: docker
-        tags:
-          - docker
-      - role: cloudalchemy.node-exporter
-        tags:
-          - node-exporter
+        tags: docker
       - role: zcube-cadvisor
-        tags:
-          - cadvisor
+        tags: cadvisor
       - role: homebridge
-        tags:
-          - homebridge
+        tags: homebridge
               
           
 
