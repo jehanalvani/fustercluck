@@ -1,8 +1,0 @@
----
-# handlers file for roles/varken
-
-  - name: Restart varken container
-    docker_container:
-        name: varken
-        state: started
-        restart: yes
