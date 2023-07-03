@@ -3,4 +3,6 @@ passfile.txt
 facts
 *.facts
 *facts*
-.op
+*.op
+*.cfg
+*.cfg
