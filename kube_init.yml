@@ -15,7 +15,7 @@
 ---
     
  - hosts: kube
-   remote_user: pi
+   remote_user: ansible
    become: yes
    gather_facts: true
 
@@ -23,7 +23,7 @@
    roles:
      - role: common
        tags: common
-#      - role: docker
-#        tags: docker
+     - role: docker
+       tags: docker
 
    

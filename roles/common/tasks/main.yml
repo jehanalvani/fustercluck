@@ -9,6 +9,7 @@
       name: 
           - tar
           - unzip
+          - zsh
       state: present
       update_cache: yes
 
@@ -19,6 +20,10 @@
     - ansible_facts['lsb']['id'] == "Raspbian" 
     - ansible_facts['lsb']['codename'] == "buster" 
   
+- name: Configure Ubuntu cGroups Support on nodes in 'kube' group
+  include_tasks: ubuntu_cGroups.yml  
+  when: inventory_hostname in groups["kube"]
+    
 
 # - import_tasks: update_hostname.yml
 

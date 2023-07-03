@@ -11,6 +11,9 @@
             - iptables-persistent
         state: present
         update_cache: yes
+    when: ansible_lsb.id == "Raspbian" or
+          ansible_nodename == "20-size"
+
 
   - name: Add Docker's official GPG key
     apt_key:
@@ -28,29 +31,19 @@
 
   - include_tasks: setup-ubuntu.yml
     when: ansible_lsb.id == "Ubuntu" 
+    
 
-  - name: Install docker
-    apt:
-      name: 
-        - docker-ce
-        - docker-ce-cli
-      state: present
-      update_cache: yes
-#    notify: Start docker on boot
+  - include_tasks: docker-ce.yml
+    when: ansible_lsb.id == "Raspbian" or
+          ansible_nodename == "20-size"
 
-  - name: Backup existing docker.service to docker.service.bak
-    copy:
-        src: "/lib/systemd/system/docker.service"
-        remote_src: yes
-        dest: "/lib/systemd/system/docker.service.{{ ansible_date_time['iso8601'] }}.bak"
 
-  - name: Drop docker.service into /lib/systemd/system/
-    template: 
-        src: docker.service.j2
-        dest: "/lib/systemd/system/docker.service"
-    notify: Restart docker service
+  - include_tasks: docker.io.yml
+    when: ansible_nodename == "kube01" or
+          ansible_nodename == "kube02" or
+          ansible_nodename == "kube03"
 
-                
+               
   - name: "Add {{ ansible_uname }} to 'docker' group"
     user:
       name: "{{ ansible_uname }}"

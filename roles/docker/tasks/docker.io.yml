@@ -1,0 +1,15 @@
+
+--- 
+
+  - name: Install docker on Kube nodes
+    apt:
+      name: 
+        - docker.io
+      state: present
+      update_cache: yes
+
+  - name: Create /etc/docker/daemon.json from template
+    template: 
+        src: daemon.json.j2
+        dest: "/etc/docker/daemon.json"
+    notify: Restart docker service

@@ -6,6 +6,7 @@
         name: pi
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev,gpio,i2c,spi
         append: yes
+        shell: /bin/bash
         password: "{{ pi_user_pass | password_hash('sha512') }}"
     when: ansible_lsb.id == "Raspbian"
        
@@ -16,6 +17,7 @@
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
         uid: 1001
         append: yes
+        shell: /bin/zsh
         password: "{{ interactive_user_pass | password_hash('sha512') }}"
         create_home: true
 
@@ -25,6 +27,7 @@
         groups: adm,dialout,cdrom,sudo,audio,video,plugdev,games,users,input,netdev
         uid: 1002
         append: yes
+        shell: /bin/bash
         password: "{{ ansible_user_pass | password_hash('sha512') }}"
         create_home: true    
         
