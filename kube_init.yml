@@ -1,17 +1,3 @@
-# Playbook runs basic setup and configuration for clusterhat cluster using USBBOOT images. Follow steps below.
-# 1. Image controller SD with desired clusterctrl image
-# 2. Touch `ssh` in `boot` vol (/Volumes/boot on MacOS)
-# 3. Boot controller from SD
-# 4. ssh to  controller using default username/pw and change hostname
-# 4. Copy pi user ID `ssh-copy-id [pi user id file] pi@[hostname]`
-# 5. Run playbook with one of the following, for example
-#    ansible-playbook -u pi --private-key ~/.ssh/pi_id_ecdsa new_host_init.yml -K
-# or
-#    ansible-playbook -u jehan --private-key ~/.ssh/jehan_personal_id_ecdsa new_host_init.yml -K
-
-
-
-
 ---
     
  - hosts: kube
@@ -25,5 +11,5 @@
        tags: common
      - role: docker
        tags: docker
-
-   
+     - role: k8s
+       tags: k8s

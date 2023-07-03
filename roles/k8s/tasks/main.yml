@@ -1,2 +1,16 @@
 ---
 # tasks file for roles/k8s
+
+- name: "Add sysctl rules to enable iptables visibility to bridged network traffic"
+  ansible.builtin.lineinfile:
+      path: /etc/sysctl.d/k8s.conf
+      search_string: "{{ item|string }}"
+      line: "{{ item|string }}"
+      state: present
+      create: true
+      backup: true
+      insertafter: EOF
+      owner: root
+      group: root
+  loop: "{{ k8s_iptables_add }}" 
+  notify: "reload sysctl"

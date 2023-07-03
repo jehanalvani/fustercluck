@@ -1,2 +1,7 @@
 ---
 # handlers file for roles/k8s
+
+
+- name: "reload sysctl"
+  ansible.builtin.command:
+      cmd: sysctl --system

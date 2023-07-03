@@ -1,2 +1,9 @@
 ---
 # vars file for roles/k8s
+
+
+k8s_iptables_add:
+    - '# Created by ansible as part of k8s role'
+    - 'net.bridge.bridge-nf-call-ip6tables = 1'
+    - 'net.bridge.bridge-nf-call-iptables = 1'
+
