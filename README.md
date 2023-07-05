@@ -9,9 +9,12 @@ All the stuff that makes my fun cluster do the stuff it do.
 3. [Cloudalchemy's node_exporter role](https://github.com/cloudalchemy/ansible-node-exporter)[^1] `ansible-galaxy install cloudalchemy.node-exporter`
 4. [Jeff Geerling's NFS Role](https://github.com/geerlingguy/ansible-role-nfs)
 
+## Requirements
+	1. `community.general.snap`
+
 
 ## Steps
-
+	
 ### If adding a new Raspberry Pi node
 
 1. Flash Pi SD 
