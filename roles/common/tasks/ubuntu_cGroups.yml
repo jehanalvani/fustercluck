@@ -11,30 +11,42 @@
 #       owner: root
 #       group: root
 #       mode: '0755'
-      
-  - set_fact:  
-      cmdline_txt_path: /boot/firmware/cmdline.txt
-  
-  - include_tasks: cmdline.yml
-    vars:
-      key: cgroup_enable
-      value: cpuset
-      update: false
-      
-  - include_tasks: cmdline.yml
-    vars:
-      key: cgroup_enable
-      value: memory
-      update: false
+    
+- set_fact:  
+    cmdline_txt_path: /boot/firmware/cmdline.txt
 
-  - include_tasks: cmdline.yml
-    vars:
-      key: cgroup_memory
-      value: 1
-      update: true            
-      
-  - include_tasks: cmdline.yml
-    vars:
-      key: swapaccount
-      value: 1
-      update: true
+# - name: "Add 'systemd.unified_cgroup_hierarchy=0' to GRUB Commandline"
+#   ansible.builtin.lineinfile:
+#     path: /etc/default/grub.d/50-cloudimg-settings.cfg
+#     backup: true
+#     backrefs: true
+#     regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=".*)(.*)'
+#     state: present
+#     line: \1 systemd.unified_cgroup_hierarchy=0\2
+
+
+- include_tasks: cmdline.yml
+  vars:
+    key: cgroup_enable
+    value: cpuset
+    update: false
+    
+- include_tasks: cmdline.yml
+  vars:
+    key: cgroup_enable
+    value: memory
+    update: false
+
+- include_tasks: cmdline.yml
+  vars:
+    key: cgroup_memory
+    value: 1
+    update: true            
+    
+- include_tasks: cmdline.yml
+  vars:
+    key: swapaccount
+    value: 1
+    update: true
+    
+    

@@ -1,24 +1,39 @@
 
 ---
-  - name: Install docker on Cluster nodes and/or 20-size
-    apt:
-      name: 
-        - docker-ce
-        - docker-ce-cli
-      state: present
-      update_cache: yes
-    when: ansible_lsb.id == "Raspbian" or
-          ansible_nodename == "20-size"
+- name: Remove conflicting container runtimes or packages
+  apt: 
+    name: 
+      - docker.io
+      - docker-compose
+      - docker-doc
+      - podman-docker
+    state: absent
+    update_cache: yes
 
 
-  - name: Backup existing docker.service to docker.service.bak
-    copy:
-        src: "/lib/systemd/system/docker.service"
-        remote_src: yes
-        dest: "/lib/systemd/system/docker.service.{{ ansible_date_time['iso8601'] }}.bak"
+- name: Install docker on Cluster nodes and/or 20-size
+  apt:
+    name: 
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
 
-  - name: Drop docker.service into /lib/systemd/system/
-    template: 
-        src: docker.service.j2
-        dest: "/lib/systemd/system/docker.service"
-    notify: Restart docker service
+
+- name: Backup existing docker.service to docker.service.bak
+  copy:
+      src: "/lib/systemd/system/docker.service"
+      remote_src: yes
+      dest: "/lib/systemd/system/docker.service.{{ ansible_date_time['iso8601'] }}.bak"
+  when: ansible_lsb.id == "Raspbian" or
+        ansible_nodename == "20-size"
+
+
+- name: Drop docker.service into /lib/systemd/system/
+  template: 
+      src: docker.service.j2
+      dest: "/lib/systemd/system/docker.service"
+  notify: Restart docker service
+  when: ansible_lsb.id == "Raspbian" or
+        ansible_nodename == "20-size"

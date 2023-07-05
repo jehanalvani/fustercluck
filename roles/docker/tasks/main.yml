@@ -32,11 +32,9 @@
 - include_tasks: setup-ubuntu.yml
   when: ansible_lsb.id == "Ubuntu" 
     
+- include_tasks: docker-ce_setup.yml
+  when: inventory_hostname in groups ["docker"]
 
-- include_tasks: docker-ce.yml
-  when: ansible_lsb.id == "Raspbian" or
-        ansible_nodename == "20-size"
-
-- include_tasks: docker.io.yml
-  when: inventory_hostname in groups["kube"]
-  # ansible_nodename == "kube03" or... into a list
+# - include_tasks: docker.io.yml
+#   when: inventory_hostname in groups["kube"]
+#    ansible_nodename == "kube03" or... into a list

@@ -15,6 +15,15 @@
   loop: "{{ k8s_iptables_add }}" 
   notify: "reload sysctl"
 
+- name: "Drop in containerd.toml config file from template"
+  template:
+    backup: true
+    src: containerd_config.toml.j2
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+  notify: "restart continerd"
+
 
 - name: Add packages.cloud.google.com atp key
   ansible.builtin.apt_key:
@@ -25,7 +34,6 @@
   ansible.builtin.apt_repository:
     repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
     state: present
-      
       
 - name: install k8s packages
   ansible.builtin.apt:
@@ -39,3 +47,10 @@
     name: "{{ item| string }}"
     selection: hold
   loop: "{{ k8s_packages }}"
+  
+  
+- name: Install Helm on Manager group
+  community.general.snap: 
+    name: helm
+    classic: true
+  when: inventory_hostname in groups['manager']

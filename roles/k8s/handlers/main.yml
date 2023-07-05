@@ -5,3 +5,10 @@
 - name: "reload sysctl"
   ansible.builtin.command:
       cmd: sysctl --system
+
+
+- name: "restart continerd"
+  ansible.builtin.service:
+      enabled: true
+      name: containerd
+      state: restarted
