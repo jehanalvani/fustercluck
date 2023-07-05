@@ -36,6 +36,7 @@
         post_reboot_delay: 15
         reboot_timeout: 300
         pre_reboot_delay: "{{ delay|int }}"
-      
+    
+    
       
     
