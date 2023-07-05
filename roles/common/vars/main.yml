@@ -8,3 +8,8 @@ interactive_uname: jehan
 interactive_user_pass: "{{ vault_interactive_user_pass }}"
 
 pi_user_pass: "{{ vault_pi_user_pass }}"
+
+
+docker_users: 
+  - "{{ ansible_uname }}"
+  - "{{ interactive_uname }}"

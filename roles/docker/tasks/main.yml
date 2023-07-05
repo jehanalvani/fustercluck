@@ -1,60 +1,42 @@
 ---
 # tasks file for docker role
 
-  - name: Install docker prerequisites and iptables-persistent
-    apt:
-        name: 
-            - apt-transport-https
-            - ca-certificates
-            - curl
-            - software-properties-common
-            - iptables-persistent
-        state: present
-        update_cache: yes
-    when: ansible_lsb.id == "Raspbian" or
-          ansible_nodename == "20-size"
-
-
-  - name: Add Docker's official GPG key
-    apt_key:
-      url: https://download.docker.com/linux/debian/gpg
+- name: Install docker prerequisites and iptables-persistent
+  apt:
+      name: 
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - iptables-persistent
       state: present
+      update_cache: yes
+  when: ansible_lsb.id == "Raspbian" or
+        ansible_nodename == "20-size"
+
+
+- name: Add Docker's official GPG key
+  apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
       
-  - name: Verify that we have the key with the fingerprint
-    apt_key:
-      id: 0EBFCD88
-      state: present
+- name: Verify that we have the key with the fingerprint
+  apt_key:
+    id: 0EBFCD88
+    state: present
 
-  - include_tasks: setup-arm.yml
-    when: ansible_machine is match("armv.*") 
-    # details on above can be found in [Testing Strings](https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html#testing-strings)
+- include_tasks: setup-arm.yml
+  when: ansible_machine is match("armv.*") 
+  # details on above can be found in [Testing Strings](https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html#testing-strings)
 
-  - include_tasks: setup-ubuntu.yml
-    when: ansible_lsb.id == "Ubuntu" 
+- include_tasks: setup-ubuntu.yml
+  when: ansible_lsb.id == "Ubuntu" 
     
 
-  - include_tasks: docker-ce.yml
-    when: ansible_lsb.id == "Raspbian" or
-          ansible_nodename == "20-size"
+- include_tasks: docker-ce.yml
+  when: ansible_lsb.id == "Raspbian" or
+        ansible_nodename == "20-size"
 
-
-  - include_tasks: docker.io.yml
-    when: ansible_nodename == "kube01" or
-          ansible_nodename == "kube02" or
-          ansible_nodename == "kube03"
-
-               
-  - name: "Add {{ ansible_uname }} to 'docker' group"
-    user:
-      name: "{{ ansible_uname }}"
-      group: "docker"
-      append: yes
-      
-  - name: "Add {{interactive_uname }} to 'docker' group"
-    user:
-      name: "{{ interactive_uname }}"
-      group: "docker"
-      append: yes
-
- 
-
+- include_tasks: docker.io.yml
+  when: inventory_hostname in groups["kube"]
+  # ansible_nodename == "kube03" or... into a list

@@ -14,3 +14,28 @@
       group: root
   loop: "{{ k8s_iptables_add }}" 
   notify: "reload sysctl"
+
+
+- name: Add packages.cloud.google.com atp key
+  ansible.builtin.apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+
+- name: Set up the stable xenial repository
+  ansible.builtin.apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+      
+      
+- name: install k8s packages
+  ansible.builtin.apt:
+    name: "{{ item|string }}"
+    state: present
+    update_cache: yes
+  loop: "{{ k8s_packages }}"
+
+- name: mark k8s packages hold in dpkg and therefore apt
+  ansible.builtin.dpkg_selections:
+    name: "{{ item| string }}"
+    selection: hold
+  loop: "{{ k8s_packages }}"
