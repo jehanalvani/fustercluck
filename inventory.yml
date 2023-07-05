@@ -1,50 +1,43 @@
 ---
+workers:
+    hosts:
+        kube02.local:
+        kube03.local:
 
-all:
-    hosts: 
-        displaypi.local:
-#        20-size.local:
-#        raspberrypi.local:
+manager:
+    hosts:
+        kube01.local:
+
+kube:
     children:
-        lab:
-            children:
-                cluster:
-                    children: 
-                        workers:
-                            hosts:
-                                cluster1.local:
-                        manager:
-                            hosts:
-                                20-size.local:               
-                docker:
-                    hosts:
-                        20-size.local:
-                        cluster1.local:
-                        kube01.local:
-                        kube02.local:
-                        kube03.local:                
-                kube:
-                    hosts:
-                        kube01.local:
-                        kube02.local:
-                        kube03.local:
-                homebridge:
-                    hosts: 
-                        cluster1.local:
-                application:
-                    hosts:
-                        cluster1.local:
-                database:
-                    hosts:
-                cAdvisor:
-                    hosts:
-                        cluster1.local:
-                        kube01.local:
-                        kube02.local:
-                        kube03.local:
-        toys:  
-            hosts:
-                artpi.local:                            
-                    
+        workers:
+        manager:
         
-    
+cluster:
+    hosts:
+        20-size.local:
+        cluster1.local:
+
+docker:
+    cluster:
+    kube:
+
+homebridge: 
+    hosts: 
+        cluster1.local:
+        
+application:
+    hosts:
+        cluster1.local:
+        
+cAdvisor:
+    children:
+        docker:
+
+toys:  
+    hosts:
+        artpi.local:
+        displaypi.local:                            
+        
+
+
