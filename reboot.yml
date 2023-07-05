@@ -38,5 +38,4 @@
         pre_reboot_delay: "{{ delay|int }}"
       
       
-      
     
