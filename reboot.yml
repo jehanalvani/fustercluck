@@ -1,41 +1,42 @@
 ---
 
-  - hosts: localhost
-    gather_facts: no
-    
-    vars_prompt:
+- hosts: localhost
+  gather_facts: no
+  user: ansible
+  
+  vars_prompt:
 
-      - name: target
-        prompt: Which host or hosts do you need to reboot (comma-separated hostname list)? 
-        default: "null"
-        private: false
-        
-
-    tasks:
-      - add_host:
-          name: "{{ item }}"
-          groups: dynamically_created_hosts
-        with_items: "{{ target.split(',') }}"
-
-  - hosts: dynamically_created_hosts
-    remote_user: ansible
-    become: yes
-
-    vars_prompt:
-      - name: delay
-        prompt: 'How long, in seconds, to delay before rebooting (default: 15)?'
-        default: "15"
-        private: false
-    
-    
-    tasks:
-
-      - name: "Reboot the target node or group"
-        ansible.builtin.reboot: 
-          post_reboot_delay: 15
-          reboot_timeout: 300
-          pre_reboot_delay: "{{ delay|int }}"
-          
-        
-        
+    - name: target
+      prompt: Which host or hosts do you need to reboot (comma-separated hostname list)? 
+      default: "null"
+      private: false
       
+  tasks:
+    - add_host:
+        name: "{{ item }}"
+        groups: dynamically_created_hosts
+      with_items: "{{ target.split(',') }}"
+
+
+- hosts: dynamically_created_hosts 
+  remote_user: ansible
+  become: yes
+
+  vars_prompt:
+    - name: delay
+      prompt: 'How long, in seconds, to delay before rebooting (default: 15)?'
+      default: "15"
+      private: false
+  
+  
+  tasks:
+
+    - name: "Reboot the target node or group"
+      ansible.builtin.reboot: 
+        post_reboot_delay: 15
+        reboot_timeout: 300
+        pre_reboot_delay: "{{ delay|int }}"
+      
+      
+      
+    
