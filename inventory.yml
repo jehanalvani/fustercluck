@@ -16,6 +16,13 @@ all:
                         manager:
                             hosts:
                                 20-size.local:               
+                docker:
+                    hosts:
+                        20-size.local:
+                        cluster1.local:
+                        kube01.local:
+                        kube02.local:
+                        kube03.local:                
                 kube:
                     hosts:
                         kube01.local:
