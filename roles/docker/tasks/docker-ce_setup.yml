@@ -10,8 +10,15 @@
     state: absent
     update_cache: yes
 
+- name: Install additional networking modules on Ubuntu on rpi
+  apt: 
+    name: 
+      - linux-modules-extra-raspi
+    state: present
+    update_cache: yes
+  when: ansible_lsb.id == "Ubuntu" and  ansible_machine == "aarch64"
 
-- name: Install docker on Cluster nodes and/or 20-size
+- name: Install docker on docker group
   apt:
     name: 
       - docker-ce
@@ -20,6 +27,14 @@
     state: present
     update_cache: yes
 
+
+
+- name: Create /etc/docker/daemon.json from template
+  template: 
+      src: daemon.json.j2
+      dest: "/etc/docker/daemon.json"
+  notify: Restart docker service
+  when: inventory_hostname in groups['kube']
 
 - name: Backup existing docker.service to docker.service.bak
   copy:

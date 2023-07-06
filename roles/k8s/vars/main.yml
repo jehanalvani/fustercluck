@@ -14,7 +14,7 @@ k8s_packages:
     - 'kubectl'
 
 
-k8s_network_cidr: 10.2.0.0/16
+k8s_network_cidr: 10.5.0.0/16
 
 k8s_cluster_token: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck

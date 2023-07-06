@@ -1,0 +1,38 @@
+---
+
+- name: Check for /opt/cni/bin/, create if it doesn't exist
+  ansible.builtin.file:
+    path: /opt/cni/bin/
+    state: directory
+    owner: root
+    group: root
+
+
+- name: Check for /tmp/downloads/cni, create if it doesn't exist
+  ansible.builtin.file:
+    path: /tmp/downloads/cni
+    state: directory
+    owner: root
+    group: root
+
+- name: Prefetch the CNI Plugins and validate checksum
+  ansible.builtin.get_url:
+    url: https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-arm64-v1.3.0.tgz
+    checksum: sha256:https://github.com/containernetworking/plugins/releases/download/v1.3.0/cni-plugins-linux-arm64-v1.3.0.tgz.sha256
+    dest: /tmp/downloads/cni/cni-plugins-linux-arm64-v1.3.0.tgz
+    
+- name: Download CNI plugins from Ansible host to /opt/cni/bin/ and 
+  ansible.builtin.unarchive:
+    src: /tmp/downloads/cni/cni-plugins-linux-arm64-v1.3.0.tgz
+    remote_src: yes
+    dest: /opt/cni/bin/   
+    owner: root
+    group: root
+    mode: 0755
+    keep_newer: true
+
+
+- name: Clean up my mess
+  ansible.builtin.file:
+    path: /tmp/downloads/
+    state: absent

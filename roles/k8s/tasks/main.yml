@@ -15,6 +15,15 @@
   loop: "{{ k8s_iptables_add }}" 
   notify: "reload sysctl"
 
+
+- name: Create /etc/containerd if it doesn't exist
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+
+
 - name: "Drop in containerd.toml config file from template"
   template:
     backup: true
@@ -54,3 +63,8 @@
     name: helm
     classic: true
   when: inventory_hostname in groups['manager']
+  
+
+- name: Flannel install on Kube manager
+  include_tasks: flannel_install.yml
+  when: inventory_hostname in groups['manager']  
