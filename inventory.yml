@@ -19,8 +19,9 @@ cluster:
         cluster1.local:
 
 docker:
-    cluster:
-    kube:
+    children:
+        cluster:
+        kube:
 
 homebridge: 
     hosts: 
