@@ -39,6 +39,19 @@
     name: helm
     classic: true
 
+#
+# Installing via Helm indicated it may fail idempotency checks incorrectly 
+# Suggested installing Helm Diff. Warning below.
+#
+# [WARNING]: The default idempotency check can fail to report changes in certain cases. 
+# Install helm diff >= 3.4.1 for better results.
+#
+
+- name: Install Helm Diff plugin
+  kubernetes.core.helm_plugin:
+    plugin_path: https://github.com/databus23/helm-diff
+    state: present
+
 - name: Create Flannel namespace
   become: no
   kubernetes.core.k8s:
