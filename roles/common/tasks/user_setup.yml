@@ -57,7 +57,6 @@
       state: present
       key: https://github.com/jehanalvani.keys
 
-
 - name: Ensure group "docker" exists
   ansible.builtin.group:
     name: docker
