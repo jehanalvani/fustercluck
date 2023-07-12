@@ -1,15 +1,29 @@
 ---
-    
- - hosts: kube
-   remote_user: ansible
-   become: yes
-   gather_facts: true
+   
+- hosts: kube
+  remote_user: ansible
+  become: yes
+  gather_facts: true
+  vars_files:
+     - vars/vars.yml
 
-      
-   roles:
-     - role: common
-       tags: common
-     - role: docker
-       tags: docker
-     - role: k8s
-       tags: k8s
+     
+  roles:
+    - role: common
+      tags: common
+    - role: docker
+      tags: docker
+    - role: k8s
+      tags: k8s
+
+
+# - hosts: manager
+#   remote_user: ansible
+#   gather_facts: true
+#   name: dynamically load k8s manager role
+#   tags: k8s_manager
+#   ansible.builtin.include_role:
+#     name: k8s_manager
+#    
+#   
+#      

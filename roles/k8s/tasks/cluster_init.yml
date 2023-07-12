@@ -1,0 +1,70 @@
+---
+   
+- name: Creates join command by creating a token and printing the command
+  ansible.builtin.shell: kubeadm token create --print-join-command
+  register: k8s_join_command
+  when: needs_init is changed
+
+# Regex to identify the join token in the output of above.   
+- name: kubeadm init command
+  ansible.builtin.debug:
+    msg: kubeadm init --token=$"{{k8s_join_command.stdout | (\b\w{6}\.\w{16}\b) }}" --kubernetes-version="{{k8s_version}}" --pod-network-cidr="{{k8s_network_cidr}}"
+  when: needs_init is changed 
+ 
+- name: Create .kube directory for common users
+  file:
+    path: "/home/{{item}}/.kube"
+    state: directory
+    mode: 0755
+  loop: "{{common_users}}"
+
+   
+- name: Check admin.conf file exists.
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_conf
+
+- name: Copy admin.conf to common users' kube config
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{item}}/.kube/config"
+    remote_src: yes
+    owner: "{{item}}"
+    group: "{{item}}"
+  when: k8s_conf.stat.exists
+  loop: "{{common_users}}"
+
+- name: Install Helm on Manager group
+  community.general.snap: 
+    name: helm
+    classic: true
+
+- name: Create Flannel namespace
+  become: no
+  kubernetes.core.k8s:
+    state: present
+    name: kube-flannel
+    kind: namespace
+    definition: 
+      labels:
+        pod-security.kubernetes.io/enforce: privileged      
+        
+- name: Add Flannel's Helm repo
+  become: no
+  kubernetes.core.helm_repository:
+    name: flannel
+    repo_url: https://flannel-io.github.io/flannel/
+
+
+- name: Install Flannel via Helm
+  become: no
+  kubernetes.core.helm:
+    name: flannel
+    chart_ref: flannel/flannel 
+    release_namespace: kube-flannel
+    set_values:
+      - value: "podCidr=\"{{k8s_network_cidr}}\""
+        value_type: string
+    wait: true
+      
+  

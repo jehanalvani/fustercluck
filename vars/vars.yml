@@ -7,3 +7,7 @@ server_media_path: /snoqualmie/media/
 media_mount_path: /mnt/media/
 configs_mount_path: /mnt/configs/
 
+common_users: 
+  - jehan
+  - pi
+  - ansible

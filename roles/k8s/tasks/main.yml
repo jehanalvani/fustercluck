@@ -1,7 +1,15 @@
 ---
 # tasks file for roles/k8s
 
-- name: "Add sysctl rules to enable iptables visibility to bridged network traffic"
+- name: Install python3, pip, & kubernetes python libraries
+  ansible.builtin.apt: 
+    name: 
+      - python3=3.11.2-1
+      - python3-pip  
+      - python3-kubernetes
+    state: present
+
+- name: Add sysctl rules to enable iptables visibility to bridged network traffic
   ansible.builtin.lineinfile:
       path: /etc/sysctl.d/k8s.conf
       search_string: "{{ item|string }}"
@@ -24,7 +32,7 @@
     group: root
 
 
-- name: "Drop in containerd.toml config file from template"
+- name: Drop in containerd.toml config file from template
   template:
     backup: true
     src: containerd_config.toml.j2
@@ -44,27 +52,28 @@
     repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
     state: present
       
-- name: install k8s packages
+- name: Install k8s packages
   ansible.builtin.apt:
     name: "{{ item|string }}"
     state: present
     update_cache: yes
   loop: "{{ k8s_packages }}"
+  register: needs_init
 
-- name: mark k8s packages hold in dpkg and therefore apt
+- name: Mark k8s packages hold in dpkg and therefore apt
   ansible.builtin.dpkg_selections:
     name: "{{ item| string }}"
     selection: hold
   loop: "{{ k8s_packages }}"
-  
-  
-- name: Install Helm on Manager group
-  community.general.snap: 
-    name: helm
-    classic: true
-  when: inventory_hostname in groups['manager']
-  
 
-- name: Flannel install on Kube manager
-  include_tasks: flannel_install.yml
-  when: inventory_hostname in groups['manager']  
+
+- name: Chill for a min
+  ansible.builtin.pause:
+    prompt: "[Press [Return]: About to head into cluster init tasks"
+
+- name: Detour to Cluster Setup when cluster has not yet been set up.
+  include_tasks: cluster_init.yml
+  when: (inventory_hostname in groups['manager'])
+    
+  
+  

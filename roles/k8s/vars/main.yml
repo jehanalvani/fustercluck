@@ -13,10 +13,11 @@ k8s_packages:
     - 'kubeadm'
     - 'kubectl'
 
+k8s_version: "v1.27.3"
 
 k8s_network_cidr: 10.5.0.0/16
 
-k8s_cluster_token: !vault |
+k8s_bearer_token: !vault |
           $ANSIBLE_VAULT;1.2;AES256;fustercluck
           36323530333631653436303561333165326161643434666266343332666537326235393737326565
           6339313739653239366638626637303833363864313861660a303961636666373066316166636261
