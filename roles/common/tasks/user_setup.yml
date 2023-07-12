@@ -20,6 +20,7 @@
       shell: /bin/zsh
       password: "{{ interactive_user_pass | password_hash('sha512') }}"
       create_home: true
+  changed_when: False
 
 - name: "Add the user {{ ansible_uname }} user with default admin groups"
   user:
@@ -30,13 +31,14 @@
       shell: /bin/bash
       password: "{{ ansible_user_pass | password_hash('sha512') }}"
       create_home: true    
-      
+  changed_when: False      
 
 - name: "Add {{ ansible_uname }} user as system user only on 20-size"
   template:
       src: service_acct.j2
       dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
   when: ansible_nodename == "20-size"
+  changed_when: False
 
 - name: "Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation"
   template:
