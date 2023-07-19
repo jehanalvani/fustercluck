@@ -46,8 +46,6 @@
         - /seatac/plex/certs
 
 
-  - name: Debug Traefik labels dictionary
-    debug: var=traefik_labels
     
   - name: "Deploy {{ app_name }} container"
     docker_container:
@@ -98,7 +96,9 @@
             PLEX_GID: "100"
             NVIDIA_VISIBLE_DEVICES: "0"
             PLEX_CLAIM: "claim-ey8YSWwhmmp6mo7oTaMH"
-            
+        published_ports:
+          - 32400:32400
+          - 19989:19989 
 #            ADVERTISE_IP: "{{ ansible_default_ipv4.address }}"
         comparisons:        
             env: strict
