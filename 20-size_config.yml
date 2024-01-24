@@ -7,61 +7,61 @@
 
     pre_tasks:
        
-       - name: "Install pip, setuptools, virtualenv if not already"
-         apt: 
-            name:
-                - python3-pip
-                - python-setuptools
-                - virtualenv
-                - smartmontools
-            state: present
-            update_cache: yes
+     - name: "Install pip, setuptools, virtualenv if not already"
+       apt: 
+          name:
+              - python3-pip
+              - python-setuptools
+              - virtualenv
+              - smartmontools
+          state: present
+          update_cache: yes
     
-       - name: "Install pyOpenSSL if not already"
-         pip:
-            name:
-               - cryptography 
-               - docker
-               - pyOpenSSL  # required for OpenSSL cert creation
-            state: present
+     - name: "Install pyOpenSSL if not already"
+       pip:
+          name:
+             - cryptography 
+             - docker
+             - pyOpenSSL  # required for OpenSSL cert creation
+          state: present
 
     roles:
-      - role: common
-        tags: common
-      - role: cloudalchemy.node-exporter
-        tags: node-exporter
-      - role: geerlingguy.nfs
-      # `insecure` option required for NFS to be mountable via MacOS' finder
-        nfs_exports: 
-          [
-          "/snoqualmie/media 10.0.1.0/24(rw,async,no_root_squash,insecure,insecure_locks,anonuid=1001,anongid=100)", 
-          "/seatac/plex 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1001,anongid=100)",
-          "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-          "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-#          "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/varken 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/prometheus 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/influxDB 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/ombi_config 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
-#          "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)"
-          ]
-        tags: nfs          
-      - role: docker
-        tags: docker
-      - role: zcube-cadvisor
-        tags: cadvisor
-      - role: plex
-        tags: plex
-      - role: shinobi
-        tags: shinobi        
-      - role: tellytv-nw_local
-        tags: tellytv-nw_local
-      - role: tellytv-mlb
-        tags: tellytv-mlb
-#      - role: xteve
-#        tags: xteve
-      - role: tautulli
-        tags: tautulli
+     - role: common
+       tags: common
+#     - role: cloudalchemy.node-exporter
+#       tags: node-exporter
+     - role: geerlingguy.nfs
+     # `insecure` option required for NFS to be mountable via MacOS' finder
+       nfs_exports: 
+        [
+         "/snoqualmie/media 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)", 
+         "/seatac/plex 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
+         "/whidbey/configs 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
+         "/whidbey/backups 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
+#         "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/varken 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/prometheus 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/influxDB 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/ombi_config 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
+#         "/whidbey/nzbget 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)"
+         ]
+       tags: nfs          
+     - role: docker
+       tags: docker
+     - role: zcube-cadvisor
+       tags: cadvisor
+     - role: plex
+       tags: plex
+     - role: shinobi
+       tags: shinobi        
+#      - role: tellytv-nw_local
+#        tags: tellytv-nw_local
+#      - role: tellytv-mlb
+#        tags: tellytv-mlb
+#     - role: xteve
+#       tags: xteve
+#     - role: tautulli
+#       tags: tautulli
 
 
