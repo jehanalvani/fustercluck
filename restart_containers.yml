@@ -30,6 +30,7 @@
       - name: Get Images running on Specified Host
         command: docker container ls --format "{{ '{{' }}.Names {{ '}}' }} {{ '{{' }}.Image {{ '}}' }}"
         register: docker_container_list
+        changed_when: false
         
      
       - name: Restart containers
