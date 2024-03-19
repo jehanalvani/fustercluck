@@ -11,22 +11,25 @@
           - iptables-persistent
       state: present
       update_cache: yes
-  when: ansible_lsb.id == "Raspbian" or
-        ansible_nodename == "20-size"
+  when: (ansible_facts['lsb']['id'] == "Raspbian") or
+        (ansible_facts['lsb']['id'] == "Debian" and ansible_facts['machine'] == "aarch64") or
+        (ansible_facts['nodename'] == "20-size")
 
 
 - name: Add Docker's official GPG key
   apt_key:
-    url: https://download.docker.com/linux/debian/gpg
-    state: present
-      
-- name: Verify that we have the key with the fingerprint
-  apt_key:
-    id: 0EBFCD88
+    url: 'https://download.docker.com/linux/debian/gpg'
     state: present
 
-- include_tasks: setup-arm.yml
-  when: ansible_machine is match("armv.*") 
+- name: Add Docker's official GPG key
+  apt_key:
+    url: 'https://download.docker.com/linux/raspbian/gpg'
+    state: present
+
+     
+- name: ARM tasks
+  include_tasks: setup-arm.yml
+  when: ansible_machine is match("aarch64") 
   # details on above can be found in [Testing Strings](https://docs.ansible.com/ansible/latest/user_guide/playbooks_tests.html#testing-strings)
 
 - include_tasks: setup-ubuntu.yml

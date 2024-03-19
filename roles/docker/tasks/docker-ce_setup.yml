@@ -7,6 +7,7 @@
       - docker-compose
       - docker-doc
       - podman-docker
+      - runc
     state: absent
     update_cache: yes
 
@@ -18,6 +19,15 @@
     update_cache: yes
   when: ansible_lsb.id == "Ubuntu" and  ansible_machine == "aarch64"
 
+- name: Install cacertificate and curl if not installed
+  apt: 
+    name: 
+      - ca-certificates
+      - curl
+    state: present
+    update_cache: yes
+
+
 - name: Install docker on docker group
   apt:
     name: 
@@ -26,7 +36,6 @@
       - containerd.io
     state: present
     update_cache: yes
-
 
 
 - name: Create /etc/docker/daemon.json from template
@@ -44,7 +53,6 @@
   when: ansible_lsb.id == "Raspbian" or
         ansible_nodename == "20-size"
 
-
 - name: Drop docker.service into /lib/systemd/system/
   template: 
       src: docker.service.j2
@@ -52,3 +60,8 @@
   notify: Restart docker service
   when: ansible_lsb.id == "Raspbian" or
         ansible_nodename == "20-size"
+
+- name: Start docker service, if not started
+  ansible.builtin.service:
+    name: docker
+    state: started
