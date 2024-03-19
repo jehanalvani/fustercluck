@@ -17,7 +17,6 @@
           owner: ansible
           group: users
         loop:
-          - varken
           - nzbget/intermediate
           - rss-bridge
           - rss-bridge/app/bridges
@@ -51,7 +50,6 @@
           - series
           - textbooks
           - videos
-          - xteve
         tags: nfs
           
 
@@ -69,38 +67,25 @@
          apt: 
             name:
                 - python3-docker
-                - python-setuptools
-                - virtualenv
+                - python3-pip              
+                - python3-venv
+                - python3-cryptography
+                - libssl-dev
+                - libffi-dev
             state: present
             update_cache: yes
     
-       - name: "Install pyOpenSSL if not already"
-         pip:
-            name:
-               - cryptography 
-               - pyOpenSSL  # required for OpenSSL cert creation
-            state: present
-    
-           
     roles:
        - role: common
          tags: common
        - role: docker
          tags: docker
-#      - role: grafana
-#        tags: grafana
-       - role: zcube-cadvisor
-         tags: cadvisor
-#      - role: nzbhydra
-#        tags: nzbhydra
-#       - role: varken
-#         tags: varken
+#        - role: zcube-cadvisor
+#          tags: cadvisor
        - role: nzbget
          tags: nzbget
        - role: transmission
          tags: transmission
-#       - role: xteve
-#         tags: xteve
        - role: radarr
          tags: radarr
        - role: sonarr
@@ -111,17 +96,15 @@
          tags: nginx_pm
        - role: ombi
          tags: ombi
-#       - role: cloudalchemy.node-exporter
-#        tags: node-exporter
        - role: prowlarr
          tags: prowlarr
        - role: fresh-rss
          tags: fresh-rss
-       - role: heimdall
-         tags: heimdall
+#        - role: heimdall
+#          tags: heimdall
        - role: rss-bridge
          tags: rss-bridge
-       - role: kavita
-         tags: kavita
+#        - role: kavita
+#          tags: kavita
          
   
