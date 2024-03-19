@@ -1,0 +1,42 @@
+# Based on https://stackoverflow.com/questions/61369132/restart-multiple-docker-containers-using-ansible
+
+
+---
+  - name: Prompt for Node or Inventory Group on which to execute
+    hosts: localhost
+    gather_facts: no
+    
+    vars_prompt:
+        
+      - name: targets
+        prompt: What node or Group should have its containers kicked?
+        private: false
+        unsafe: true
+        default: "cluster1.local"
+        
+   
+    tasks: 
+      - name: "Add {{ targets }} to dynamic group"
+        add_host: 
+          name: "{{ item }}"
+          group: dynamic_execution_group
+        loop:  "{{ targets.split(',') }}"
+        changed_when: false
+    
+
+  - hosts: dynamic_execution_group
+
+    tasks:  
+      - name: Get Images running on Specified Host
+        command: docker container ls --format "{{ '{{' }}.Names {{ '}}' }} {{ '{{' }}.Image {{ '}}' }}"
+        register: docker_container_list
+        
+     
+      - name: Restart containers
+        docker_container:
+          name: "{{ item.split(' ')[0]}}"
+          image: "{{ item.split(' ')[1]}}"
+          state: started
+          restart: yes
+        loop: "{{ docker_container_list.stdout_lines }}"
+       
