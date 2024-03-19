@@ -30,34 +30,31 @@
       - name: "Install pip, setuptools, virtualenv if not already"
         apt: 
            name:
-#                 - python-pip
-                - python-setuptools
-                - virtualenv
+                - python3-full
+                - python3-docker
+                - python3-pip              
+                - python3-venv
+                - python3-packaging
+                - python3-setuptools
+                - python3-cryptography
+                - pipx
+                - build-essential
+                - libssl-dev
+                - libffi-dev
+                - python3-dev
+                - cargo 
+                - pkg-config
            state: present
            update_cache: yes
-    
-      - name: "Install pyOpenSSL if not already"
-        pip:
-            name:
-              - cryptography 
-              - pyOpenSSL  # required for OpenSSL cert creation
-            state: present
 
-   
     roles:
       - role: common
         tags: common
       - role: docker
         tags: docker
-      - role: zcube-cadvisor
-        tags: cadvisor
+#       - role: zcube-cadvisor
+#         tags: cadvisor
+      - role: nginx_pm
+        tags: nginx_pm        
       - role: homebridge
         tags: homebridge
-              
-          
-
-   
-
-
-
-       
