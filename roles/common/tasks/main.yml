@@ -10,6 +10,7 @@
           - tar
           - unzip
           - zsh
+          - nfs-common
       state: present
       update_cache: yes
 
