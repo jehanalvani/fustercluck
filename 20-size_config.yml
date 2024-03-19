@@ -6,6 +6,19 @@
 
 
     pre_tasks:
+    
+     - ansible.posix.sysctl:
+          name: kernel.softlockup_panic
+          value: 1
+          state: present
+          reload: true
+
+     - ansible.posix.sysctl:
+          name: kernel.panic
+          value: 60
+          state: present
+          reload: true
+          
        
      - name: "Install pip, setuptools, virtualenv if not already"
        apt: 
@@ -36,8 +49,8 @@
         [
          "/snoqualmie/media 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)", 
          "/seatac/plex 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-         "/whidbey/configs 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-         "/whidbey/backups 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
+         "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
+         "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
 #         "/whidbey/homebridge 10.0.1.0/24(rw,sync,no_root_squash,insecure,insecure_locks,anonuid=1024,anongid=100)",
 #         "/whidbey/grafana 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
 #         "/whidbey/varken 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1024,anongid=100)",
@@ -55,13 +68,5 @@
        tags: plex
      - role: shinobi
        tags: shinobi        
-#      - role: tellytv-nw_local
-#        tags: tellytv-nw_local
-#      - role: tellytv-mlb
-#        tags: tellytv-mlb
-#     - role: xteve
-#       tags: xteve
-#     - role: tautulli
-#       tags: tautulli
 
 
