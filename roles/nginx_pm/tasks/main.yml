@@ -5,8 +5,8 @@
     file: 
         path: "{{ configs_mount_path }}"
         state: directory
-        mode: 0775
-        owner: ansible
+        mode: 0777
+        owner: root
         group: users
         
 
@@ -34,7 +34,7 @@
         env:
         # might need to replace PGIO and PUID with user parameter
             PGID: "100"
-            PUID: "1002"
+            PUID: "0"
         volumes:
           - "{{ configs_mount_path }}{{ role_subdir }}:/data"
           - "{{ configs_mount_path }}{{ letsencrypt_subdir }}:/etc/letsencrypt"

@@ -3,9 +3,7 @@
 
   - name: Ensures /container_data/ombi_config exists, creates it if not
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+        mode: 0775
         state: directory
         path: "{{ role_local_config_path }}"
 

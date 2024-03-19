@@ -3,17 +3,13 @@
 
   - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+        mode: 0775
         state: directory
         path: "{{ role_local_config_path }}"
 
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
-        group: docker
         mode: 0775
-        owner: ansible
         state: directory
         path: "{{ media_mount_path }}"
         

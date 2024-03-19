@@ -33,7 +33,7 @@
   - name: "Deploy Homebridge container"
     docker_container:
         name: homebridge
-        image: oznu/homebridge:latest
+        image: homebridge/homebridge
         restart_policy: always
         state: started
         network_mode: host

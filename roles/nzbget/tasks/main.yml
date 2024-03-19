@@ -4,9 +4,7 @@
 ## Media Volume Creation
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+        mode: 0775
         state: directory
         path: "{{ media_mount_path }}"
 
@@ -21,9 +19,7 @@
 ## Intermediate volume creation
   - name: "Ensures {{ intermediate_mount_path }} exists, creates it if not"
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+        mode: 0775
         state: directory
         path: "{{ intermediate_mount_path }}"
         

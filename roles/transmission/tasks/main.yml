@@ -4,10 +4,8 @@
 ## Media Volume Creation
   - name: "Ensures {{ media_mount_path }} exists, creates it if not"
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
-        state: directory
+        mode: 0775
+        state: directory   
         path: "{{ media_mount_path }}"
 
 ## Mediu volume mount
@@ -51,7 +49,7 @@
           PUID: "1002"
           PGID: "100"
           UMASK: "000"
-          TRANSMISSION_WEB_HOME: "/combustion-release/"
+#           TRANSMISSION_WEB_HOME: "/combustion-release/"
           USER: "{{ transmission_username }}"
           PASS: "{{ transmission_user_pswd }}"
         comparisons:        

@@ -12,9 +12,7 @@
         
   - name: "Ensure {{configs_mount_path}}{{role_config_suffix}} exists, create it if it doesn't"
     ansible.builtin.file:
-        group: docker
-        mode: 0755
-        owner: ansible
+        mode: 0775
         state: directory
         path: "{{configs_mount_path}}{{role_config_suffix}}"
         
