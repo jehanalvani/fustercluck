@@ -27,10 +27,11 @@
               - python-setuptools
               - virtualenv
               - smartmontools
+              - unrar
           state: present
           update_cache: yes
     
-     - name: "Install pyOpenSSL if not already"
+     - name: "Install pyOpenSSL, crypto, docker if not already"
        pip:
           name:
              - cryptography 
@@ -62,8 +63,6 @@
        tags: nfs          
      - role: docker
        tags: docker
-     - role: zcube-cadvisor
-       tags: cadvisor
      - role: plex
        tags: plex
      - role: shinobi
