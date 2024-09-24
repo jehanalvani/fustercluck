@@ -23,7 +23,6 @@
     docker_container:
         name: nginx_pm
         image: 'jc21/nginx-proxy-manager:latest'
-        network_mode: host
         restart_policy: unless-stopped
         state: started
         ports: 
