@@ -76,13 +76,13 @@
       dest: "/etc/sudoers.d/{{ ansible_uname }}"
 
 - name: "Set authorized keys taken from url for {{ interactive_uname }}"
-  authorized_key:
+  ansible.posix.authorized_key:
       user: "{{ interactive_uname }}"
       state: present
       key: https://github.com/jehanalvani.keys
           
 - name: "Set authorized keys taken from url for {{ ansible_uname }}"
-  authorized_key:
+  ansible.posix.authorized_key:
       user: "{{ ansible_uname }}"
       state: present
       key: https://github.com/jehanalvani.keys

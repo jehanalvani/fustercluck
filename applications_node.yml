@@ -88,6 +88,8 @@
          tags: transmission
        - role: radarr
          tags: radarr
+       - role: readarr
+         tags: readarr
        - role: sonarr
          tags: sonarr
        - role: lidarr
@@ -98,12 +100,12 @@
          tags: ombi
        - role: prowlarr
          tags: prowlarr
-       - role: fresh-rss
-         tags: fresh-rss
+#        - role: fresh-rss
+#          tags: fresh-rss
 #        - role: heimdall
 #          tags: heimdall
-       - role: rss-bridge
-         tags: rss-bridge
+#        - role: rss-bridge
+#          tags: rss-bridge
 #        - role: kavita
 #          tags: kavita
          
