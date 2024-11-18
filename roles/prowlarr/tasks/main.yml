@@ -1,5 +1,5 @@
 ---
-# tasks file for roles/sonarr
+# tasks file for roles/prowlarr
 
     
 #  - name: "Ensures /container_data/sonarr_config exists, creates it if not"
@@ -36,7 +36,7 @@
     docker_container:
         name: prowlarr
         hostname: prowlarr
-        image: linuxserver/prowlarr:nightly
+        image: linuxserver/prowlarr:latest
         restart_policy: unless-stopped
         state: started
         ports: "{{ role_ui_port }}:9696"
