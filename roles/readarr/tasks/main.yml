@@ -1,0 +1,50 @@
+---
+# tasks file for roles/radarr
+
+  - name: "Ensures {{ role_local_config_path }} exists, creates it if not"
+    ansible.builtin.file:
+        mode: 0775
+        state: directory
+        path: "{{ role_local_config_path }}"
+
+  - name: "Ensures {{ media_mount_path }} exists, creates it if not"
+    ansible.builtin.file:
+        mode: 0775
+        state: directory
+        path: "{{ media_mount_path }}"
+        
+  - name: "Mount {{ nfs_server }}:{{server_media_path}} to {{media_mount_path}}"
+    mount:
+        src: "{{nfs_server}}:{{server_media_path}}"
+        path: "{{media_mount_path}}"
+        state: mounted
+        fstype: nfs
+
+           
+  - name: "Deploy Readarr container"
+    docker_container:
+        name: readarr
+        hostname: readarr
+        image: linuxserver/readarr:develop
+        restart_policy: unless-stopped
+        state: started
+        ports: "{{ role_ui_port }}:8787"
+        mounts:
+          - source: "{{ role_local_config_path }}"
+            target: /config
+            read_only: no
+            type: bind
+          - source: "{{ media_mount_path }}"
+            target: /media
+            read_only: no
+            type: bind
+        env:
+          TZ: "America/Los_Angeles"
+          PUID: "1002"
+          PGID: "100"
+        comparisons:        
+            env: strict
+
+  - name: "Success Notification"
+    debug:
+        msg: "Readarr is now accessible at http://{{ ansible_hostname }}.local:{{ role_ui_port | string }}"
