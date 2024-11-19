@@ -1,11 +1,12 @@
 ---
 - include_vars: ../vars/vault.yml
 
-- name: remove gpio group
+- name: remove gpio, docker, netdev group
   group: 
     name: 
       - gpio
       - docker
+      - netdev
     state: absent
 
 - name: create "users" group
@@ -32,29 +33,17 @@
 - name: "If on raspbian, change `pi` user password"
   user:
       name: pi
-      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input,netdev
+      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input
       append: yes
       shell: /bin/bash
       password: "{{ pi_user_pass | password_hash('sha512') }}"
   when: ansible_lsb.id == "Raspbian"
   
     
-
-- name: "Add the user {{ interactive_uname }} with default admin groups"  
-  user:
-      name: "{{ interactive_uname }}"
-      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input,netdev
-      uid: 1001
-      append: yes
-      shell: /bin/zsh
-      password: "{{ interactive_user_pass | password_hash('sha512') }}"
-      create_home: true
-  changed_when: False
-
 - name: "Add the user {{ ansible_uname }} user with default admin groups"
   user:
       name: "{{ ansible_uname }}"
-      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input,netdev
+      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input
       uid: 1002
       append: yes
       shell: /bin/bash
@@ -62,25 +51,23 @@
       create_home: true    
   changed_when: False      
 
-- name: "Add {{ ansible_uname }} user as system user only on 20-size"
-  template:
-      src: service_acct.j2
-      dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
-  when: 
-    - ansible_nodename == "20-size"
-  changed_when: False
+
+####### Unnecessary after switching 20-Size to Ubuntu Server ############
+#########################################################################
+#
+# - name: "Add {{ ansible_uname }} user as system user only on 20-size"
+#   template:
+#       src: service_acct.j2
+#       dest: "/var/lib/AccountsService/users/{{ ansible_uname }}"
+#   when: 
+#     - ansible_nodename == "20-size"
+#   changed_when: False
 
 - name: "Generate a template for '/etc/sudoers.d/{{ ansible_uname }}' enabling passwordless priv. escalation"
   template:
       src: sudoers.d.j2
       dest: "/etc/sudoers.d/{{ ansible_uname }}"
 
-- name: "Set authorized keys taken from url for {{ interactive_uname }}"
-  ansible.posix.authorized_key:
-      user: "{{ interactive_uname }}"
-      state: present
-      key: https://github.com/jehanalvani.keys
-          
 - name: "Set authorized keys taken from url for {{ ansible_uname }}"
   ansible.posix.authorized_key:
       user: "{{ ansible_uname }}"
@@ -100,3 +87,23 @@
     append: yes
   when: inventory_hostname in groups["docker"]
   loop: "{{docker_users}}"
+
+
+- name: "Add the user {{ interactive_uname }} with default admin groups"  
+  user:
+      name: "{{ interactive_uname }}"
+      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input
+      uid: 1001
+      append: yes
+      shell: /bin/zsh
+      password: "{{ interactive_user_pass | password_hash('sha512') }}"
+      create_home: true
+  changed_when: False
+
+
+- name: "Set authorized keys taken from url for {{ interactive_uname }}"
+  ansible.posix.authorized_key:
+      user: "{{ interactive_uname }}"
+      state: present
+      key: https://github.com/jehanalvani.keys
+          
