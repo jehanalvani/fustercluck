@@ -15,6 +15,7 @@ kube:
         
 cluster:
     hosts:
+        10.0.1.203:
         20-size.local:
         cluster1.local:
 
