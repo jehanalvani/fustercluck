@@ -1,0 +1,36 @@
+---
+# Factory default credentials — used only on first run against a fresh camera
+amcrest_factory_user: admin
+amcrest_factory_password: admin
+
+# Credentials to configure — sourced from vault
+amcrest_admin_password: "{{ vault_amcrest_admin_password }}"
+amcrest_automation_password: "{{ vault_amcrest_automation_password }}"
+amcrest_stream_password: "{{ vault_amcrest_stream_password }}"
+
+# Motion detection defaults
+amcrest_motion_enabled: true
+amcrest_motion_level: 60             # 0-100 (CGI param is Level, not Sensitivity)
+amcrest_motion_channel: 0            # channel index (0-based)
+
+# Full-frame detection region.
+# Each entry sets Region[N] to all-bits-set (entire row enabled).
+# 8 rows covers the full frame on IP4M-1025E and IP3M-956E.
+amcrest_motion_region_rows:
+  - 4294967295
+  - 4294967295
+  - 4294967295
+  - 4294967295
+  - 4294967295
+  - 4294967295
+  - 4294967295
+  - 4294967295
+
+# Record and snapshot on motion
+amcrest_motion_record: true
+amcrest_motion_snapshot: true
+
+# Image orientation — set flip/mirror for cameras mounted upside-down or mirrored
+# VideoInOptions[0].Flip=true rotates 180°; VideoInOptions[0].Mirror=true flips horizontally
+amcrest_image_flip: false
+amcrest_image_mirror: false

@@ -1,0 +1,12 @@
+# Managed by Ansible
+server: "https://{{ k3s_server_host }}:{{ k3s_server_port }}"
+token: "{{ hostvars[k3s_server_host]['k3s_node_token'] }}"
+{% if inventory_hostname == '20-size.local' %}
+node-taint:
+  - "dedicated=media:NoSchedule"
+node-label:
+  - "nvidia.com/gpu=true"
+kubelet-arg:
+  - "kube-reserved={{ k3s_nfs_node_kube_reserved }}"
+  - "system-reserved={{ k3s_nfs_node_system_reserved }}"
+{% endif %}

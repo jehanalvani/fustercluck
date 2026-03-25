@@ -1,0 +1,74 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# NZBGet - Usenet client for downloading NZB files
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: linuxserver/nzbget
+          tag: "latest@sha256:c476c76281b17c05bab8001af37c0b8cab93f0690369e290f81fa33f098e5052"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+          UMASK: "022"
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 512Mi
+          limits:
+            cpu: 500m
+            memory: 1Gi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 6789
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: nzbget.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: nzbget-tls
+        hosts:
+          - nzbget.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-nfs-pvc
+    globalMounts:
+      - path: /media
+  intermediate:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /intermediate

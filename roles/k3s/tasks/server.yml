@@ -1,0 +1,36 @@
+---
+# tasks for installing k3s server (control plane)
+
+- name: Ensure /etc/rancher/k3s/ directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Template k3s server configuration
+  ansible.builtin.template:
+    src: k3s-server-config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install k3s server
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server
+  args:
+    creates: /usr/local/bin/k3s
+  environment:
+    INSTALL_K3S_EXEC: "server"
+
+- name: Wait for k3s server to be ready
+  ansible.builtin.wait_for:
+    port: "{{ k3s_server_port }}"
+    timeout: 300
+
+- name: Wait for all nodes to register with cluster
+  ansible.builtin.pause:
+    seconds: 30
+    prompt: "Waiting for cluster nodes to register. k3s server is ready on {{ k3s_server_host }}:{{ k3s_server_port }}"

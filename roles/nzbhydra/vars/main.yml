@@ -1,6 +1,0 @@
----
-# vars file for roles/nzbhydra
-
-role_ui_port: 5076
-
-role_local_config_path: /container_data/nzbhydra2/config

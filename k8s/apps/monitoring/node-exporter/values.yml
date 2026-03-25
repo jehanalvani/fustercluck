@@ -1,0 +1,20 @@
+# Chart: prometheus-community/prometheus-node-exporter
+# Repo: https://prometheus-community.github.io/helm-charts
+# Runs as DaemonSet on all nodes — exposes host metrics on port 9100
+
+tolerations:
+  - operator: Exists
+    effect: NoSchedule
+
+extraArgs:
+  # Exclude virtual/container filesystems from disk metrics
+  - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/.+)($|/)
+  - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

@@ -1,0 +1,444 @@
+# Chart: grafana/alloy
+# Repo: https://grafana.github.io/helm-charts
+# Grafana Alloy — ships metrics and logs to Grafana Cloud
+# Runs as DaemonSet so every node's logs are collected
+
+controller:
+  type: daemonset
+  tolerations:
+    - operator: Exists
+      effect: NoSchedule
+  podSecurityContext:
+    supplementalGroups:
+      - 997  # docker group on 20-size — allows Alloy to read /var/run/docker.sock
+  volumes:
+    extra:
+      - name: alloy-wal
+        hostPath:
+          path: /var/lib/alloy
+          type: DirectoryOrCreate
+      - name: journal
+        hostPath:
+          path: /var/log/journal
+          type: DirectoryOrCreate
+      - name: journal-run
+        hostPath:
+          path: /run/log/journal
+          type: DirectoryOrCreate
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
+          # No type check — nodes without Docker simply won't have the socket
+
+alloy:
+
+  # Mount host log paths for pod log collection
+  mounts:
+    varlog: true
+    extra:
+      - name: alloy-wal
+        mountPath: /var/lib/alloy
+      - name: journal
+        mountPath: /var/log/journal
+        readOnly: true
+      - name: journal-run
+        mountPath: /run/log/journal
+        readOnly: true
+      - name: docker-sock
+        mountPath: /var/run/docker.sock
+        readOnly: true
+
+  # Persistent WAL directory — survives pod restarts and network blips.
+  # Alloy buffers unsent metrics/logs here until the connection recovers.
+  extraArgs:
+    - --storage.path=/var/lib/alloy/data
+
+  # Grafana Cloud credentials from secret + node identity for log filtering
+  extraEnv:
+    - name: NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+    - name: GRAFANA_CLOUD_PROMETHEUS_URL
+      valueFrom:
+        secretKeyRef:
+          name: grafana-cloud-secret
+          key: prometheus-url
+    - name: GRAFANA_CLOUD_PROMETHEUS_USER
+      valueFrom:
+        secretKeyRef:
+          name: grafana-cloud-secret
+          key: prometheus-user
+    - name: GRAFANA_CLOUD_LOKI_URL
+      valueFrom:
+        secretKeyRef:
+          name: grafana-cloud-secret
+          key: loki-url
+    - name: GRAFANA_CLOUD_LOKI_USER
+      valueFrom:
+        secretKeyRef:
+          name: grafana-cloud-secret
+          key: loki-user
+    - name: GRAFANA_CLOUD_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: grafana-cloud-secret
+          key: api-key
+
+  configMap:
+    content: |
+      // =========================================================
+      // METRICS
+      // =========================================================
+
+      // Remote write to Grafana Cloud Prometheus (Mimir).
+      // WAL is automatically written to --storage.path, so metrics are
+      // buffered on the node's local disk during network outages.
+      // cluster label makes all Grafana Kubernetes dashboards work correctly.
+      prometheus.remote_write "grafana_cloud" {
+        endpoint {
+          url = env("GRAFANA_CLOUD_PROMETHEUS_URL")
+          basic_auth {
+            username = env("GRAFANA_CLOUD_PROMETHEUS_USER")
+            password = env("GRAFANA_CLOUD_API_KEY")
+          }
+        }
+        external_labels = {
+          cluster = "homelab",
+        }
+      }
+
+      // --- node-exporter: per-node host metrics ---
+      discovery.kubernetes "node_exporter_pods" {
+        role = "pod"
+        namespaces {
+          names = ["monitoring"]
+        }
+        selectors {
+          role  = "pod"
+          label = "app.kubernetes.io/name=prometheus-node-exporter"
+        }
+      }
+
+      discovery.relabel "node_exporter" {
+        targets = discovery.kubernetes.node_exporter_pods.targets
+
+        // Label each metric with the node it came from
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label  = "node"
+        }
+
+        // Point scrape address to node-exporter port
+        rule {
+          source_labels = ["__address__"]
+          regex         = "([^:]+)(?::\\d+)?"
+          replacement   = "$1:9100"
+          target_label  = "__address__"
+        }
+      }
+
+      prometheus.scrape "node_exporter" {
+        targets    = discovery.relabel.node_exporter.output
+        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+        job_name   = "node-exporter"
+      }
+
+      // --- kube-state-metrics: cluster state ---
+      discovery.kubernetes "kube_state_metrics_pods" {
+        role = "pod"
+        namespaces {
+          names = ["monitoring"]
+        }
+        selectors {
+          role  = "pod"
+          label = "app.kubernetes.io/name=kube-state-metrics"
+        }
+      }
+
+      prometheus.scrape "kube_state_metrics" {
+        targets    = discovery.kubernetes.kube_state_metrics_pods.targets
+        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+        job_name   = "kube-state-metrics"
+      }
+
+      // --- kubelet: node-level k8s metrics ---
+      discovery.kubernetes "nodes" {
+        role = "node"
+      }
+
+      discovery.relabel "kubelet" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = "(.+)"
+          replacement   = "$1:10250"
+          target_label  = "__address__"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      prometheus.scrape "kubelet" {
+        targets    = discovery.relabel.kubelet.output
+        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+        job_name   = "kubelet"
+        scheme     = "https"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+      }
+
+      // --- cAdvisor: container resource usage ---
+      discovery.relabel "cadvisor" {
+        targets = discovery.kubernetes.nodes.targets
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = "(.+)"
+          replacement   = "$1:10250"
+          target_label  = "__address__"
+        }
+
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          target_label  = "node"
+        }
+      }
+
+      prometheus.scrape "cadvisor" {
+        targets      = discovery.relabel.cadvisor.output
+        forward_to   = [prometheus.remote_write.grafana_cloud.receiver]
+        job_name     = "cadvisor"
+        scheme       = "https"
+        metrics_path = "/metrics/cadvisor"
+        bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        tls_config {
+          insecure_skip_verify = true
+        }
+      }
+
+      // =========================================================
+      // LOGS
+      // =========================================================
+
+      // Remote write to Grafana Cloud Loki.
+      // Generous backoff so transient network blips don't drop logs.
+      loki.write "grafana_cloud" {
+        endpoint {
+          url = env("GRAFANA_CLOUD_LOKI_URL")
+          basic_auth {
+            username = env("GRAFANA_CLOUD_LOKI_USER")
+            password = env("GRAFANA_CLOUD_API_KEY")
+          }
+          // Retry for up to 10 minutes before giving up on a batch
+          max_backoff_period = "10m"
+        }
+      }
+
+      // local.file_match expands the glob and returns one target per matched file.
+      // Each Alloy DaemonSet pod only has its own node's /var/log/pods/ mounted,
+      // so this naturally scopes to local pods only.
+      local.file_match "pod_logs" {
+        path_targets = [{
+          __path__ = "/var/log/pods/*/*/*.log",
+          node     = env("NODE_NAME"),
+        }]
+        sync_period = "10s"
+      }
+
+      // loki.source.file tails the files discovered above. Positions are tracked
+      // on disk so logs missed during an outage are caught up on reconnect.
+      loki.source.file "pod_logs" {
+        targets    = local.file_match.pod_logs.targets
+        forward_to = [loki.process.extract_pod_labels.receiver]
+      }
+
+      // =========================================================
+      // HOST JOURNAL LOGS
+      // =========================================================
+
+      // Read from the systemd journal on each host node.
+      // Captures k3s, kubelet, kernel, SSH, and other system-level events.
+      loki.source.journal "host_journal" {
+        max_age    = "12h"
+        path       = "/var/log/journal"
+        labels     = {
+          job  = "host/journal",
+          node = env("NODE_NAME"),
+        }
+        forward_to = [loki.process.journal_filter.receiver]
+      }
+
+      loki.process "journal_filter" {
+        forward_to = [loki.write.grafana_cloud.receiver]
+
+        // Promote systemd unit to a label — makes filtering in Grafana easy
+        stage.labels {
+          values = {
+            unit = "__journal__systemd_unit",
+          }
+        }
+
+        // Drop high-frequency, low-value units
+        stage.drop {
+          source              = "unit"
+          expression          = "^(systemd-timesyncd\\.service|session-\\d+\\.scope)$"
+          drop_counter_reason = "journal_noise"
+        }
+      }
+
+      // =========================================================
+      // DOCKER CONTAINER LOGS (20-size only — Pi-hole and any other Docker containers)
+      // =========================================================
+
+      // Discover all Docker containers on this node.
+      // On nodes without Docker the socket won't exist — discovery silently finds nothing.
+      discovery.docker "containers" {
+        host = "unix:///var/run/docker.sock"
+      }
+
+      discovery.relabel "docker_containers" {
+        targets = discovery.docker.containers.targets
+
+        rule {
+          source_labels = ["__meta_docker_container_name"]
+          regex         = "/(.*)"
+          target_label  = "container"
+        }
+
+        rule {
+          replacement  = env("NODE_NAME")
+          target_label = "node"
+        }
+
+        rule {
+          replacement  = "docker"
+          target_label = "job"
+        }
+      }
+
+      loki.source.docker "containers" {
+        host       = "unix:///var/run/docker.sock"
+        targets    = discovery.relabel.docker_containers.output
+        forward_to = [loki.write.grafana_cloud.receiver]
+      }
+
+      // =========================================================
+      // CLUSTER EVENTS
+      // =========================================================
+
+      // Ship Kubernetes cluster events to Loki — captures pod OOM kills,
+      // scheduling failures, image pull errors, and other cluster-level events.
+      loki.source.kubernetes_events "cluster_events" {
+        job_name   = "integrations/kubernetes/eventhandler"
+        log_format = "logfmt"
+        forward_to = [loki.write.grafana_cloud.receiver]
+      }
+
+      // Extract namespace, pod, container from the file path before filtering.
+      // k3s path format: /var/log/pods/<namespace>_<pod>_<uid>/<container>/<num>.log
+      loki.process "extract_pod_labels" {
+        forward_to = [loki.process.filter_and_redact.receiver]
+
+        stage.regex {
+          expression = "/var/log/pods/(?P<namespace>[^_/]+)_(?P<pod>[^_/]+)_[^/]+/(?P<container>[^/]+)/"
+          source     = "filename"
+        }
+
+        stage.labels {
+          values = {
+            namespace = "",
+            pod       = "",
+            container = "",
+          }
+        }
+      }
+
+      // =========================================================
+      // LOG PIPELINE: filter noise, redact secrets, then ship
+      // =========================================================
+      loki.process "filter_and_redact" {
+        forward_to = [loki.write.grafana_cloud.receiver]
+
+        // ---------------------------------------------------------
+        // COST CONTROL: drop high-volume noise before it leaves the node
+        // ---------------------------------------------------------
+
+        // Kubernetes liveness/readiness probe requests
+        stage.drop {
+          expression          = ".*kube-probe/.*"
+          drop_counter_reason = "k8s_probe"
+        }
+
+        // Health/ready/ping endpoints (Traefik, app health checks)
+        stage.drop {
+          expression          = "\"(GET|HEAD) /(ping|health|healthz|ready|readyz|live|livez|metrics).*\" (200|204)"
+          drop_counter_reason = "health_endpoint"
+        }
+
+        // Traefik access logs for internal k8s traffic (frequent, low value)
+        stage.drop {
+          expression          = ".*traefik.*RouterName=\"monitoring@.*\""
+          drop_counter_reason = "traefik_internal"
+        }
+
+        // *arr app polling logs (Sonarr/Radarr/etc emit these every few seconds)
+        stage.drop {
+          expression          = ".*(Checking for finished .+ downloads|RSS Sync Execution|Completed RSS Sync).*"
+          drop_counter_reason = "arr_polling"
+        }
+
+        // ---------------------------------------------------------
+        // PRIVACY: redact credentials before logs leave the node
+        // ---------------------------------------------------------
+
+        // Authorization headers (Basic, Bearer, API key)
+        stage.replace {
+          expression = `(?i)(authorization:\s*(?:basic|bearer|token|apikey)\s+)[^\s\r\n]+`
+          replace    = "$1<redacted>"
+        }
+
+        // Bearer tokens appearing in log lines outside of headers
+        stage.replace {
+          expression = `(?i)(bearer\s+)[A-Za-z0-9\-._~+/]+=*`
+          replace    = "$1<redacted>"
+        }
+
+        // Password fields in query strings or JSON bodies
+        stage.replace {
+          expression = `(?i)(password["']?\s*[=:]\s*["']?)[^"'&\s]+`
+          replace    = "$1<redacted>"
+        }
+
+        // API key patterns (api_key=, apikey=, api-key=, x-api-key:)
+        stage.replace {
+          expression = `(?i)(api[-_]?key["']?\s*[=:]\s*["']?)[A-Za-z0-9\-_]+`
+          replace    = "$1<redacted>"
+        }
+
+        // Webhook URLs containing tokens (e.g. Slack/Discord webhooks in configs)
+        stage.replace {
+          expression = `(https://[^\s"']+/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+)`
+          replace    = "https://<webhook-redacted>"
+        }
+
+        // Grafana Cloud API keys if they somehow appear in logs
+        stage.replace {
+          expression = `(glc_[A-Za-z0-9+/]+=*)`
+          replace    = "<grafana-cloud-key-redacted>"
+        }
+      }
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi

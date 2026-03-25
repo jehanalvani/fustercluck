@@ -1,0 +1,158 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Transmission - BitTorrent client
+#
+# LSIO image behavior: on every startup it creates /downloads/complete and
+# /downloads/incomplete subdirs and sets download-dir/incomplete-dir to those paths.
+# We mount our NFS torrents/ directory at /downloads so those subdirs land correctly:
+#
+#   /downloads             → snoqualmie /media/torrents/     (LSIO manages subdirs)
+#   /downloads/complete    → snoqualmie /media/torrents/complete   (download-dir)
+#   /downloads/incomplete  → snoqualmie /media/torrents/incomplete (incomplete-dir)
+#   /watch                 → snoqualmie /media/torrents/watch      (watch-dir)
+#   /media                 → snoqualmie /media                     (arr import path)
+#
+# The init container writes settings.json on first start for fields LSIO
+# does not manage (incomplete-dir, ratio-limit, rpc-whitelist).
+# LSIO injects USER/PASS from the secret into rpc-username/password at runtime.
+#
+# postStart hook: LSIO resets ratio-limit-enabled to false in settings.json
+# during its init scripts. The postStart hook waits for transmission-daemon to
+# be ready, then calls the RPC to set seedRatioLimit=1.0 / seedRatioLimited=true
+# / idle-seeding-limit=65535 (max uint16, ≈45 days) so seeding config survives
+# every restart. 1 year would be 525600 but Transmission uses uint16 → wraps.
+
+controllers:
+  main:
+    initContainers:
+      settings-init:
+        image:
+          repository: busybox
+          tag: "latest@sha256:b3255e7dfbcd10cb367af0d409747d511aeb66dfac98cf30e97e87e4207dd76f"
+        command:
+          - sh
+          - -c
+          - |
+            if [ ! -f /config/settings.json ]; then
+              cat > /config/settings.json << 'EOF'
+            {
+                "incomplete-dir": "/incomplete",
+                "incomplete-dir-enabled": true,
+                "peer-port": 51413,
+                "peer-port-random-on-start": false,
+                "ratio-limit": 1.0,
+                "ratio-limit-enabled": true,
+                "rpc-whitelist-enabled": false,
+                "rpc-host-whitelist-enabled": false,
+                "start-added-torrents": true,
+                "trash-original-torrent-files": false,
+                "umask": 2
+            }
+            EOF
+            fi
+
+    containers:
+      main:
+        image:
+          repository: linuxserver/transmission
+          tag: "latest@sha256:9be45020def7c121267d0c08ee7dfdcb39a07432699b347780f8acfb465951b5"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+          UMASK: "022"
+          PEERPORT: "51413"
+          USER:
+            valueFrom:
+              secretKeyRef:
+                name: transmission-secret
+                key: TRANSMISSION_USER
+          PASS:
+            valueFrom:
+              secretKeyRef:
+                name: transmission-secret
+                key: TRANSMISSION_PASS
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  i=0; until curl -s -o /dev/null -w '%{http_code}' -u "$USER:$PASS" http://localhost:9091/transmission/rpc | grep -qE '(409|200)'; do sleep 2; i=$((i+1)); [ $i -ge 90 ] && exit 0; done
+                  SESSION=$(curl -si -u "$USER:$PASS" http://localhost:9091/transmission/rpc 2>&1 | grep -i 'x-transmission-session-id' | tr -d '\r' | awk '{print $2}')
+                  curl -s -u "$USER:$PASS" -H "X-Transmission-Session-Id: $SESSION" \
+                    -d '{"method":"session-set","arguments":{"seedRatioLimit":1.0,"seedRatioLimited":true,"idle-seeding-limit":65535,"idle-seeding-limit-enabled":true}}' \
+                    http://localhost:9091/transmission/rpc
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 9091
+  torrent:
+    controller: main
+    type: NodePort
+    ports:
+      torrent-tcp:
+        port: 51413
+        protocol: TCP
+        targetPort: 51413
+      torrent-udp:
+        port: 51413
+        protocol: UDP
+        targetPort: 51413
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: transmission.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: transmission-tls
+        hosts:
+          - transmission.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config
+
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-nfs-pvc
+    advancedMounts:
+      main:
+        settings-init:
+          - path: /media
+        main:
+          - path: /media
+          - path: /downloads
+            subPath: torrents
+          - path: /watch
+            subPath: torrents/watch

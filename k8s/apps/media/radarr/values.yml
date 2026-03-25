@@ -1,0 +1,66 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Radarr - Movie download and library management
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: linuxserver/radarr
+          tag: "latest@sha256:ca43905eaf2dd11425efdcfe184892e43806b1ae0a830440c825cecbc2629cfb"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 7878
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: radarr.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: radarr-tls
+        hosts:
+          - radarr.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-nfs-pvc
+    globalMounts:
+      - path: /media

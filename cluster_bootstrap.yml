@@ -1,0 +1,162 @@
+---
+# Kubernetes Cluster Bootstrap Playbook
+#
+# This playbook installs and configures infrastructure components on a k3s cluster.
+# It must be run AFTER k3s_init.yml has completed successfully.
+#
+# Components installed:
+#   - Sealed Secrets: Secret encryption/management
+#   - cert-manager: TLS certificate management
+#   - nfs-subdir-external-provisioner: NFS-backed storage class
+#   - Nvidia device plugin: GPU support for media node
+#
+# Prerequisites:
+#   - k3s cluster must be running and fully initialized
+#   - k3s server node (kube01.local) must be accessible
+#   - kubectl and helm must be available on the control machine
+#
+# Usage:
+#   ansible-playbook cluster_bootstrap.yml
+#
+
+- hosts: k3s_server
+  name: Bootstrap k3s cluster with infrastructure components
+  remote_user: ansible
+  become: no
+  gather_facts: false
+  vars_files:
+    - vars/vars.yml
+
+  tasks:
+    # Helm repository setup
+    - name: Add Bitnami Helm repository for Sealed Secrets
+      kubernetes.core.helm_repository:
+        name: sealed-secrets
+        repo_url: "https://bitnami-labs.github.io/sealed-secrets"
+
+    - name: Add Jetstack Helm repository for cert-manager
+      kubernetes.core.helm_repository:
+        name: jetstack
+        repo_url: "https://charts.jetstack.io"
+
+    - name: Add NFS Helm repository for nfs-subdir-external-provisioner
+      kubernetes.core.helm_repository:
+        name: nfs-subdir-external-provisioner
+        repo_url: "https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/"
+
+    - name: Add Nvidia Helm repository for device plugin
+      kubernetes.core.helm_repository:
+        name: nvdp
+        repo_url: "https://nvidia.github.io/k8s-device-plugin"
+
+    # Sync k8s manifests to the server node so kubernetes.core.k8s can read them
+    - name: Sync k8s manifests to server
+      ansible.posix.synchronize:
+        src: k8s/
+        dest: /home/ansible/k8s/
+        delete: yes
+        recursive: yes
+
+    # Apply all namespaces
+    - name: Apply infrastructure and application namespaces
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/namespaces.yml
+        state: present
+
+    # Install Sealed Secrets
+    - name: Install Sealed Secrets controller
+      kubernetes.core.helm:
+        name: sealed-secrets
+        chart_ref: sealed-secrets/sealed-secrets
+        release_namespace: sealed-secrets
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/infrastructure/sealed-secrets/values.yml
+        wait: true
+        wait_timeout: "120s"
+
+    # Install cert-manager (single install with CRDs)
+    - name: Install cert-manager
+      kubernetes.core.helm:
+        name: cert-manager
+        chart_ref: jetstack/cert-manager
+        release_namespace: cert-manager
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/infrastructure/cert-manager/values.yml
+
+    # Apply ClusterIssuers - wait for cert-manager to be fully ready first
+    - name: Wait for cert-manager webhook to be ready
+      ansible.builtin.pause:
+        seconds: 30
+        prompt: "Waiting for cert-manager webhook to become available before applying ClusterIssuers"
+
+    - name: Apply cert-manager ClusterIssuers
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/cert-manager/cluster-issuer.yml
+        state: present
+
+    # Install NFS StorageClass provisioner
+    # Points at /whidbey/configs - auto-provisions per-app subdirectories
+    - name: Install nfs-subdir-external-provisioner
+      kubernetes.core.helm:
+        name: nfs-subdir-external-provisioner
+        chart_ref: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+        release_namespace: kube-system
+        create_namespace: false
+        state: present
+        values:
+          nfs:
+            server: "{{ nfs_server }}"
+            path: "{{ server_config_path }}"
+          storageClass:
+            name: nfs-client          # matches storageClass referenced in all app values
+            defaultClass: false
+            reclaimPolicy: Retain
+            archiveOnDelete: true
+            pathPattern: "${.PVC.namespace}/${.PVC.name}"
+
+    # Apply shared storage PVs (media, plex, prometheus local disk)
+    - name: Apply shared media NFS PersistentVolume
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/storage/media-nfs-pv.yml
+        state: present
+
+    - name: Apply Plex NFS PersistentVolumes
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/storage/plex-nfs-pv.yml
+        state: present
+
+    - name: Apply Prometheus local PersistentVolume and StorageClass
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/storage/prometheus-local-pv.yml
+        state: present
+
+    # Install Nvidia device plugin - tolerates dedicated=media taint so it runs on 20-size
+    - name: Install Nvidia device plugin
+      kubernetes.core.helm:
+        name: nvidia-device-plugin
+        chart_ref: nvdp/nvidia-device-plugin
+        release_namespace: kube-system
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/infrastructure/nvidia/device-plugin-values.yml
+
+    # Apply Traefik configuration (k3s built-in)
+    - name: Apply Traefik HelmChartConfig
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/traefik/config.yml
+        state: present
+
+    - name: Apply Traefik middlewares
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/traefik/middleware.yml
+        state: present
+
+    - name: Apply Traefik dashboard IngressRoute
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/traefik/dashboard-ingress.yml
+        state: present

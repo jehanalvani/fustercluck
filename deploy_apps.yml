@@ -1,0 +1,230 @@
+---
+# Application Deployment Playbook
+#
+# Deploys all home lab applications to the k3s cluster using the bjw-s/app-template
+# Helm chart. Must be run AFTER cluster_bootstrap.yml has completed successfully.
+#
+# Applications deployed:
+#   media namespace:    nzbget, transmission, radarr, sonarr, lidarr, readarr, prowlarr, ombi
+#   plex namespace:     plex (GPU-accelerated, pinned to media node)
+#   monitoring:         node-exporter (DaemonSet), kube-state-metrics, alloy (DaemonSet → Grafana Cloud)
+#   homebridge:         homebridge (hostNetwork, pinned to kube02)
+#   security:           shinobi (multi-container, pinned to media node)
+#
+# Prerequisites:
+#   - cluster_bootstrap.yml completed (namespaces, storage, cert-manager, traefik)
+#   - Required secrets created in each namespace (see k8s/secrets/examples/)
+#   - bjw-s app-template chart available via OCI (oci://ghcr.io/bjw-s/helm/app-template)
+#
+# Usage:
+#   ansible-playbook deploy_apps.yml
+#   ansible-playbook deploy_apps.yml --tags media
+#   ansible-playbook deploy_apps.yml --tags plex,monitoring
+
+- hosts: k3s_server
+  name: Deploy all applications to k3s cluster
+  remote_user: ansible
+  become: no
+  gather_facts: false
+  vars_files:
+    - vars/vars.yml
+
+  tasks:
+
+    - name: Sync k8s app manifests to server
+      ansible.posix.synchronize:
+        src: k8s/
+        dest: /home/ansible/k8s/
+        delete: yes
+        recursive: yes
+      tags: always
+
+    # -------------------------------------------------------------------------
+    # Media namespace
+    # -------------------------------------------------------------------------
+
+    - name: Deploy nzbget
+      kubernetes.core.helm:
+        name: nzbget
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/nzbget/values.yml
+      tags: [media, nzbget]
+
+    - name: Deploy transmission
+      kubernetes.core.helm:
+        name: transmission
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/transmission/values.yml
+      tags: [media, transmission]
+
+    - name: Deploy radarr
+      kubernetes.core.helm:
+        name: radarr
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/radarr/values.yml
+      tags: [media, radarr]
+
+    - name: Deploy sonarr
+      kubernetes.core.helm:
+        name: sonarr
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/sonarr/values.yml
+      tags: [media, sonarr]
+
+    - name: Deploy lidarr
+      kubernetes.core.helm:
+        name: lidarr
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/lidarr/values.yml
+      tags: [media, lidarr]
+
+    - name: Deploy readarr
+      kubernetes.core.helm:
+        name: readarr
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/readarr/values.yml
+      tags: [media, readarr]
+
+    - name: Deploy prowlarr
+      kubernetes.core.helm:
+        name: prowlarr
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/prowlarr/values.yml
+      tags: [media, prowlarr]
+
+    - name: Deploy ombi
+      kubernetes.core.helm:
+        name: ombi
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: media
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/media/ombi/values.yml
+      tags: [media, ombi]
+
+    # -------------------------------------------------------------------------
+    # Plex namespace
+    # -------------------------------------------------------------------------
+
+    - name: Deploy plex
+      kubernetes.core.helm:
+        name: plex
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: plex
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/plex/values.yml
+      tags: [plex]
+
+    # -------------------------------------------------------------------------
+    # Monitoring namespace
+    # Visualization and alerting: Grafana Cloud (grafana.com)
+    # In-cluster: collectors only (node-exporter, kube-state-metrics, alloy)
+    # -------------------------------------------------------------------------
+
+    - name: Deploy node-exporter
+      kubernetes.core.helm:
+        name: node-exporter
+        chart_ref: prometheus-node-exporter
+        chart_repo_url: https://prometheus-community.github.io/helm-charts
+        release_namespace: monitoring
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/monitoring/node-exporter/values.yml
+      tags: [monitoring, node-exporter]
+
+    - name: Deploy kube-state-metrics
+      kubernetes.core.helm:
+        name: kube-state-metrics
+        chart_ref: kube-state-metrics
+        chart_repo_url: https://prometheus-community.github.io/helm-charts
+        release_namespace: monitoring
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/monitoring/kube-state-metrics/values.yml
+      tags: [monitoring, kube-state-metrics]
+
+    - name: Deploy alloy
+      kubernetes.core.helm:
+        name: alloy
+        chart_ref: alloy
+        chart_repo_url: https://grafana.github.io/helm-charts
+        release_namespace: monitoring
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/monitoring/alloy/values.yml
+      tags: [monitoring, alloy]
+
+    # -------------------------------------------------------------------------
+    # Homebridge namespace
+    # -------------------------------------------------------------------------
+
+    - name: Deploy homebridge
+      kubernetes.core.helm:
+        name: homebridge
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: homebridge
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/homebridge/values.yml
+      tags: [homebridge]
+
+    # -------------------------------------------------------------------------
+    # Security namespace
+    # -------------------------------------------------------------------------
+
+    - name: Deploy shinobi
+      kubernetes.core.helm:
+        name: shinobi
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: security
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/security/shinobi/values.yml
+      tags: [security, shinobi]

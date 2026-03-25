@@ -1,0 +1,65 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Prowlarr - Indexer manager for Arr suite applications
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: ghcr.io/hotio/prowlarr
+          tag: "latest@sha256:02e472dec7a97d079f63bb9eab6799c4ca9b5e8687286e55794faa7e57944b9a"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              initialDelaySeconds: 60
+              periodSeconds: 15
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            spec:
+              initialDelaySeconds: 60
+              periodSeconds: 15
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 200m
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 9696
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: prowlarr.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: prowlarr-tls
+        hosts:
+          - prowlarr.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: prowlarr-config
+    globalMounts:
+      - path: /config

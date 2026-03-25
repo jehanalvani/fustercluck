@@ -1,9 +1,0 @@
----
-# handlers file for roles/nzbget
-
-
-- name: Restart nzbget container
-  docker_container:
-    name: nzbget
-    state: started
-    restart: yes

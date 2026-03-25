@@ -1,0 +1,18 @@
+---
+# Configure image orientation (flip/mirror) for cameras mounted upside-down or sideways.
+# VideoInOptions[0].Flip=true rotates 180°; VideoInOptions[0].Mirror=true flips horizontally.
+# (VideoColor namespace does NOT support these params on firmware V2.400.0002.15.R.20170810)
+
+- name: Set image flip and mirror
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/configManager.cgi\
+          ?action=setConfig\
+          &VideoInOptions[{{ amcrest_motion_channel }}].Flip={{ amcrest_image_flip | lower }}\
+          &VideoInOptions[{{ amcrest_motion_channel }}].Mirror={{ amcrest_image_mirror | lower }}"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"

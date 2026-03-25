@@ -30,13 +30,10 @@
     gid: 997
 
 
-- name: "If on raspbian, change `pi` user password"
+- name: "Lock default `pi` account on Raspberry Pi nodes"
   user:
       name: pi
-      groups: adm,dialout,sudo,audio,video,plugdev,games,docker,users,input
-      append: yes
-      shell: /bin/bash
-      password: "{{ pi_user_pass | password_hash('sha512') }}"
+      password_lock: true
   when: ansible_lsb.id == "Raspbian"
   
     
@@ -74,18 +71,24 @@
       state: present
       key: https://github.com/jehanalvani.keys
 
+- name: "Add {{ interactive_uname }} keys to {{ ansible_uname }} for privileged access"
+  ansible.posix.authorized_key:
+      user: "{{ ansible_uname }}"
+      state: present
+      key: https://github.com/jehanalvani.keys
+
 - name: Ensure group "docker" exists
   ansible.builtin.group:
     name: docker
     state: present
-  when: inventory_hostname in groups["docker"]
+  when: "'docker' in groups and inventory_hostname in groups['docker']"
 
 - name: "Add docker users to 'docker' group"
   user:
     name: "{{ item|string }}"
     groups: "docker"
     append: yes
-  when: inventory_hostname in groups["docker"]
+  when: "'docker' in groups and inventory_hostname in groups['docker']"
   loop: "{{docker_users}}"
 
 

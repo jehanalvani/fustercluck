@@ -1,0 +1,66 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Readarr - Book download and library management (develop branch)
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: linuxserver/readarr
+          tag: "0.4.19-nightly@sha256:4f291128d1a5538be73c2a30473d7cdd0820e223dc8b8533b0cbc5659000dcbe"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8787
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: readarr.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: readarr-tls
+        hosts:
+          - readarr.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config
+  media:
+    type: persistentVolumeClaim
+    existingClaim: media-nfs-pvc
+    globalMounts:
+      - path: /media

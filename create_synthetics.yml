@@ -1,0 +1,220 @@
+---
+# Registers all Grafana Cloud Synthetic Monitoring checks defined in
+# k8s/apps/monitoring/synthetic-monitoring/checks.yml
+#
+# Prerequisites:
+#   1. Private probe deployed and registered in Grafana Cloud SM UI
+#      (get its numeric probe ID from the UI or API)
+#   2. SM API token in Ansible vault:
+#        sm_api_token: "your-sm-api-token"
+#        sm_api_url: "https://synthetic-monitoring-api-us-west-0.grafana.net"
+#        sm_private_probe_id: 377     # homelab-private
+#        sm_external_probe_ids:
+#          - 15   # Oregon
+#          - 18   # NorthCalifornia
+#      Run: ansible-vault edit roles/common/vars/vault.yml
+#
+# Run:
+#   ansible-playbook create_synthetics.yml
+#
+# Idempotency: checks are matched by job name. Existing checks are updated,
+# new ones are created. Run this any time checks.yml changes.
+
+- name: Register Grafana Cloud Synthetic Monitoring checks
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - roles/common/vars/vault.yml
+
+  vars:
+    checks_file: "k8s/apps/monitoring/synthetic-monitoring/checks.yml"
+    probe_map:
+      external: "{{ sm_external_probe_ids }}"
+      internal: ["{{ sm_private_probe_id }}"]
+
+  tasks:
+
+    - name: Load check definitions
+      ansible.builtin.include_vars:
+        file: "{{ checks_file }}"
+        name: check_defs
+
+    # ------------------------------------------------------------------
+    # Fetch existing checks so we can decide create vs update
+    # ------------------------------------------------------------------
+
+    - name: Get existing SM checks
+      ansible.builtin.uri:
+        url: "{{ sm_api_url }}/api/v1/check/list"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ sm_api_token }}"
+        status_code: 200
+      register: existing_checks_resp
+
+    - name: Build existing check map (job → id)
+      ansible.builtin.set_fact:
+        existing_check_map: >-
+          {{ existing_checks_resp.json
+             | items2dict(key_name='job', value_name='id') }}
+
+    # ------------------------------------------------------------------
+    # HTTP / HTTPS checks
+    # ------------------------------------------------------------------
+
+    - name: Register HTTP checks
+      ansible.builtin.uri:
+        url: >-
+          {{ sm_api_url }}/api/v1/check/{{
+             'update' if (item.service + '-' + probe) in existing_check_map
+             else 'add'
+          }}
+        method: POST
+        headers:
+          Authorization: "Bearer {{ sm_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: >-
+            {{ existing_check_map[item.service + '-' + probe]
+               if (item.service + '-' + probe) in existing_check_map
+               else omit }}
+          job: "{{ item.service }}-{{ probe }}"
+          target: "{{ item.target }}"
+          frequency: "{{ 30000 if probe == 'internal' else 60000 }}"
+          timeout: 5000
+          enabled: true
+          probes: "{{ probe_map[probe] }}"
+          labels:
+            - name: env
+              value: homelab
+            - name: tier
+              value: "{{ item.tier }}"
+            - name: service
+              value: "{{ item.service }}"
+            - name: probe
+              value: "{{ probe }}"
+          settings:
+            http:
+              method: GET
+              ipVersion: V4
+              noFollowRedirects: false
+              tlsConfig:
+                insecureSkipVerify: "{{ probe == 'internal' }}"
+              validStatusCodes: [200, 401, 403]  # 401/403 expected once Traefik auth is added
+        status_code: [200, 201]
+      loop: "{{ check_defs.http_checks | subelements('probes') | list }}"
+      loop_control:
+        loop_var: item_pair
+      vars:
+        item: "{{ item_pair[0] }}"
+        probe: "{{ item_pair[1] }}"
+
+    # ------------------------------------------------------------------
+    # DNS checks
+    # ------------------------------------------------------------------
+
+    - name: Register DNS checks
+      ansible.builtin.uri:
+        url: >-
+          {{ sm_api_url }}/api/v1/check/{{
+             'update' if (item.service + '-dns-' + probe) in existing_check_map
+             else 'add'
+          }}
+        method: POST
+        headers:
+          Authorization: "Bearer {{ sm_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: >-
+            {{ existing_check_map[item.service + '-dns-' + probe]
+               if (item.service + '-dns-' + probe) in existing_check_map
+               else omit }}
+          job: "{{ item.service }}-dns-{{ probe }}"
+          target: "{{ item.query }}"
+          frequency: 30000
+          timeout: 3000
+          enabled: true
+          probes: "{{ probe_map[probe] }}"
+          labels:
+            - name: env
+              value: homelab
+            - name: tier
+              value: "{{ item.tier }}"
+            - name: service
+              value: "{{ item.service }}"
+            - name: probe
+              value: "{{ probe }}"
+          settings:
+            dns:
+              server: "{{ item.target | regex_replace('^dns://', '') }}"
+              port: 53
+              recordType: "{{ item.record_type | default('A') }}"
+              ipVersion: V4
+              protocol: UDP
+        status_code: [200, 201]
+      loop: "{{ check_defs.dns_checks | subelements('probes') | list }}"
+      loop_control:
+        loop_var: item_pair
+      vars:
+        item: "{{ item_pair[0] }}"
+        probe: "{{ item_pair[1] }}"
+
+    # ------------------------------------------------------------------
+    # Ping checks
+    # ------------------------------------------------------------------
+
+    - name: Register ping checks
+      ansible.builtin.uri:
+        url: >-
+          {{ sm_api_url }}/api/v1/check/{{
+             'update' if (item.service + '-ping-' + probe) in existing_check_map
+             else 'add'
+          }}
+        method: POST
+        headers:
+          Authorization: "Bearer {{ sm_api_token }}"
+          Content-Type: "application/json"
+        body_format: json
+        body:
+          id: >-
+            {{ existing_check_map[item.service + '-ping-' + probe]
+               if (item.service + '-ping-' + probe) in existing_check_map
+               else omit }}
+          job: "{{ item.service }}-ping-{{ probe }}"
+          target: "{{ item.target }}"
+          frequency: 30000
+          timeout: 3000
+          enabled: true
+          probes: "{{ probe_map[probe] }}"
+          labels:
+            - name: env
+              value: homelab
+            - name: tier
+              value: "{{ item.tier }}"
+            - name: service
+              value: "{{ item.service }}"
+            - name: probe
+              value: "{{ probe }}"
+          settings:
+            ping:
+              ipVersion: V4
+              dontFragment: false
+        status_code: [200, 201]
+      loop: "{{ check_defs.ping_checks | subelements('probes') | list }}"
+      loop_control:
+        loop_var: item_pair
+      vars:
+        item: "{{ item_pair[0] }}"
+        probe: "{{ item_pair[1] }}"
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg: >-
+          Registered {{ check_defs.http_checks | sum(attribute='probes', start=[]) | length }} HTTP,
+          {{ check_defs.dns_checks | sum(attribute='probes', start=[]) | length }} DNS,
+          {{ check_defs.ping_checks | sum(attribute='probes', start=[]) | length }} ping
+          check instances across all probes.

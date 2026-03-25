@@ -1,0 +1,34 @@
+# Values for cert-manager
+# Chart: jetstack/cert-manager
+# Repo: https://charts.jetstack.io
+# Note: install with --set installCRDs=true or crds.enabled=true
+
+installCRDs: true
+
+# Disable the post-install startup check job (it times out on slow hardware)
+startupapicheck:
+  enabled: false
+
+# ARM64 compatible - uses multi-arch images by default
+
+replicaCount: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi

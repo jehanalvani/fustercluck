@@ -1,6 +1,0 @@
----
-# vars file for roles/ombi
-
-role_local_config_path: /container_data/ombi_config
-
-role_ui_port: 3579

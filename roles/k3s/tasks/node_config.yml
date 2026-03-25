@@ -1,0 +1,34 @@
+---
+# tasks for configuring node labels and taints via kubectl
+# Runs only on the k3s server node
+
+- name: Apply node labels and taints
+  become: yes
+  block:
+    - name: Apply labels to kube02 (homekit-bridge)
+      ansible.builtin.command: |
+        kubectl label nodes kube02 homekit-bridge=true --overwrite
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Apply labels to kube03 (monitoring)
+      ansible.builtin.command: |
+        kubectl label nodes kube03 monitoring=true --overwrite
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Apply labels to 20-size (media node)
+      ansible.builtin.command: |
+        kubectl label nodes 20-size node-role.kubernetes.io/media=true nvidia.com/gpu=true --overwrite
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Apply taint to 20-size (dedicated media workloads)
+      ansible.builtin.command: |
+        kubectl taint nodes 20-size dedicated=media:NoSchedule --overwrite
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true

@@ -12,41 +12,57 @@
 #       group: root
 #       mode: '0755'
     
-- set_fact:  
+# k3s requires cgroup memory support on ARM systems.
+# These kernel parameters must be added to /boot/firmware/cmdline.txt on Raspberry Pi
+# or to GRUB on other systems. The following tasks handle the firmware cmdline case.
+
+- set_fact:
     cmdline_txt_path: /boot/firmware/cmdline.txt
 
-# - name: "Add 'systemd.unified_cgroup_hierarchy=0' to GRUB Commandline"
-#   ansible.builtin.lineinfile:
-#     path: /etc/default/grub.d/50-cloudimg-settings.cfg
-#     backup: true
-#     backrefs: true
-#     regexp: '^(GRUB_CMDLINE_LINUX_DEFAULT=".*)(.*)'
-#     state: present
-#     line: \1 systemd.unified_cgroup_hierarchy=0\2
-
+- name: Check if Pi firmware cmdline.txt exists
+  ansible.builtin.stat:
+    path: "{{ cmdline_txt_path }}"
+  register: cmdline_txt_stat
 
 - include_tasks: cmdline.yml
   vars:
     key: cgroup_enable
     value: cpuset
     update: false
-    
+  when: cmdline_txt_stat.stat.exists
+
 - include_tasks: cmdline.yml
   vars:
     key: cgroup_enable
     value: memory
     update: false
+  when: cmdline_txt_stat.stat.exists
 
 - include_tasks: cmdline.yml
   vars:
     key: cgroup_memory
     value: 1
-    update: true            
-    
+    update: true
+  when: cmdline_txt_stat.stat.exists
+
 - include_tasks: cmdline.yml
   vars:
     key: swapaccount
     value: 1
     update: true
-    
+  when: cmdline_txt_stat.stat.exists
+
+# k3s works better without swap - disable it
+- name: Disable swap
+  ansible.builtin.command: swapoff -a
+  ignore_errors: yes
+  changed_when: false
+
+- name: Remove swap from /etc/fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    regexp: '^\s*[^#]*\sswap\s'
+    state: absent
+    backup: yes
+
     

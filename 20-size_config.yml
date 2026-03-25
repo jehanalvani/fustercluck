@@ -19,8 +19,52 @@
           state: present
           reload: true
       
-  tasks:    
-  
+  tasks:
+
+    - name: "Create config dirs in {{ server_config_path }}"
+      file:
+        path: "{{ server_config_path }}{{ item }}"
+        state: directory
+        mode: 0775
+        owner: ansible
+        group: users
+      loop:
+        - nzbget/intermediate
+        - rss-bridge
+        - rss-bridge/app/bridges
+        - transmission/config
+        - homebridge
+      tags: nfs
+
+    - name: "Create media dirs in {{ server_media_path }}"
+      file:
+        path: "{{ server_media_path }}{{ item }}"
+        state: directory
+        mode: 0775
+        owner: ansible
+        group: users
+      loop:
+        - adult_audio
+        - adult_books
+        - adult_manga
+        - adult_videos
+        - anime
+        - books
+        - comics
+        - manga
+        - misc
+        - movies
+        - music
+        - nzb_downloads
+        - torrents/watch
+        - torrents/downloads/complete
+        - photos
+        - security_cam_recordings
+        - series
+        - textbooks
+        - videos
+      tags: nfs
+
     - name: "Install pipx, setuptools, virtualenv if not already"
       apt: 
         name:
@@ -57,9 +101,7 @@
       tags: nfs          
     - role: docker
       tags: docker
-    - role: plex
-      tags: plex
-    - role: shinobi
-      tags: shinobi        
+    - role: pihole
+      tags: pihole
     
     

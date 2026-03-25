@@ -1,8 +1,0 @@
----
-# handlers file for roles/prometheus
-
-  - name: Restart prometheus container
-    docker_container:
-        name: prometheus
-        state: started
-        restart: yes

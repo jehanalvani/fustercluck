@@ -1,6 +1,0 @@
----
-# vars file for roles/radarr
-
-role_ui_port: 7878
-role_local_config_path: /container_data/radarr_config
-

@@ -1,0 +1,71 @@
+# HelmChartConfig for k3s built-in Traefik v2
+# This configures the Traefik ingress controller that ships with k3s
+# Apply with: kubectl apply -f config.yml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    # Enable the Traefik API and dashboard
+    api:
+      dashboard: true
+
+    # Disable the built-in IngressRoute (we use our own with TLS)
+    ingressRoute:
+      dashboard:
+        enabled: false
+
+    # Configure entry points for HTTP and HTTPS
+    ports:
+      web:
+        port: 8000
+        expose: true
+        exposedPort: 80
+        protocol: TCP
+      websecure:
+        port: 8443
+        expose: true
+        exposedPort: 443
+        protocol: TCP
+        tls:
+          enabled: true
+
+    # Enable IngressClass as the default for Ingress resources
+    ingressClass:
+      enabled: true
+      isDefaultClass: true
+
+    # Provider configuration for Kubernetes
+    providers:
+      kubernetesCRD:
+        enabled: true
+        allowCrossNamespace: true
+      kubernetesIngress:
+        enabled: true
+        publishedService:
+          enabled: true
+
+    # Resource limits for the Traefik pod
+    # Keep these modest for a home lab with limited resources
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 300m
+        memory: 256Mi
+
+    # Logging configuration
+    logs:
+      general:
+        level: WARN
+      access:
+        enabled: false
+
+    # Prometheus metrics integration
+    # Metrics are exposed on port 9100 by default
+    metrics:
+      prometheus:
+        enabled: true

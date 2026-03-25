@@ -1,0 +1,11 @@
+# Chart: prometheus-community/kube-state-metrics
+# Repo: https://prometheus-community.github.io/helm-charts
+# Exposes cluster state metrics (pod restarts, deployment status, resource requests vs limits)
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

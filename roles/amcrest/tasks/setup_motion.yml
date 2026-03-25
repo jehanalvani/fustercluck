@@ -1,0 +1,54 @@
+---
+# Configure hardware motion detection on the camera.
+# Uses the MotionDetect configManager namespace.
+#
+# Firmware notes (V2.400.0002.15.R.20170810):
+#   - getConfig for MotionDetect returns "Invalid Authority" even for admin — firmware bug.
+#     setConfig returns OK and does work. Verification via getUserInfoAll is not possible.
+#   - Correct param names: Level (not Sensitivity), RecordEnable (not Record),
+#     SnapshotEnable (not SnapShot). Region[N] takes an integer bitmask.
+
+- name: Enable motion detection and set level
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/configManager.cgi\
+          ?action=setConfig\
+          &MotionDetect[{{ amcrest_motion_channel }}].Enable={{ amcrest_motion_enabled | lower }}\
+          &MotionDetect[{{ amcrest_motion_channel }}].Level={{ amcrest_motion_level }}"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"
+
+- name: Enable record and snapshot on motion
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/configManager.cgi\
+          ?action=setConfig\
+          &MotionDetect[{{ amcrest_motion_channel }}].EventHandler.RecordEnable={{ amcrest_motion_record | lower }}\
+          &MotionDetect[{{ amcrest_motion_channel }}].EventHandler.SnapshotEnable={{ amcrest_motion_snapshot | lower }}"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"
+
+- name: Set full-frame motion detection region
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/configManager.cgi\
+          ?action=setConfig\
+          &MotionDetect[{{ amcrest_motion_channel }}].Region[{{ row_index }}]={{ item }}"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"
+  loop: "{{ amcrest_motion_region_rows }}"
+  loop_control:
+    index_var: row_index
+    label: "row {{ row_index }}"

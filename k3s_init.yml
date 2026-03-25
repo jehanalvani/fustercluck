@@ -1,0 +1,70 @@
+---
+# k3s Cluster Initialization Playbook
+#
+# This playbook initializes a k3s Kubernetes cluster across designated nodes.
+# It follows a three-play sequence:
+#   1. Common baseline setup (users, packages, cgroups, swap)
+#   2. k3s server (control plane) installation
+#   3. k3s agents (worker nodes) installation with server token
+#
+# Prerequisites:
+#   - All nodes must be reachable via SSH as 'ansible' user with sudo access
+#   - Nodes must be in appropriate inventory groups (k3s_server, k3s_agent)
+#   - k3s_server_host must be resolvable from all nodes (DNS or /etc/hosts)
+#   - Network connectivity required between all nodes on port 6443
+#
+# Usage:
+#   ansible-playbook k3s_init.yml
+#   ansible-playbook k3s_init.yml --tags k3s
+#   ansible-playbook k3s_init.yml -e k3s_version=v1.30.0+k3s1
+#
+# Note: The playbook can be re-run safely; tasks use 'creates' conditions for idempotency
+
+# Play 1: Common baseline for all k3s nodes
+- hosts: k3s_cluster
+  name: Apply common baseline configuration to k3s cluster
+  remote_user: ansible
+  become: yes
+  gather_facts: true
+  vars_files:
+    - vars/vars.yml
+  roles:
+    - role: common
+      tags: common
+
+# Play 2: Install k3s server (control plane)
+- hosts: k3s_server
+  name: Install k3s server on control plane
+  remote_user: ansible
+  become: yes
+  gather_facts: true
+  vars_files:
+    - vars/vars.yml
+  roles:
+    - role: k3s
+      tags: k3s
+
+# Play 3: Install k3s agents (worker nodes)
+# This play depends on the server being ready and node token being available
+- hosts: k3s_agent
+  name: Install k3s agents on worker nodes
+  remote_user: ansible
+  become: yes
+  gather_facts: true
+  vars_files:
+    - vars/vars.yml
+  roles:
+    - role: k3s
+      tags: k3s
+
+# Play 4: Apply node labels and taints after all agents have joined
+- hosts: k3s_server
+  name: Apply node labels and taints
+  remote_user: ansible
+  become: yes
+  gather_facts: false
+  vars_files:
+    - vars/vars.yml
+  tasks:
+    - ansible.builtin.include_tasks: roles/k3s/tasks/node_config.yml
+      tags: k3s

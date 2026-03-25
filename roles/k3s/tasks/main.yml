@@ -1,0 +1,26 @@
+---
+# tasks file for k3s role
+# Orchestrates k3s installation for both server and agents
+
+- name: Install k3s server
+  ansible.builtin.include_tasks: server.yml
+  when: inventory_hostname in groups['k3s_server']
+
+- name: Fetch k3s node token from server
+  ansible.builtin.slurp:
+    src: /var/lib/rancher/k3s/server/node-token
+  register: k3s_token_file
+  delegate_to: "{{ k3s_server_host }}"
+  become: yes
+
+- name: Set k3s_node_token fact
+  ansible.builtin.set_fact:
+    k3s_node_token: "{{ k3s_token_file.content | b64decode | trim }}"
+
+- name: Install k3s agents
+  ansible.builtin.include_tasks: agent.yml
+  when: inventory_hostname in groups['k3s_agent']
+
+- name: Distribute kubeconfig to users
+  ansible.builtin.include_tasks: kubeconfig.yml
+  when: inventory_hostname in groups['k3s_server']

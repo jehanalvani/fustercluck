@@ -1,0 +1,129 @@
+---
+# Arr App Configuration Playbook
+#
+# Configures shared settings across Sonarr, Radarr, Lidarr, and Readarr via
+# their REST APIs. Safe to re-run — all tasks are idempotent PUTs.
+#
+# Settings applied:
+#   1. Unmonitor Deleted — unmonitors episodes/movies/tracks/books when their
+#      file is deleted from disk (Settings > Media Management)
+#   2. Plex Metadata — enables .plexmatch file creation and episode mappings
+#      (Settings > Metadata > Plex) — Sonarr and Radarr only
+#
+# Usage:
+#   ansible-playbook configure_arr_apps.yml --vault-id fustercluck@prompt
+#   ansible-playbook configure_arr_apps.yml --tags unmonitor_deleted
+#   ansible-playbook configure_arr_apps.yml --tags plex_metadata
+
+- hosts: localhost
+  connection: local
+  name: Configure arr app settings via API
+  gather_facts: false
+  vars_files:
+    - roles/sonarr/vars/main.yml
+    - roles/radarr/vars/main.yml
+    - roles/lidarr/vars/main.yml
+    - roles/readarr/vars/main.yml
+
+  vars:
+    arr_apps:
+      - name: sonarr
+        url: "https://sonarr.alvani.me"
+        api_key: "{{ sonarr_api_key }}"
+        api_version: v3
+        unmonitor_field: unmonitorDeletedEpisodes
+        has_plex_metadata: true
+
+      - name: radarr
+        url: "https://radarr.alvani.me"
+        api_key: "{{ radarr_api_key }}"
+        api_version: v3
+        unmonitor_field: unmonitorDeletedMovies
+        has_plex_metadata: true
+
+      - name: lidarr
+        url: "https://lidarr.alvani.me"
+        api_key: "{{ lidarr_api_key }}"
+        api_version: v1
+        unmonitor_field: unmonitorDeletedTracks
+        has_plex_metadata: false
+
+      - name: readarr
+        url: "https://readarr.alvani.me"
+        api_key: "{{ readarr_api_key }}"
+        api_version: v1
+        unmonitor_field: unmonitorDeletedBooks
+        has_plex_metadata: false
+
+  tasks:
+
+    # -------------------------------------------------------------------------
+    # 1. Unmonitor Deleted
+    # -------------------------------------------------------------------------
+
+    - name: "Get media management config — {{ item.name }}"
+      ansible.builtin.uri:
+        url: "{{ item.url }}/api/{{ item.api_version }}/config/mediamanagement"
+        headers:
+          X-Api-Key: "{{ item.api_key }}"
+        method: GET
+        validate_certs: true
+        status_code: 200
+      register: mediamanagement_configs
+      loop: "{{ arr_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags: unmonitor_deleted
+
+    - name: "Enable unmonitor deleted — {{ item.item.name }}"
+      ansible.builtin.uri:
+        url: "{{ item.item.url }}/api/{{ item.item.api_version }}/config/mediamanagement"
+        headers:
+          X-Api-Key: "{{ item.item.api_key }}"
+        method: PUT
+        body_format: json
+        body: "{{ item.json | combine({ item.item.unmonitor_field: true }) }}"
+        validate_certs: true
+        status_code: [200, 202]
+      loop: "{{ mediamanagement_configs.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      # Skip if the field isn't present — older app versions may not support it
+      when: item.item.unmonitor_field in item.json
+      tags: unmonitor_deleted
+
+    # -------------------------------------------------------------------------
+    # 2. Plex Metadata (Sonarr and Radarr only)
+    # -------------------------------------------------------------------------
+
+    - name: "Get metadata consumers — {{ item.name }}"
+      ansible.builtin.uri:
+        url: "{{ item.url }}/api/{{ item.api_version }}/metadata"
+        headers:
+          X-Api-Key: "{{ item.api_key }}"
+        method: GET
+        validate_certs: true
+        status_code: 200
+      register: metadata_consumers
+      loop: "{{ arr_apps | selectattr('has_plex_metadata') | list }}"
+      loop_control:
+        label: "{{ item.name }}"
+      tags: plex_metadata
+
+    - name: "Enable Plex metadata — {{ item.item.name }}"
+      vars:
+        plex_entry: "{{ item.json | selectattr('name', 'search', '(?i)plex') | list | first }}"
+      ansible.builtin.uri:
+        url: "{{ item.item.url }}/api/{{ item.item.api_version }}/metadata/{{ plex_entry.id }}"
+        headers:
+          X-Api-Key: "{{ item.item.api_key }}"
+        method: PUT
+        body_format: json
+        body: "{{ plex_entry | combine({'enable': true, 'fields': plex_entry.fields | map('combine', {'value': true}) | list}) }}"
+        validate_certs: true
+        status_code: [200, 202]
+      loop: "{{ metadata_consumers.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      when: item.json | selectattr('name', 'search', '(?i)plex') | list | length > 0
+      tags: plex_metadata

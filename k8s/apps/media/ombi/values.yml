@@ -1,0 +1,66 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Ombi - User request management for media server
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: ghcr.io/hotio/ombi
+          tag: "latest@sha256:9dd1afcd385d0a16e7224080ca02088116f4ad655f201af264e9341f851dffda"
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+          UMASK: "002"
+        probes:
+          liveness:
+            enabled: true
+            spec:
+              initialDelaySeconds: 60
+              periodSeconds: 15
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            spec:
+              initialDelaySeconds: 60
+              periodSeconds: 15
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 5000
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: ombi.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: ombi-tls
+        hosts:
+          - ombi.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    existingClaim: ombi-config
+    globalMounts:
+      - path: /config

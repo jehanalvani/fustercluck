@@ -1,0 +1,31 @@
+# Values for nfs-subdir-external-provisioner
+# Chart: nfs-subdir-external-provisioner/nfs-subdir-external-provisioner
+# Repo: https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+
+nfs:
+  server: 20-size.local
+  path: /whidbey/configs
+  mountOptions:
+    - hard
+    - intr
+    - timeo=600
+
+storageClass:
+  name: nfs-client
+  defaultClass: false
+  reclaimPolicy: Retain
+  archiveOnDelete: true
+  pathPattern: "${.PVC.namespace}/${.PVC.name}"
+
+# ARM64 image
+image:
+  repository: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner
+  tag: v4.0.2
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

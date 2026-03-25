@@ -1,0 +1,18 @@
+---
+# Run against factory-fresh Amcrest cameras after a firmware reset.
+#
+# Full setup:
+#   ansible-playbook configure_cameras.yml
+#
+# Users only:
+#   ansible-playbook configure_cameras.yml --tags users
+#
+# Motion only (cameras already have passwords set):
+#   ansible-playbook configure_cameras.yml --tags motion
+
+- hosts: cameras
+  gather_facts: false
+  vars_files:
+    - roles/common/vars/vault.yml
+  roles:
+    - amcrest

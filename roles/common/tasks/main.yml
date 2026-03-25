@@ -4,9 +4,22 @@
 
 - import_tasks: user_setup.yml
 
-- name: Install docker prerequisites and iptables-persistent
+- name: Remove apt sources referencing dead kubernetes or docker mantic repos
+  ansible.builtin.shell: |
+    grep -rl 'apt\.kubernetes\.io\|download\.docker\.com' /etc/apt/sources.list.d/ 2>/dev/null | xargs rm -f
+    sed -i '/apt\.kubernetes\.io/d' /etc/apt/sources.list 2>/dev/null
+  changed_when: false
+
+- name: Redirect EOL Ubuntu mantic repos to old-releases
+  ansible.builtin.replace:
+    path: /etc/apt/sources.list
+    regexp: 'http://ports\.ubuntu\.com/ubuntu-ports'
+    replace: 'http://old-releases.ubuntu.com/ubuntu'
+  when: ansible_facts['distribution_release'] == 'mantic'
+
+- name: Install base packages
   apt:
-      name: 
+      name:
           - tar
           - unzip
           - zsh
@@ -22,9 +35,18 @@
     - ansible_facts['lsb']['id'] == "Raspbian" 
     - ansible_facts['lsb']['codename'] == "buster" 
   
-- name: Configure Ubuntu cGroups Support on nodes in 'kube' group
-  include_tasks: ubuntu_cGroups.yml  
-  when: inventory_hostname in groups["kube"]
+- name: Ensure cluster nodes resolvable via /etc/hosts (Go binaries bypass mDNS)
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    line: "{{ item.ip }} {{ item.names }}"
+    regexp: "^{{ item.ip }}\\s"
+    state: present
+  loop: "{{ cluster_hosts }}"
+  when: cluster_hosts is defined
+
+- name: Configure Ubuntu cGroups Support on k3s cluster nodes
+  include_tasks: ubuntu_cGroups.yml
+  when: inventory_hostname in groups["k3s_cluster"]
     
 
 # - import_tasks: update_hostname.yml

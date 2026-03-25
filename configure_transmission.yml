@@ -1,0 +1,23 @@
+---
+# Transmission Pre-Deployment Configuration
+#
+# Creates the torrent directory structure on the NFS server (snoqualmie).
+# Must be run BEFORE deploy_apps.yml --tags transmission.
+#
+# Directories created on 20-size.local:
+#   /snoqualmie/media/torrents/complete/    - finished downloads (arr apps import from here)
+#   /snoqualmie/media/torrents/incomplete/  - in-progress (hidden from arr scanners)
+#   /snoqualmie/media/torrents/watch/       - auto-queue by dropping .torrent files here
+#
+# Usage:
+#   ansible-playbook configure_transmission.yml
+
+- hosts: cluster
+  name: Create Transmission directory structure on NFS server
+  remote_user: ansible
+  become: yes
+  gather_facts: false
+  vars_files:
+    - vars/vars.yml
+  roles:
+    - transmission

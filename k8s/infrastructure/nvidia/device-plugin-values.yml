@@ -1,0 +1,25 @@
+# Values for Nvidia device plugin
+# Chart: nvdp/nvidia-device-plugin
+# Repo: https://nvidia.github.io/k8s-device-plugin
+
+# Only run on nodes with the nvidia GPU label
+nodeSelector:
+  nvidia.com/gpu: "true"
+
+# Must tolerate the media node taint to run on 20-size.local
+tolerations:
+  - key: dedicated
+    operator: Equal
+    value: media
+    effect: NoSchedule
+
+# Use RuntimeClass for nvidia
+runtimeClassName: nvidia
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 100m
+    memory: 128Mi

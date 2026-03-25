@@ -1,0 +1,146 @@
+# Grafana Cloud Synthetic Monitoring — check definitions
+# Processed by create_synthetics.yml to register checks via the SM API.
+#
+# Label taxonomy:
+#   env=homelab         — all checks
+#   tier=<tier>         — media | security | monitoring | network | infra
+#   service=<name>      — short service name (matches Loki/Grafana dashboards)
+#   probe=external      — public Grafana probe network (validates public reachability)
+#   probe=internal      — private in-cluster probe (validates LAN/cluster reachability)
+#
+# Probes:
+#   external: uses the built-in Grafana public probe network (probe names vary by region)
+#   internal: homelab-private — the private probe deployed in monitoring namespace
+#
+# Check frequency: 60s (external), 30s (internal)
+# TLS: internal checks skip verification (homelab-ca-issuer cert, not yet publicly trusted)
+#      external checks enforce TLS (will use Let's Encrypt after cert-manager DNS-01 migration)
+
+# ============================================================
+# HTTP/HTTPS checks — cluster services
+# ============================================================
+
+http_checks:
+
+  # -- monitoring tier --
+  - service: traefik
+    tier: monitoring
+    target: https://traefik.alvani.me
+    probes: [external, internal]
+
+  - service: prometheus
+    tier: monitoring
+    target: https://prometheus.alvani.me
+    probes: [external, internal]
+
+  # -- infra tier --
+  - service: homebridge
+    tier: infra
+    target: https://homebridge.alvani.me
+    probes: [external, internal]
+
+  # -- security tier --
+  - service: shinobi
+    tier: security
+    target: https://shinobi.alvani.me
+    probes: [external, internal]
+
+  # -- media tier --
+  - service: plex
+    tier: media
+    target: https://plex.alvani.me
+    probes: [external, internal]
+
+  - service: radarr
+    tier: media
+    target: https://radarr.alvani.me
+    probes: [external, internal]
+
+  - service: sonarr
+    tier: media
+    target: https://sonarr.alvani.me
+    probes: [external, internal]
+
+  - service: lidarr
+    tier: media
+    target: https://lidarr.alvani.me
+    probes: [external, internal]
+
+  - service: readarr
+    tier: media
+    target: https://readarr.alvani.me
+    probes: [external, internal]
+
+  - service: prowlarr
+    tier: media
+    target: https://prowlarr.alvani.me
+    probes: [external, internal]
+
+  - service: ombi
+    tier: media
+    target: https://ombi.alvani.me
+    probes: [external, internal]
+
+  - service: nzbget
+    tier: media
+    target: https://nzbget.alvani.me
+    probes: [external, internal]
+
+  - service: transmission
+    tier: media
+    target: https://transmission.alvani.me
+    probes: [external, internal]
+
+# ============================================================
+# DNS checks — internal probe only (Pi-hole on LAN)
+# ============================================================
+
+dns_checks:
+
+  - service: pihole
+    tier: network
+    # Resolve a reliable public domain via Pi-hole
+    target: dns://10.0.1.250
+    query: grafana.com
+    record_type: A
+    probes: [internal]
+
+  - service: pihole-local-dns
+    tier: network
+    # Confirm split-horizon: *.alvani.me resolves to local IP, not public
+    target: dns://10.0.1.250
+    query: traefik.alvani.me
+    record_type: A
+    expected_answer: "10.0.1.30"
+    probes: [internal]
+
+# ============================================================
+# Ping checks — internal probe only (LAN node reachability)
+# ============================================================
+
+ping_checks:
+
+  - service: kube01
+    tier: infra
+    target: 10.0.1.30
+    probes: [internal]
+
+  - service: kube02
+    tier: infra
+    target: 10.0.1.50
+    probes: [internal]
+
+  - service: kube03
+    tier: infra
+    target: 10.0.1.49
+    probes: [internal]
+
+  - service: 20-size
+    tier: infra
+    target: 10.0.1.203
+    probes: [internal]
+
+  - service: pihole
+    tier: network
+    target: 10.0.1.250
+    probes: [internal]

@@ -1,45 +1,43 @@
 ---
-workers:
-    hosts:
-        kube02.local:
-        kube03.local:
+# k3s cluster groups
+k3s_server:
+  hosts:
+    kube01.local:
 
-manager:
-    hosts:
-        kube01.local:
+k3s_agent:
+  hosts:
+    kube02.local:
+    kube03.local:
+    20-size.local:
 
-kube:
-    children:
-        workers:
-        manager:
-        
+k3s_cluster:
+  children:
+    k3s_server:
+    k3s_agent:
+
+# Other systems
 cluster:
-    hosts:
-        10.0.1.203:
-        20-size.local:
-        cluster1.local:
+  hosts:
+    20-size.local:
 
-docker:
-    children:
-        cluster:
-        kube:
+homebridge:
+  hosts:
+    kube02.local:
 
-homebridge: 
-    hosts: 
-        cluster1.local:
-        
-application:
-    hosts:
-        cluster1.local:
-        
-cAdvisor:
-    children:
-        docker:
+toys:
+  hosts:
+    artpi.local:
+    displaypi.local:
 
-toys:  
-    hosts:
-        artpi.local:
-        displaypi.local:                            
-        
-
-
+cameras:
+  hosts:
+    backyard:
+      ansible_host: 10.0.1.157
+    front_porch:
+      ansible_host: 10.0.1.163
+      amcrest_image_flip: true
+      amcrest_image_mirror: true
+    driveway:
+      ansible_host: 10.0.1.164
+  vars:
+    ansible_connection: local

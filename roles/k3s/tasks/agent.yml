@@ -1,0 +1,24 @@
+---
+# tasks for installing k3s agents (worker nodes)
+
+- name: Ensure /etc/rancher/k3s/ directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s/
+    state: directory
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: Template k3s agent configuration
+  ansible.builtin.template:
+    src: k3s-agent-config.yaml.j2
+    dest: /etc/rancher/k3s/config.yaml
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Install k3s agent
+  ansible.builtin.shell: |
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" K3S_URL="https://{{ k3s_server_host }}:{{ k3s_server_port }}" K3S_TOKEN="{{ hostvars[k3s_server_host]['k3s_node_token'] }}" sh -s - agent
+  args:
+    creates: /usr/local/bin/k3s

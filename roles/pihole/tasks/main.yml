@@ -1,0 +1,74 @@
+---
+# tasks file for roles/pihole
+# Deploys Pi-hole v6 with macvlan networking on 20-size
+# Pi-hole gets its own LAN IP (10.0.1.250) — no NAT/DNAT needed
+
+- name: Create Pi-hole config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ pihole_config_path }}"
+    - "{{ pihole_dnsmasq_path }}"
+
+- name: Create Docker macvlan network on LAN interface
+  community.docker.docker_network:
+    name: "{{ pihole_network_name }}"
+    driver: macvlan
+    driver_options:
+      parent: "{{ pihole_lan_interface }}"
+    ipam_config:
+      - subnet: "10.0.1.0/24"
+        gateway: "10.0.1.1"
+    state: present
+
+- name: Write static DHCP leases
+  ansible.builtin.template:
+    src: dhcp-hosts.conf.j2
+    dest: "{{ pihole_dnsmasq_path }}/02-dhcp-hosts.conf"
+    mode: "0644"
+
+- name: Deploy Pi-hole container on macvlan
+  community.docker.docker_container:
+    name: pihole
+    hostname: pihole
+    image: pihole/pihole:latest
+    restart_policy: unless-stopped
+    state: started
+    capabilities:
+      - NET_ADMIN
+    networks:
+      - name: "{{ pihole_network_name }}"
+        ipv4_address: "{{ pihole_ip }}"
+    env:
+      TZ: "{{ pihole_timezone }}"
+      FTLCONF_dns_upstreams: "{{ pihole_upstream_dns }}"
+      FTLCONF_dns_hosts: "{{ pihole_local_hosts | map(attribute='ip') | zip(pihole_local_hosts | map(attribute='hostname')) | map('join', ' ') | join(';') }}"
+      FTLCONF_dhcp_active: "{{ pihole_dhcp_active }}"
+      FTLCONF_dhcp_start: "{{ pihole_dhcp_start }}"
+      FTLCONF_dhcp_end: "{{ pihole_dhcp_end }}"
+      FTLCONF_dhcp_router: "{{ pihole_dhcp_router }}"
+      FTLCONF_dhcp_leaseTime: "{{ pihole_dhcp_leasetime }}"
+      WEBPASSWORD: "pihole"
+    volumes:
+      - "{{ pihole_config_path }}:/etc/pihole"
+      - "{{ pihole_dnsmasq_path }}:/etc/dnsmasq.d"
+
+- name: Wait for Pi-hole to become healthy
+  ansible.builtin.command:
+    cmd: docker inspect --format="{{ '{{' }}.State.Health.Status{{ '}}' }}" pihole
+  register: pihole_health
+  until: pihole_health.stdout == "healthy"
+  retries: 12
+  delay: 10
+
+- name: Set Pi-hole web password
+  ansible.builtin.command:
+    cmd: docker exec pihole pihole setpassword "{{ pihole_web_password }}"
+  changed_when: true
+
+
+- name: Pi-hole deployed
+  debug:
+    msg: "Pi-hole is running at http://{{ pihole_ip }}/admin"

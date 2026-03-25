@@ -1,8 +1,0 @@
----
-# handlers file for homebridge
-
-- name: Restart homebridge container
-  docker_container:
-    name: homebridge
-    state: started
-    restart: yes

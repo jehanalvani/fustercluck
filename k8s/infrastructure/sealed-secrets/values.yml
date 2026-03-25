@@ -1,0 +1,23 @@
+# Values for Sealed Secrets controller
+# Chart: sealed-secrets/sealed-secrets
+# Repo: https://bitnami-labs.github.io/sealed-secrets
+
+fullnameOverride: sealed-secrets-controller
+
+livenessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  failureThreshold: 6
+
+readinessProbe:
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  failureThreshold: 6
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi

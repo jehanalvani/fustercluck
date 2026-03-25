@@ -1,0 +1,25 @@
+---
+k3s_version: "v1.29.4+k3s1"
+k3s_server_host: "kube01.local"
+k3s_server_port: 6443
+k3s_pod_cidr: "10.5.0.0/16"
+k3s_service_cidr: "10.96.0.0/12"
+
+# Node-specific config
+k3s_node_config:
+  "20-size.local":
+    node_taints:
+      - "dedicated=media:NoSchedule"
+    node_labels:
+      - "node-role.kubernetes.io/media=true"
+      - "nvidia.com/gpu=true"
+  "kube02.local":
+    node_labels:
+      - "homekit-bridge=true"
+  "kube03.local":
+    node_labels:
+      - "monitoring=true"
+
+# kubelet resource reservations for 20-size (protects NFS server)
+k3s_nfs_node_kube_reserved: "cpu=200m,memory=256Mi"
+k3s_nfs_node_system_reserved: "cpu=200m,memory=512Mi"

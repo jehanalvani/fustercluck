@@ -1,0 +1,143 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Shinobi - Video surveillance system with built-in MariaDB
+#
+# FFmpeg note: Shinobi's bundled image ships FFmpeg 4.3.9 (Debian Bullseye) which segfaults on
+# H.264 multi-slice streams from Amcrest cameras. The init container downloads a static 7.x build
+# from johnvansickle.com into an emptyDir at /ffmpeg-bin. PATH is prepended in the container env
+# so Shinobi finds the static binary immediately on startup — no postStart race window.
+
+controllers:
+  main:
+    pod:
+      # Pin to media nodes with local storage for recordings
+      nodeSelector:
+        node-role.kubernetes.io/media: "true"
+      # Tolerate media node taint
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: media
+          effect: NoSchedule
+    initContainers:
+      ffmpeg-upgrade:
+        image:
+          repository: debian
+          tag: bullseye-slim
+        command:
+          - sh
+          - -c
+          - |
+            if [ ! -f /config/ffmpeg ]; then
+              apt-get update -qq && apt-get install -y -qq curl xz-utils 2>/dev/null
+              curl -fsSL https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz \
+                | tar xJ --strip-components=1 -C /config --wildcards "*/ffmpeg"
+              chmod +x /config/ffmpeg
+            fi
+            cp /config/ffmpeg /ffmpeg-bin/ffmpeg
+    containers:
+      main:
+        image:
+          repository: registry.gitlab.com/shinobi-systems/shinobi
+          tag: "latest@sha256:583b4e87b21dccaa20b4f80dc7eb8acffa63e6c83a24eb74213c81d5997cca04"
+          pullPolicy: IfNotPresent
+        env:
+          TZ: America/Los_Angeles
+          PUID: "1002"
+          PGID: "100"
+          PATH: /ffmpeg-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          # Shinobi built-in MariaDB config
+          DB_HOST: "localhost"
+          DB_PORT: "3306"
+          DB_TYPE: "mysql"
+          DB_USER:
+            valueFrom:
+              secretKeyRef:
+                name: shinobi-db-secret
+                key: MYSQL_USER
+          DB_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: shinobi-db-secret
+                key: MYSQL_PASSWORD
+          DB_DATABASE:
+            valueFrom:
+              secretKeyRef:
+                name: shinobi-db-secret
+                key: MYSQL_DATABASE
+          MYSQL_ROOT_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: shinobi-db-secret
+                key: MYSQL_ROOT_PASSWORD
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 6Gi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8080
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: shinobi.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: shinobi-tls
+        hosts:
+          - shinobi.alvani.me
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 2Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config
+
+  recordings:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 500Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /recordings
+
+  db:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /var/lib/mysql
+
+  ffmpeg-bin:
+    type: emptyDir
+    advancedMounts:
+      main:
+        ffmpeg-upgrade:
+          - path: /ffmpeg-bin
+        main:
+          - path: /ffmpeg-bin

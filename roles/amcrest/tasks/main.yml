@@ -1,0 +1,12 @@
+---
+- name: Set up users
+  ansible.builtin.import_tasks: setup_users.yml
+  tags: users
+
+- name: Configure motion detection
+  ansible.builtin.import_tasks: setup_motion.yml
+  tags: motion
+
+- name: Configure image orientation
+  ansible.builtin.import_tasks: setup_image.yml
+  tags: image

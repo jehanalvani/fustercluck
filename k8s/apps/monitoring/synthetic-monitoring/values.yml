@@ -1,0 +1,46 @@
+# Chart: bjw-s/app-template
+# Grafana Cloud Synthetic Monitoring — private probe agent
+# Runs in-cluster so checks can reach LAN services (Pi-hole, cluster ingress, nodes)
+# Connects outbound to Grafana Cloud SM backend — no inbound ports needed
+
+controllers:
+  main:
+    containers:
+      main:
+        image:
+          repository: grafana/synthetic-monitoring-agent
+          tag: "latest@sha256:6586d8f72ec390f24da2735decd78ee5bb2e75751cd98f9eebf12ce0a03c8004"
+          pullPolicy: IfNotPresent
+
+        env:
+          # Probe connection token — one-time token generated when you create the probe in the UI
+          # Testing & Synthetics → Synthetics → Probes → Add Private Probe
+          # Store as k8s secret (see k8s/secrets/examples/sm-private-probe-secret.example.yml)
+          API_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: sm-private-probe-secret
+                key: token
+          # GRPC server address — shown alongside the token in the Add Probe UI
+          # Format: synthetic-monitoring-grpc-<region>.grafana.net:443
+          API_SERVER_ADDRESS:
+            valueFrom:
+              secretKeyRef:
+                name: sm-private-probe-secret
+                key: api-server
+
+        args:
+          - -api-server-address=$(API_SERVER_ADDRESS)
+          - -api-token=$(API_TOKEN)
+
+        resources:
+          requests:
+            cpu: 25m
+            memory: 64Mi
+          limits:
+            cpu: 100m
+            memory: 128Mi
+
+service:
+  main:
+    enabled: false  # No inbound traffic — agent connects outbound only

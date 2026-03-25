@@ -1,0 +1,12 @@
+# Managed by Ansible
+cluster-init: false
+tls-san:
+  - "{{ k3s_server_host }}"
+  - "kube01"
+cluster-cidr: "{{ k3s_pod_cidr }}"
+service-cidr: "{{ k3s_service_cidr }}"
+flannel-backend: vxlan
+disable:
+  - local-storage
+kube-controller-manager-arg:
+  - "node-cidr-mask-size=24"

@@ -1,0 +1,53 @@
+---
+# Run against factory-fresh cameras after firmware flash + factory reset.
+#
+# Prerequisites (must be done manually via web UI at http://<camera-ip>):
+#   1. Log in as admin / admin — the UI will force a password change on first login.
+#   2. Set the admin password to vault_amcrest_admin_password.
+#
+# This task then creates the automation and stream users via CGI.
+# The admin password cannot be changed via the userManager CGI on this firmware.
+#
+# Required fields discovered empirically on firmware V2.400.0002.15.R.20170810:
+#   user.Reserved, user.Anonymous, user.Sharable must all be present on addUser.
+# Auth: cameras use Digest — do NOT set force_basic_auth: true.
+
+- name: Create automation user (admin group)
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/userManager.cgi\
+          ?action=addUser\
+          &user.Name=automation\
+          &user.Password={{ amcrest_automation_password }}\
+          &user.Group=admin\
+          &user.Reserved=false\
+          &user.Anonymous=false\
+          &user.Sharable=false\
+          &user.Memo=automation"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"
+  no_log: true
+
+- name: Create stream user (viewer group)
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/userManager.cgi\
+          ?action=addUser\
+          &user.Name=stream\
+          &user.Password={{ amcrest_stream_password }}\
+          &user.Group=user\
+          &user.Reserved=false\
+          &user.Anonymous=false\
+          &user.Sharable=false\
+          &user.Memo=rtsp+motion-events"
+    method: GET
+    url_username: admin
+    url_password: "{{ amcrest_admin_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'Error' in result.content"
+  no_log: true

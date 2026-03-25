@@ -1,6 +1,21 @@
 ---
 # global vars file
 
+# k3s cluster
+k3s_server_host: kube01.local
+
+# Static /etc/hosts entries for cluster nodes (mDNS not reliable in Go-based tools)
+cluster_hosts:
+  - ip: 10.0.1.30
+    names: "kube01.local kube01"
+  - ip: 10.0.1.50
+    names: "kube02.local kube02"
+  - ip: 10.0.1.49
+    names: "kube03.local kube03"
+  - ip: 10.0.1.203
+    names: "20-size.local 20-size"
+
+# NFS and storage
 nfs_server: 20-size.local
 server_config_path: /whidbey/configs/
 server_media_path: /snoqualmie/media/
