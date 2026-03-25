@@ -1,5 +1,0 @@
-# Static DHCP leases — managed by Ansible, do not edit manually
-# Format: dhcp-host=<mac>,<ip>,<hostname>
-{% for host in pihole_dhcp_hosts %}
-dhcp-host={{ host.mac }},{{ host.ip }},{{ host.name }}
-{% endfor %}

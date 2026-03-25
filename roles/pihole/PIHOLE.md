@@ -35,7 +35,9 @@ klipper-lb runs on kube01, kube02, kube03 — any of these IPs work. kube01 (10.
 
 ## DHCP
 
-Pi-hole handles DHCP for the entire `10.0.1.0/24` subnet (pool: `10.0.1.2–10.0.1.249`). Static leases for all known devices are managed in `pihole_dhcp_hosts` in `vars/main.yml`. To add a new static lease, add an entry there and re-run the Ansible role.
+Pi-hole handles DHCP for the entire `10.0.1.0/24` subnet (pool: `10.0.1.2–10.0.1.249`). Static leases for all known devices are managed in `pihole_dhcp_hosts` in `vars/main.yml` and passed to the container via `FTLCONF_dhcp_hosts`. They are visible and editable in the Pi-hole UI under **Settings > DHCP > Static DHCP configuration**.
+
+To add a new static lease, add an entry to `pihole_dhcp_hosts` and re-run the Ansible role — do not add leases manually in the UI as they will be overwritten on next deploy.
 
 ## Configuration
 
@@ -46,10 +48,10 @@ ansible-playbook 20-size_config.yml --tags pihole
 ```
 
 Key config in `roles/pihole/vars/main.yml`:
-- `pihole_ingress_ip` — LAN IP for all `*.alvani.me` DNS entries (must be a klipper-lb node)
-- `pihole_local_hosts` — structured list of cluster service hostnames (`{ ip, hostname }`)
+- `pihole_local_hosts` — cluster service DNS entries (`{ ip, hostname }`); all currently point to `10.0.1.30` (klipper-lb on kube01)
 - `pihole_dhcp_hosts` — static DHCP leases (`{ mac, ip, name }`)
 - `pihole_upstream_dns` — upstream resolvers (Unlocator SmartDNS + Cloudflare)
+- `pihole_web_password` — inline vault-encrypted; decrypted via `passfile.txt` → 1Password
 
 ## Adding a New Cluster Service
 

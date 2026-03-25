@@ -23,11 +23,10 @@
         gateway: "10.0.1.1"
     state: present
 
-- name: Write static DHCP leases
-  ansible.builtin.template:
-    src: dhcp-hosts.conf.j2
-    dest: "{{ pihole_dnsmasq_path }}/02-dhcp-hosts.conf"
-    mode: "0644"
+- name: Remove legacy dnsmasq DHCP hosts file
+  ansible.builtin.file:
+    path: "{{ pihole_dnsmasq_path }}/02-dhcp-hosts.conf"
+    state: absent
 
 - name: Deploy Pi-hole container on macvlan
   community.docker.docker_container:
@@ -46,6 +45,7 @@
       FTLCONF_dns_upstreams: "{{ pihole_upstream_dns }}"
       FTLCONF_dns_hosts: "{{ pihole_local_hosts | map(attribute='ip') | zip(pihole_local_hosts | map(attribute='hostname')) | map('join', ' ') | join(';') }}"
       FTLCONF_dhcp_active: "{{ pihole_dhcp_active }}"
+      FTLCONF_dhcp_hosts: "{{ pihole_dhcp_hosts | map(attribute='mac') | zip(pihole_dhcp_hosts | map(attribute='ip'), pihole_dhcp_hosts | map(attribute='name')) | map('join', ',') | join(';') }}"
       FTLCONF_dhcp_start: "{{ pihole_dhcp_start }}"
       FTLCONF_dhcp_end: "{{ pihole_dhcp_end }}"
       FTLCONF_dhcp_router: "{{ pihole_dhcp_router }}"

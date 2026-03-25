@@ -1,0 +1,2 @@
+#!/bin/bash
+op read "op://Private/Fustercluck vault pw/password"
