@@ -42,8 +42,6 @@
         ipv4_address: "{{ pihole_ip }}"
     env:
       TZ: "{{ pihole_timezone }}"
-      FTLCONF_dns_upstreams: "{{ pihole_upstream_dns }}"
-      FTLCONF_dns_hosts: "{{ pihole_local_hosts | map(attribute='ip') | zip(pihole_local_hosts | map(attribute='hostname')) | map('join', ' ') | join(';') }}"
       FTLCONF_dhcp_active: "{{ pihole_dhcp_active }}"
       FTLCONF_dhcp_hosts: "{{ pihole_dhcp_hosts | map(attribute='mac') | zip(pihole_dhcp_hosts | map(attribute='ip'), pihole_dhcp_hosts | map(attribute='name')) | map('join', ',') | join(';') }}"
       FTLCONF_dhcp_start: "{{ pihole_dhcp_start }}"
@@ -54,6 +52,7 @@
     volumes:
       - "{{ pihole_config_path }}:/etc/pihole"
       - "{{ pihole_dnsmasq_path }}:/etc/dnsmasq.d"
+  register: pihole_container
 
 - name: Wait for Pi-hole to become healthy
   ansible.builtin.command:
@@ -62,6 +61,22 @@
   until: pihole_health.stdout == "healthy"
   retries: 12
   delay: 10
+
+- name: Seed upstream DNS servers (fresh deploy only)
+  ansible.builtin.command:
+    cmd: >
+      docker exec pihole pihole --config dns.upstreams
+      '{{ pihole_upstream_dns.split(";") | to_json }}'
+  when: pihole_container.changed
+  changed_when: true
+
+- name: Seed local DNS hosts (fresh deploy only)
+  ansible.builtin.command:
+    cmd: >
+      docker exec pihole pihole --config dns.hosts
+      '{{ pihole_local_hosts | map(attribute="ip") | zip(pihole_local_hosts | map(attribute="hostname")) | map("join", " ") | list | to_json }}'
+  when: pihole_container.changed
+  changed_when: true
 
 - name: Set Pi-hole web password
   ansible.builtin.command:

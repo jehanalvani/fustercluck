@@ -30,8 +30,8 @@ klipper-lb runs on kube01, kube02, kube03 — any of these IPs work. kube01 (10.
 
 ### DNS ownership split
 
-- **`*.alvani.me` cluster services** — managed via `FTLCONF_dns_hosts` env var in the container. These records return only the local IP (no upstream merge). Because they are set via env var, they are locked in the Pi-hole UI — do not try to edit them there. Add/remove them in `pihole_local_hosts` in `vars/main.yml` and re-run Ansible.
-- **All other local records** (e.g. `printer.home`, `nas.local`) — add freely via the Pi-hole UI (Local DNS > DNS Records). These are stored in Pi-hole's database and are never touched by Ansible.
+- **`*.alvani.me` cluster services** — seeded from `pihole_local_hosts` in `vars/main.yml` on fresh deploys only (`pihole --config dns.hosts`). After initial deploy these are editable in the Pi-hole UI (Local DNS > DNS Records) and Ansible will not overwrite them. To force a re-seed, recreate the container and re-run the role.
+- **All other local records** (e.g. `printer.home`, `nas.local`) — add freely via the Pi-hole UI. These are stored in Pi-hole's database and are never touched by Ansible.
 
 ## DHCP
 
@@ -55,23 +55,16 @@ Key config in `roles/pihole/vars/main.yml`:
 
 ## Adding a New Cluster Service
 
-Add an entry to `pihole_local_hosts` in `vars/main.yml`:
-```yaml
-- { ip: "{{ pihole_ingress_ip }}", hostname: "newservice.alvani.me" }
-```
-Then re-run the Ansible role. The container will be recreated with the updated `FTLCONF_dns_hosts` env var.
-
-## Manual Recovery (without Ansible)
-
-`FTLCONF_dns_hosts` is set at container startup. To update DNS entries without Ansible, recreate the container:
+Add an entry to `pihole_local_hosts` in `vars/main.yml` and recreate the Pi-hole container so the seed task runs:
 
 ```bash
 # On 20-size:
 docker stop pihole && docker rm pihole
-# Then re-run Ansible
 ansible-playbook 20-size_config.yml --tags pihole
 ```
 
+Alternatively, add the DNS record directly in the Pi-hole UI (Local DNS > DNS Records) — it will persist and never be overwritten by Ansible.
+
 ## Upstream DNS
 
-`185.37.37.37` (Unlocator SmartDNS for geo-unblocking) with `1.1.1.1` (Cloudflare) as fallback.
+`185.37.37.37` (Unlocator SmartDNS for geo-unblocking) with `1.1.1.1` (Cloudflare) as fallback. Editable in the Pi-hole UI under **Settings > DNS**. Seeded from `pihole_upstream_dns` in `vars/main.yml` on fresh deploys only.
