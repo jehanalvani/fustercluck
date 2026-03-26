@@ -101,7 +101,5 @@
       tags: nfs          
     - role: docker
       tags: docker
-    - role: pihole
-      tags: pihole
     
     

@@ -2,10 +2,20 @@
 pihole_config_path: /opt/pihole/etc-pihole
 pihole_dnsmasq_path: /opt/pihole/etc-dnsmasq.d
 pihole_network_name: lan
-pihole_lan_interface: enp42s0
+pihole_lan_interface: eth0  # RPi4 wired NIC — verify with `ip link show` on kube01
 pihole_ip: 10.0.1.250
 pihole_timezone: America/Los_Angeles
 pihole_upstream_dns: "185.37.37.37;1.1.1.1"
+pihole_dhcp_fallback_dns: "10.0.1.1"  # Router — clients fall back here if Pi-hole is unresponsive
+
+# Block adlists. This is the full desired set — lists not in this array will
+# be removed from Pi-hole on the next playbook run (fully declarative).
+# To add a new list: add it here and re-run pihole.yml.
+pihole_adlists:
+  - address: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts"
+    comment: "StevenBlack unified hosts"
+  - address: "https://lists.zachlagden.uk/lists/all_domains.txt"
+    comment: "Zach's List"
 pihole_dhcp_active: "true"
 pihole_dhcp_start: 10.0.1.2
 pihole_dhcp_end: 10.0.1.249

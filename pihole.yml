@@ -1,0 +1,18 @@
+---
+# Deploys Pi-hole to the pihole host (kube01.local)
+# Pi-hole runs as a Docker container with macvlan networking, giving it a
+# dedicated LAN IP (10.0.1.250) independent of k3s cluster health.
+#
+# Migration from 20-size: stop and remove the container on 20-size first:
+#   docker stop pihole && docker rm pihole
+# Then run this playbook.
+
+- hosts: pihole
+  remote_user: ansible
+  become: yes
+
+  roles:
+    - role: docker
+      tags: docker
+    - role: pihole
+      tags: pihole

@@ -1,0 +1,11 @@
+---
+- name: Restart Pi-hole container
+  community.docker.docker_container:
+    name: pihole
+    state: started
+    restart: true
+
+- name: Update Pi-hole gravity
+  ansible.builtin.command:
+    cmd: docker exec pihole pihole -g
+  changed_when: true

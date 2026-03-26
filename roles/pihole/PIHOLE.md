@@ -1,6 +1,6 @@
 # Pi-hole
 
-Split-horizon DNS, ad-blocking, and DHCP for the home network. Runs as a Docker container on 20-size with its own LAN IP via macvlan — no NAT or port-forwarding needed.
+Split-horizon DNS, ad-blocking, and DHCP for the home network. Runs as a Docker container on **kube01** with its own LAN IP via macvlan — no NAT or port-forwarding needed.
 
 ## Access
 
@@ -14,9 +14,19 @@ Pi-hole intentionally runs outside the k3s cluster as a standalone Docker contai
 
 Exposing port 53 from k8s is also awkward: CoreDNS already occupies port 53 cluster-internally, so pihole would need either `hostNetwork: true` (pinning it to one node) or a LoadBalancer service with a dedicated LAN IP — adding a dependency on klipper-lb just to get a stable DNS address. The macvlan approach gives a cleaner, more stable result with less complexity.
 
+## Why kube01, not 20-size?
+
+Pi-hole was previously on 20-size but was moved because 20-size is the most loaded machine in the cluster — NFS server, GPU, Plex, Shinobi. NFS lock events caused host-level resource starvation that made Pi-hole's DNS daemon unresponsive (even though the web UI still responded), taking down DNS for the entire LAN.
+
+kube01 runs only the k3s control plane and Traefik. It's the lightest-loaded node and is already the most critical to keep alive (Traefik ingress). Co-locating DNS with the control plane aligns failure domains: if kube01 is down, the cluster is down anyway.
+
+## DNS Fallback
+
+DHCP leases hand out both `10.0.1.250` (Pi-hole) and `10.0.1.1` (router) as DNS servers via `dhcp-option=6`. Clients automatically fall back to the router's DNS if Pi-hole is unresponsive, preventing a full LAN outage. Configured in `roles/pihole/tasks/main.yml` via `03-dhcp-dns-fallback.conf` in the dnsmasq config directory.
+
 ## Architecture
 
-Pi-hole uses a Docker macvlan network (`lan`) on 20-size's physical LAN interface (`enp42s0`), giving the container a real LAN IP (10.0.1.250) that is directly reachable by all LAN clients.
+Pi-hole uses a Docker macvlan network (`lan`) on kube01's physical LAN interface (`eth0`), giving the container a real LAN IP (10.0.1.250) that is directly reachable by all LAN clients.
 
 Pi-hole is the DHCP server for the LAN — clients receive `10.0.1.250` directly as their DNS server, so Pi-hole sees real client IPs in query logs (not the router IP).
 

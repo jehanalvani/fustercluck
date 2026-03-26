@@ -60,12 +60,12 @@ For a fresh cluster:
 
 - **common**: Baseline for all nodes — users, packages, `/etc/hosts` population (critical: k3s Go tools need static DNS, not mDNS), cgroups, libseccomp2 workaround
 - **k3s**: Cluster install split into `server.yml`, `agent.yml`, `node_config.yml` (labels/taints), `kubeconfig.yml`
-- **docker**: Docker CE install on 20-size (for Pi-hole container)
-- **pihole**: Pi-hole v6 on Docker with macvlan (`lan` driver) — gets its own LAN IP (10.0.1.250), runs DHCP for the 10.0.1.0/24 subnet
+- **docker**: Docker CE install on 20-size and kube01
+- **pihole**: Pi-hole v6 on Docker with macvlan (`lan` driver) on **kube01** — gets its own LAN IP (10.0.1.250), runs DHCP for the 10.0.1.0/24 subnet. DHCP leases hand out the router (10.0.1.1) as secondary DNS fallback.
 
 ### Why Pi-hole is not on k8s
 
-Pi-hole runs as a Docker container on 20-size with a macvlan network rather than in k8s because: DNS is foundational (k8s failure would break DNS), port 53 conflicts with CoreDNS, and macvlan gives Pi-hole a real LAN IP without port-forwarding complexity. See `roles/pihole/PIHOLE.md` for details.
+Pi-hole runs as a Docker container on kube01 with a macvlan network rather than in k8s because: DNS is foundational (k8s failure would break DNS), port 53 conflicts with CoreDNS, and macvlan gives Pi-hole a real LAN IP without port-forwarding complexity. It was moved from 20-size because NFS lock events on 20-size caused host-level resource starvation that made FTL unresponsive. See `roles/pihole/PIHOLE.md` for details.
 
 ### Kubernetes Applications
 

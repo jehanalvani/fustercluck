@@ -36,7 +36,7 @@
   when: ansible_lsb.id == "Ubuntu" 
     
 - include_tasks: docker-ce_setup.yml
-  when: inventory_hostname in groups ["docker"]
+  when: "'docker' in groups and inventory_hostname in groups['docker']"
 
 # - include_tasks: docker.io.yml
 #   when: inventory_hostname in groups["kube"]

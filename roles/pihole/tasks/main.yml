@@ -1,7 +1,11 @@
 ---
 # tasks file for roles/pihole
-# Deploys Pi-hole v6 with macvlan networking on 20-size
+# Deploys Pi-hole v6 with macvlan networking on kube01
 # Pi-hole gets its own LAN IP (10.0.1.250) — no NAT/DNAT needed
+#
+# Source of truth: all Ansible-managed settings (DNS, adlists, DHCP) are
+# applied on every run. UI edits to these settings will be overwritten.
+# Client names, groups, and allow/deny entries are UI-managed and untouched.
 
 - name: Create Pi-hole config directories
   ansible.builtin.file:
@@ -11,6 +15,13 @@
   loop:
     - "{{ pihole_config_path }}"
     - "{{ pihole_dnsmasq_path }}"
+
+- name: Configure DHCP secondary DNS fallback
+  ansible.builtin.copy:
+    content: "dhcp-option=6,{{ pihole_ip }},{{ pihole_dhcp_fallback_dns }}\n"
+    dest: "{{ pihole_dnsmasq_path }}/03-dhcp-dns-fallback.conf"
+    mode: "0644"
+  notify: Restart Pi-hole container
 
 - name: Create Docker macvlan network on LAN interface
   community.docker.docker_network:
@@ -42,13 +53,15 @@
         ipv4_address: "{{ pihole_ip }}"
     env:
       TZ: "{{ pihole_timezone }}"
+      # WEBPASSWORD is applied by the container entrypoint on every start.
+      # Changing this value in vault will recreate the container with the new password.
+      WEBPASSWORD: "{{ pihole_web_password }}"
       FTLCONF_dhcp_active: "{{ pihole_dhcp_active }}"
       FTLCONF_dhcp_hosts: "{{ pihole_dhcp_hosts | map(attribute='mac') | zip(pihole_dhcp_hosts | map(attribute='ip'), pihole_dhcp_hosts | map(attribute='name')) | map('join', ',') | join(';') }}"
       FTLCONF_dhcp_start: "{{ pihole_dhcp_start }}"
       FTLCONF_dhcp_end: "{{ pihole_dhcp_end }}"
       FTLCONF_dhcp_router: "{{ pihole_dhcp_router }}"
       FTLCONF_dhcp_leaseTime: "{{ pihole_dhcp_leasetime }}"
-      WEBPASSWORD: "pihole"
     volumes:
       - "{{ pihole_config_path }}:/etc/pihole"
       - "{{ pihole_dnsmasq_path }}:/etc/dnsmasq.d"
@@ -62,28 +75,76 @@
   retries: 12
   delay: 10
 
-- name: Seed upstream DNS servers (fresh deploy only)
-  ansible.builtin.command:
-    cmd: >
-      docker exec pihole pihole --config dns.upstreams
-      '{{ pihole_upstream_dns.split(";") | to_json }}'
-  when: pihole_container.changed
+- name: Authenticate with Pi-hole API
+  ansible.builtin.uri:
+    url: "http://{{ pihole_ip }}/api/auth"
+    method: POST
+    body_format: json
+    body:
+      password: "{{ pihole_web_password }}"
+    status_code: 200
+  register: pihole_auth
+
+# --- DNS config (always applied) ---
+# pihole_upstream_dns and pihole_local_hosts in vars/main.yml are the source
+# of truth. UI edits to these will be overwritten on next playbook run.
+
+- name: Apply upstream DNS and local host overrides
+  ansible.builtin.uri:
+    url: "http://{{ pihole_ip }}/api/config/dns"
+    method: PATCH
+    body_format: json
+    body:
+      config:
+        dns:
+          upstreams: "{{ pihole_upstream_dns.split(';') }}"
+          hosts: "{{ pihole_local_hosts | map(attribute='ip') | zip(pihole_local_hosts | map(attribute='hostname')) | map('join', ' ') | list }}"
+    headers:
+      sid: "{{ pihole_auth.json.session.sid }}"
+    status_code: 200
   changed_when: true
 
-- name: Seed local DNS hosts (fresh deploy only)
-  ansible.builtin.command:
-    cmd: >
-      docker exec pihole pihole --config dns.hosts
-      '{{ pihole_local_hosts | map(attribute="ip") | zip(pihole_local_hosts | map(attribute="hostname")) | map("join", " ") | list | to_json }}'
-  when: pihole_container.changed
-  changed_when: true
+# --- Adlist reconciliation (always applied, declarative) ---
+# pihole_adlists in vars/main.yml is the full desired set. Lists added via
+# the UI that are not in vars will be removed on next playbook run.
 
-- name: Set Pi-hole web password
-  ansible.builtin.command:
-    cmd: docker exec pihole pihole setpassword "{{ pihole_web_password }}"
-  changed_when: true
+- name: Get current block adlists
+  ansible.builtin.uri:
+    url: "http://{{ pihole_ip }}/api/lists?type=block"
+    headers:
+      sid: "{{ pihole_auth.json.session.sid }}"
+  register: pihole_current_lists
 
+- name: Add missing adlists
+  ansible.builtin.uri:
+    url: "http://{{ pihole_ip }}/api/lists"
+    method: POST
+    body_format: json
+    body:
+      address: "{{ item.address }}"
+      comment: "{{ item.comment | default('') }}"
+      type: block
+      enabled: true
+    headers:
+      sid: "{{ pihole_auth.json.session.sid }}"
+    status_code: [200, 201]
+  loop: "{{ pihole_adlists }}"
+  when: item.address not in (pihole_current_lists.json.lists | map(attribute='address') | list)
+  changed_when: true
+  notify: Update Pi-hole gravity
+
+- name: Remove adlists not in Ansible config
+  ansible.builtin.uri:
+    url: "http://{{ pihole_ip }}/api/lists/{{ item.id }}"
+    method: DELETE
+    headers:
+      sid: "{{ pihole_auth.json.session.sid }}"
+    status_code: [200, 204]
+  loop: "{{ pihole_current_lists.json.lists }}"
+  when: item.address not in (pihole_adlists | map(attribute='address') | list)
+  changed_when: true
+  notify: Update Pi-hole gravity
 
 - name: Pi-hole deployed
-  debug:
+  ansible.builtin.debug:
     msg: "Pi-hole is running at http://{{ pihole_ip }}/admin"
