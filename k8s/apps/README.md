@@ -15,6 +15,7 @@ helm repo update
 
 ```bash
 helm upgrade --install <appname> bjw-s/app-template \
+  --version 3.6.1 \
   --namespace <namespace> \
   --create-namespace \
   --values k8s/apps/<namespace>/<appname>/values.yml
@@ -24,6 +25,7 @@ Example - Deploy Sonarr:
 
 ```bash
 helm upgrade --install sonarr bjw-s/app-template \
+  --version 3.6.1 \
   --namespace media \
   --create-namespace \
   --values k8s/apps/media/sonarr/values.yml

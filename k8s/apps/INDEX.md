@@ -192,6 +192,7 @@ Before deploying any applications:
 ### Deploy Single Application
 ```bash
 helm upgrade --install sonarr bjw-s/app-template \
+  --version 3.6.1 \
   --namespace media \
   --create-namespace \
   --values k8s/apps/media/sonarr/values.yml
@@ -201,6 +202,7 @@ helm upgrade --install sonarr bjw-s/app-template \
 ```bash
 for app in nzbget transmission radarr sonarr lidarr readarr prowlarr ombi; do
   helm upgrade --install $app bjw-s/app-template \
+    --version 3.6.1 \
     --namespace media \
     --create-namespace \
     --values k8s/apps/media/$app/values.yml
