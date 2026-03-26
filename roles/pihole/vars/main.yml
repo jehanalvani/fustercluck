@@ -7,6 +7,10 @@ pihole_ip: 10.0.1.250
 pihole_timezone: America/Los_Angeles
 pihole_upstream_dns: "185.37.37.37;1.1.1.1"
 pihole_dhcp_fallback_dns: "10.0.1.1"  # Router — clients fall back here if Pi-hole is unresponsive
+# Macvlan shim: kube01 host cannot communicate with its own macvlan containers
+# via eth0 (macvlan isolation). A shim interface on the same parent allows
+# host→Pi-hole communication, which fixes systemd-resolved and CoreDNS forwarding.
+pihole_host_shim_ip: "10.0.1.251"
 
 # Block adlists. This is the full desired set — lists not in this array will
 # be removed from Pi-hole on the next playbook run (fully declarative).

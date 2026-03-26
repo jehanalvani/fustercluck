@@ -7,6 +7,99 @@
 # applied on every run. UI edits to these settings will be overwritten.
 # Client names, groups, and allow/deny entries are UI-managed and untouched.
 
+# --- Host networking fixes for macvlan isolation ---
+# kube01 cannot reach its own macvlan container (Pi-hole) via eth0 due to macvlan
+# isolation. A shim interface on the same parent (eth0) bridges this gap.
+# Without it: systemd-resolved and CoreDNS both fail to forward DNS upstream.
+
+- name: Create macvlan shim systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/macvlan-pihole-shim.service
+    mode: "0644"
+    content: |
+      [Unit]
+      Description=Macvlan shim — allows kube01 host to reach Pi-hole macvlan container
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      ExecStartPre=-/sbin/ip link del macvlan-pihole-shim
+      ExecStart=/sbin/ip link add macvlan-pihole-shim link {{ pihole_lan_interface }} type macvlan mode bridge
+      ExecStart=/sbin/ip addr add {{ pihole_host_shim_ip }}/32 dev macvlan-pihole-shim
+      ExecStart=/sbin/ip link set macvlan-pihole-shim up
+      ExecStart=/sbin/ip route add {{ pihole_ip }}/32 dev macvlan-pihole-shim
+      ExecStop=/sbin/ip link del macvlan-pihole-shim
+
+      [Install]
+      WantedBy=multi-user.target
+  notify: Enable and start macvlan-pihole-shim
+
+- name: Create systemd-resolved global DNS config
+  ansible.builtin.file:
+    path: /etc/systemd/resolved.conf.d
+    state: directory
+    mode: "0755"
+
+- name: Configure systemd-resolved to use Pi-hole via global (non-interface-bound) DNS
+  ansible.builtin.copy:
+    dest: /etc/systemd/resolved.conf.d/pihole.conf
+    mode: "0644"
+    content: |
+      # Global DNS config — not bound to eth0 interface, so traffic uses the
+      # kernel routing table and reaches Pi-hole via the macvlan-pihole-shim.
+      [Resolve]
+      DNS={{ pihole_ip }}
+      FallbackDNS={{ pihole_dhcp_fallback_dns }} 1.1.1.1
+      Domains=~.
+  notify: Restart systemd-resolved
+
+# --- CoreDNS ConfigMap patch ---
+# CoreDNS forwards to /etc/resolv.conf by default, which is systemd-resolved's
+# stub (127.0.0.53). Point it directly at Pi-hole so cluster pods resolve correctly.
+# Note: k3s may reset the coredns ConfigMap on upgrades — re-run this playbook after.
+
+- name: Patch CoreDNS to forward to Pi-hole
+  ansible.builtin.command:
+    cmd: >
+      kubectl patch configmap coredns -n kube-system --type merge
+      -p '{"data":{"Corefile": null}}'
+  delegate_to: localhost
+  become: false
+  run_once: true
+  changed_when: false
+  check_mode: false
+
+- name: Update CoreDNS forward directive to use Pi-hole
+  ansible.builtin.shell: |
+    kubectl get configmap coredns -n kube-system -o json | \
+    python3 -c "
+    import sys,json
+    cm = json.load(sys.stdin)
+    cf = cm['data']['Corefile']
+    desired = 'forward . {{ pihole_ip }} {{ pihole_dhcp_fallback_dns }}'
+    if 'forward . {{ pihole_ip }}' not in cf:
+      cf = cf.replace('forward . /etc/resolv.conf', desired)
+      cm['data']['Corefile'] = cf
+      print(json.dumps(cm))
+    else:
+      print('no-change')
+    " | grep -v no-change | kubectl apply -f - || true
+  delegate_to: localhost
+  become: false
+  run_once: true
+  register: coredns_patch
+  changed_when: "'configured' in coredns_patch.stdout"
+
+- name: Restart CoreDNS if forward directive changed
+  ansible.builtin.command:
+    cmd: kubectl rollout restart deployment/coredns -n kube-system
+  delegate_to: localhost
+  become: false
+  run_once: true
+  when: coredns_patch.changed
+
 - name: Create Pi-hole config directories
   ansible.builtin.file:
     path: "{{ item }}"
