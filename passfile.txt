@@ -1,2 +1,2 @@
 #!/bin/bash
-op read "op://Private/Fustercluck vault pw/password"
+op read "op://Private/Fustercluck vault pw/password" --account alvani.1password.com

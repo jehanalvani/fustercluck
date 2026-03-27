@@ -13,7 +13,7 @@
 
 - name: Write static netplan config from current interface state
   ansible.builtin.copy:
-    dest: /etc/netplan/50-eth0-static.yaml
+    dest: /etc/netplan/50-{{ ansible_default_ipv4.interface }}-static.yaml
     owner: root
     group: root
     mode: "0600"
@@ -30,8 +30,7 @@
                 via: {{ ansible_default_ipv4.gateway }}
             nameservers:
               addresses:
-                - 10.0.1.250
-                - 10.0.1.1
+                - {{ static_dns_servers | join('\n                - ') }}
   notify: Apply netplan
 
 - name: Remove cloud-init generated netplan config

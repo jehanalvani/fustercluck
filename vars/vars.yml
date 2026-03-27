@@ -22,7 +22,12 @@ server_media_path: /snoqualmie/media/
 media_mount_path: /mnt/media/
 configs_mount_path: /mnt/configs/
 
-common_users: 
+common_users:
   - jehan
   - pi
   - ansible
+
+# DNS servers for static netplan config
+static_dns_servers:
+  - 10.0.1.250  # Pi-hole
+  - 10.0.1.1    # Router fallback
