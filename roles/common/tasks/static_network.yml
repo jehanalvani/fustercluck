@@ -1,0 +1,41 @@
+---
+# Lock the node's current IP as static via netplan.
+# Prevents DHCP lease loss from breaking cluster connectivity when Pi-hole
+# (the DHCP server) is macvlan-isolated on kube01 and eth0 can't renew.
+
+- name: Disable cloud-init network management
+  ansible.builtin.copy:
+    content: "network: {config: disabled}\n"
+    dest: /etc/cloud/cloud.cfg.d/99-disable-network-config.cfg
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write static netplan config from current interface state
+  ansible.builtin.copy:
+    dest: /etc/netplan/50-eth0-static.yaml
+    owner: root
+    group: root
+    mode: "0600"
+    content: |
+      network:
+        version: 2
+        ethernets:
+          {{ ansible_default_ipv4.interface }}:
+            dhcp4: false
+            addresses:
+              - {{ ansible_default_ipv4.address }}/{{ ansible_default_ipv4.prefix }}
+            routes:
+              - to: default
+                via: {{ ansible_default_ipv4.gateway }}
+            nameservers:
+              addresses:
+                - 10.0.1.250
+                - 10.0.1.1
+  notify: Apply netplan
+
+- name: Remove cloud-init generated netplan config
+  ansible.builtin.file:
+    path: /etc/netplan/50-cloud-init.yaml
+    state: absent
+  notify: Apply netplan

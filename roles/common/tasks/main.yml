@@ -47,6 +47,13 @@
 - name: Configure Ubuntu cGroups Support on k3s cluster nodes
   include_tasks: ubuntu_cGroups.yml
   when: inventory_hostname in groups["k3s_cluster"]
+
+- name: Configure static IP to prevent DHCP lease loss
+  include_tasks: static_network.yml
+  when:
+    - inventory_hostname in groups["k3s_cluster"]
+    - ansible_default_ipv4.interface is defined
+    - ansible_os_family == "Debian"
     
 
 # - import_tasks: update_hostname.yml
