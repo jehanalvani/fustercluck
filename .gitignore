@@ -6,3 +6,4 @@ facts
 *.op
 *.cfg
 *.cfg
+passfile.txt
