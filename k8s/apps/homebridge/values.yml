@@ -22,8 +22,6 @@ controllers:
           TZ: America/Los_Angeles
           HOMEBRIDGE_CONFIG_UI: "1"
           HOMEBRIDGE_CONFIG_UI_PORT: "8080"
-          PGID: "995"
-          PUID: "1002"
         probes:
           liveness:
             enabled: true
@@ -61,7 +59,7 @@ controllers:
             memory: 256Mi
           limits:
             cpu: 500m
-            memory: 512Mi
+            memory: 1Gi
 
 service:
   main:

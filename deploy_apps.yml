@@ -201,6 +201,18 @@
     # Homebridge namespace
     # -------------------------------------------------------------------------
 
+    - name: Deploy mosquitto
+      kubernetes.core.helm:
+        name: mosquitto
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: homebridge
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/homebridge/mosquitto/values.yml
+      tags: [homebridge, mosquitto]
+
     - name: Deploy homebridge
       kubernetes.core.helm:
         name: homebridge
