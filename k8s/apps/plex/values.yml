@@ -109,8 +109,7 @@ persistence:
     globalMounts:
       - path: /config
   transcode:
-    type: persistentVolumeClaim
-    existingClaim: plex-transcode-pvc
+    type: emptyDir
     globalMounts:
       - path: /transcode
   media:
