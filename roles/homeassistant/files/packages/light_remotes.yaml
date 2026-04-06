@@ -3,7 +3,9 @@
 # Do not edit on the server — changes will be overwritten on next run.
 #
 # All Lutron Pico light remote automations. Uses the light_pico_remote blueprint.
-# Remotes controlling HomeKit-managed switches are excluded until migrated.
+# Remotes controlling HomeKit-managed switches are excluded until migrated:
+#   Living Room Pico (2-button, PJ2-2B)  — controls switch.living_room_fireplace (HomeKit)
+#   Garage Entry GE Pico                 — controls switch.garage_lights (HomeKit)
 #
 # To add a new remote:
 #   1. Get device ID from HA → Settings → Devices → search Lutron

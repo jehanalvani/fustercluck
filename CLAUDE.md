@@ -23,6 +23,10 @@ ansible-playbook 20-size_config.yml --vault-id fustercluck@passfile.txt
 # Create k8s secrets from vault-encrypted values
 ansible-playbook create_secrets.yml --vault-id fustercluck@passfile.txt
 
+# Deploy HA config files (configuration.yaml, blueprints, packages, secrets) to NFS volume
+# Run after editing any file under roles/homeassistant/files/, then reload HA YAML config
+ansible-playbook create_ha_config.yml
+
 # Deploy all applications via Helm (supports --tags media, plex, monitoring, homeautomation, security)
 ansible-playbook deploy_apps.yml --vault-id fustercluck@passfile.txt --tags media
 
@@ -53,6 +57,7 @@ For a fresh cluster:
 3. `20-size_config.yml` — configure NFS exports, Docker, Pi-hole on 20-size
 4. `create_secrets.yml` — populate k8s secrets from vault
 5. `deploy_apps.yml` — Helm install all applications
+6. `create_ha_config.yml` — deploy HA config files to NFS volume
 
 ## Architecture
 
@@ -74,8 +79,51 @@ All apps use the **bjw-s/app-template** OCI Helm chart (v3.6.1). App values live
 - **media**: nzbget, transmission, radarr, sonarr, lidarr, readarr, prowlarr, ombi
 - **plex**: Plex (GPU-accelerated, pinned to 20-size via taint toleration + nodeSelector)
 - **monitoring**: prometheus, grafana, influxdb, node-exporter (DaemonSet), kube-state-metrics, alloy (→ Grafana Cloud)
-- **homeautomation**: home-assistant (hostNetwork=true, pinned to kube02)
+- **homeautomation**: home-assistant (hostNetwork=true, pinned to kube02). Config managed via `create_ha_config.yml` — see below.
 - **security**: shinobi (video surveillance, pinned to 20-size)
+
+### Home Assistant Config Management
+
+HA config is split between git-managed files (deployed by `create_ha_config.yml`) and HA-owned files (written by the UI). Do not edit git-managed files directly on the server — they will be overwritten.
+
+**Git-managed** (`roles/homeassistant/files/` → `/whidbey/configs/homeautomation/home-assistant-config/`):
+- `configuration.yaml` — core config; enables `homeassistant.packages: !include_dir_named packages`
+- `blueprints/automation/light_pico_remote.yaml` — Lutron Pico 5-button light remote blueprint
+- `packages/light_remotes.yaml` — all Pico light remote automations
+- `secrets.yaml` — Amcrest camera RTSP/snapshot URLs (rendered from vault)
+
+**HA-owned** (not tracked in git):
+- `automations.yaml` — UI-created automations (empty; git-managed ones live in packages/)
+- `.storage/` — integration config, entity registry, device registry
+
+**Workflow for adding/changing a git-managed automation:**
+1. Edit the relevant file under `roles/homeassistant/files/`
+2. `ansible-playbook create_ha_config.yml`
+3. In HA: Developer Tools → YAML → All YAML configuration (or Reload Automations)
+
+**Lutron Pico remote inventory:**
+
+| Remote | Status | Primary Light | Secondary |
+|--------|--------|---------------|-----------|
+| Main Bedroom Jehan's Light Remote | ✓ automated | light.jehans_lamp | light.lindsays_lamp |
+| Main Bedroom Lindsay's Light Remote | ✓ automated | light.lindsays_lamp | light.jehans_lamp |
+| Front Porch Pico | ✓ automated | light.front_porch_lights | — |
+| Garage Entry Hallway Light Pico | ✓ automated | light.garage_entry_main_lights | — |
+| Stairwell Pico | ✓ automated | light.stairwell_light | — |
+| Upstairs Hallway Laundry Side | ✓ automated | light.upstairs_hallway_main_lights | — |
+| Upstairs Hallway Master Bedroom Door | ✓ automated | light.upstairs_hallway_main_lights | — |
+| Office Office Remote | ✓ automated | light.office_lamp | — |
+| Living Room Back Door | Lutron direct | light.living_room_overhead | — |
+| Garage Entry GE Pico | HomeKit | switch.garage_lights | — |
+| Living Room Pico (2-button) | HomeKit | switch.living_room_fireplace | — |
+| Aubrey's Room Remote | Shade remote | — | — |
+| Iain's Room Remote | Shade remote | — | — |
+| Master Bathroom Remote | Shade remote | — | — |
+| Play Room Remote | Shade remote (Lindsay's office) | — | — |
+| Jehan's Audio Remote | Audio | — | — |
+| Jehan's Shade Remote | Shades | — | — |
+| Office Audio Pico | Unused | — | — |
+| Kitchen Downstairs Remote | Lutron shade groups (FourGroupRemote) | — | — |
 
 ### Storage
 
