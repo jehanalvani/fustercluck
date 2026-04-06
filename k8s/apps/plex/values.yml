@@ -102,6 +102,23 @@ ingress:
         hosts:
           - plex.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: plex.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: plex-lan-tls
+        hosts:
+          - plex.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

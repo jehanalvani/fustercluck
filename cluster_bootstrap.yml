@@ -160,3 +160,63 @@
       kubernetes.core.k8s:
         src: /home/ansible/k8s/infrastructure/traefik/dashboard-ingress.yml
         state: present
+
+    - name: Apply Pi-hole ingress for pihole.lan
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/pihole/ingress.yml
+        state: present
+
+    # CoreDNS: restore Corefile key (k3s can lose it on upgrades) and add .lan forwarding
+    # The Corefile key must exist or the coredns pod will fail to mount its config volume.
+    # Using Pi-hole as the single forwarder prevents .lan NXDOMAIN from external resolvers.
+    - name: Restore CoreDNS Corefile and set Pi-hole as forwarder
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: coredns
+            namespace: kube-system
+          data:
+            Corefile: |
+              .:53 {
+                  errors
+                  health
+                  ready
+                  kubernetes cluster.local in-addr.arpa ip6.arpa {
+                    pods insecure
+                    fallthrough in-addr.arpa ip6.arpa
+                  }
+                  hosts /etc/coredns/NodeHosts {
+                    ttl 60
+                    reload 15s
+                    fallthrough
+                  }
+                  prometheus :9153
+                  forward . 10.0.1.250
+                  cache 30
+                  loop
+                  reload
+                  loadbalance
+                  import /etc/coredns/custom/*.override
+              }
+              import /etc/coredns/custom/*.server
+
+    - name: Apply CoreDNS custom .lan forwarding
+      kubernetes.core.k8s:
+        src: /home/ansible/k8s/infrastructure/coredns/coredns-custom.yml
+        state: present
+
+    - name: Restart CoreDNS to pick up custom config
+      kubernetes.core.k8s:
+        state: patched
+        kind: Deployment
+        name: coredns
+        namespace: kube-system
+        definition:
+          spec:
+            template:
+              metadata:
+                annotations:
+                  kubectl.kubernetes.io/restartedAt: "{{ ansible_date_time.iso8601 }}"

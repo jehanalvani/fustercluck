@@ -30,7 +30,9 @@
                 via: {{ ansible_default_ipv4.gateway }}
             nameservers:
               addresses:
-                - {{ static_dns_servers | join('\n                - ') }}
+              {% for dns in static_dns_servers %}
+                - {{ dns }}
+              {% endfor %}
   notify: Apply netplan
 
 - name: Remove cloud-init generated netplan config

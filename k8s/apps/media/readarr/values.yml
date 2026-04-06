@@ -51,6 +51,23 @@ ingress:
         hosts:
           - readarr.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: readarr.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: readarr-lan-tls
+        hosts:
+          - readarr.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

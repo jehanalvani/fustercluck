@@ -49,6 +49,23 @@ pihole_local_hosts:
   - { ip: "10.0.1.30", hostname: "plex.alvani.me" }
   - { ip: "10.0.1.30", hostname: "nzbget.alvani.me" }
   - { ip: "10.0.1.30", hostname: "transmission.alvani.me" }
+  - { ip: "10.0.1.30", hostname: "home-assistant.alvani.me" }
+  - { ip: "10.0.1.30", hostname: "homeassistant.alvani.me" }
+  # .lan entries — explicit records needed because Pi-hole v6 FTL intercepts
+  # .lan as its local domain, which overrides dnsmasq address=/.lan/ wildcards.
+  - { ip: "10.0.1.30", hostname: "home-assistant.lan" }
+  - { ip: "10.0.1.30", hostname: "homeassistant.lan" }
+  - { ip: "10.0.1.30", hostname: "lidarr.lan" }
+  - { ip: "10.0.1.30", hostname: "nzbget.lan" }
+  - { ip: "10.0.1.30", hostname: "ombi.lan" }
+  - { ip: "10.0.1.30", hostname: "pihole.lan" }
+  - { ip: "10.0.1.30", hostname: "plex.lan" }
+  - { ip: "10.0.1.30", hostname: "prowlarr.lan" }
+  - { ip: "10.0.1.30", hostname: "radarr.lan" }
+  - { ip: "10.0.1.30", hostname: "readarr.lan" }
+  - { ip: "10.0.1.30", hostname: "shinobi.lan" }
+  - { ip: "10.0.1.30", hostname: "sonarr.lan" }
+  - { ip: "10.0.1.30", hostname: "transmission.lan" }
 
 pihole_dhcp_hosts:
   - { mac: "C8:9E:43:CF:59:30", ip: "10.0.1.6",   name: "living-room-rbs850" }
@@ -62,8 +79,7 @@ pihole_dhcp_hosts:
   - { mac: "00:17:88:24:CF:1F", ip: "10.0.1.66",  name: "garage-hue-bridge" }
   - { mac: "5C:CF:7F:59:F1:29", ip: "10.0.1.9",   name: "opengarage" }
   - { mac: "DC:A6:32:A3:84:FF", ip: "10.0.1.30",  name: "kube01" }
-  - { mac: "D8:3A:D0:18:DE:AA", ip: "10.0.1.50",  name: "kube02" }
+  - { mac: "D8:3A:DD:18:DE:AA", ip: "10.0.1.50",  name: "kube02" }
   - { mac: "DC:A6:32:11:6A:A7", ip: "10.0.1.49",  name: "kube03" }
   - { mac: "B4:2E:99:A6:31:F2", ip: "10.0.1.44",  name: "gms" }
-  - { mac: "F0:18:98:ED:17:FC", ip: "10.0.1.55",  name: "jehans-mac-mini" }
   - { mac: "28:AF:42:18:3E:2C", ip: "10.0.1.183", name: "samsung-living-room-tv" }

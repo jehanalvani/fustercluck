@@ -1,0 +1,21 @@
+---
+# Enable NTP on cameras and point at the router (10.0.1.1).
+# NTP disabled by default on Amcrest firmware — without it, clock drift breaks
+# ONVIF authentication (WS-Security rejects timestamps >5s from server time).
+
+- name: Enable NTP and set server to router
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}/cgi-bin/configManager.cgi\
+          ?action=setConfig\
+          &NTP.Enable=true\
+          &NTP.Address=10.0.1.1\
+          &NTP.Port=123\
+          &NTP.UpdatePeriod=10"
+    method: GET
+    url_username: automation
+    url_password: "{{ amcrest_automation_password }}"
+    return_content: true
+    status_code: 200
+  register: result
+  failed_when: "'OK' not in result.content"
+  no_log: true

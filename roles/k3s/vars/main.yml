@@ -15,7 +15,7 @@ k3s_node_config:
       - "nvidia.com/gpu=true"
   "kube02.local":
     node_labels:
-      - "homekit-bridge=true"
+      - "homeautomation=true"
   "kube03.local":
     node_labels:
       - "monitoring=true"

@@ -57,6 +57,23 @@ ingress:
         hosts:
           - prowlarr.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: prowlarr.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: prowlarr-lan-tls
+        hosts:
+          - prowlarr.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

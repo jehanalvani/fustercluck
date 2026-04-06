@@ -51,6 +51,23 @@ ingress:
         hosts:
           - sonarr.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: sonarr.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: sonarr-lan-tls
+        hosts:
+          - sonarr.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

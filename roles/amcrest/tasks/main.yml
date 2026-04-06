@@ -10,3 +10,7 @@
 - name: Configure image orientation
   ansible.builtin.import_tasks: setup_image.yml
   tags: image
+
+- name: Configure NTP
+  ansible.builtin.import_tasks: setup_ntp.yml
+  tags: ntp

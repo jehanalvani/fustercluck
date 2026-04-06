@@ -29,6 +29,13 @@ metadata:
 apiVersion: v1
 kind: Namespace
 metadata:
+  name: homeautomation
+  labels:
+    name: homeautomation
+---
+apiVersion: v1
+kind: Namespace
+metadata:
   name: security
   labels:
     name: security

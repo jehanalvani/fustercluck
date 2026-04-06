@@ -10,9 +10,9 @@
     cmd: docker exec pihole pihole -g
   changed_when: true
 
-- name: Enable and start macvlan-pihole-shim
+- name: Enable and start macvlan-shim
   ansible.builtin.systemd:
-    name: macvlan-pihole-shim
+    name: macvlan-shim
     enabled: true
     state: started
     daemon_reload: true

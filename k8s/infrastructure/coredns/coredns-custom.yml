@@ -1,0 +1,24 @@
+# CoreDNS custom configuration
+#
+# Creates the coredns-custom ConfigMap referenced by the k3s CoreDNS deployment via
+# `import /etc/coredns/custom/*.server` in the Corefile.
+#
+# lan.server — adds a dedicated server block for .lan queries, forwarding them
+# directly to Pi-hole (10.0.1.250). Without this, .lan names fail inside the
+# cluster because CoreDNS's default forward uses /etc/resolv.conf which goes
+# through systemd-resolved. The dedicated block guarantees Pi-hole handles .lan.
+#
+# Apply: kubectl apply -f coredns-custom.yml
+# Restart CoreDNS after applying: kubectl rollout restart deployment/coredns -n kube-system
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns-custom
+  namespace: kube-system
+data:
+  lan.server: |
+    lan:53 {
+        errors
+        cache 30
+        forward . 10.0.1.250
+    }

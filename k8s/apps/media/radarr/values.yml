@@ -51,6 +51,23 @@ ingress:
         hosts:
           - radarr.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: radarr.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: radarr-lan-tls
+        hosts:
+          - radarr.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

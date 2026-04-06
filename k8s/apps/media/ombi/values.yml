@@ -58,6 +58,23 @@ ingress:
         hosts:
           - ombi.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: ombi.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: ombi-lan-tls
+        hosts:
+          - ombi.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

@@ -1,0 +1,137 @@
+# Chart: bjw-s/app-template
+# Repo: https://bjw-s.github.io/helm-charts
+# Home Assistant - Home automation platform
+#
+# hostNetwork: true is required for mDNS/UPnP device discovery and HomeKit bridge
+# advertising. Without it, HA cannot find devices on the LAN or be discovered
+# by Apple Home.
+#
+# Pinned to kube02 (homeautomation node).
+#
+# Image: pin to digest after first stable deploy
+# docker pull ghcr.io/home-assistant/home-assistant:stable && docker inspect ...
+
+controllers:
+  main:
+    pod:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      nodeSelector:
+        homeautomation: "true"
+      securityContext:
+        runAsUser: 1002
+        runAsGroup: 1002
+        fsGroup: 1002
+    containers:
+      main:
+        image:
+          repository: ghcr.io/home-assistant/home-assistant
+          tag: "stable"
+          pullPolicy: IfNotPresent
+        env:
+          TZ: America/Los_Angeles
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              initialDelaySeconds: 60
+              periodSeconds: 15
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              initialDelaySeconds: 60
+              periodSeconds: 15
+              failureThreshold: 5
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /
+                port: 8123
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              failureThreshold: 30
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8123
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: home-assistant.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+      - host: homeassistant.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: home-assistant-tls
+        hosts:
+          - home-assistant.alvani.me
+          - homeassistant.alvani.me
+
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: home-assistant.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+      - host: homeassistant.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: home-assistant-lan-tls
+        hosts:
+          - home-assistant.lan
+          - homeassistant.lan
+
+persistence:
+  config:
+    type: persistentVolumeClaim
+    storageClass: nfs-client
+    size: 10Gi
+    accessMode: ReadWriteOnce
+    globalMounts:
+      - path: /config

@@ -1,0 +1,63 @@
+# Pi-hole ingress for pihole.lan
+#
+# Pi-hole runs as Docker on kube01 with macvlan IP 10.0.1.250 — it is not a
+# k8s service. We expose it via a headless Service + manual Endpoints so
+# Traefik can route pihole.lan → Pi-hole admin UI, and cert-manager can
+# issue a TLS cert for it via the homelab CA.
+#
+# Pi-hole v6 serves HTTP on port 80.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pihole
+  labels:
+    name: pihole
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pihole
+  namespace: pihole
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: pihole
+  namespace: pihole
+subsets:
+  - addresses:
+      - ip: 10.0.1.250
+    ports:
+      - name: http
+        port: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pihole-lan
+  namespace: pihole
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: pihole.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: pihole
+                port:
+                  name: http
+  tls:
+    - secretName: pihole-lan-tls
+      hosts:
+        - pihole.lan

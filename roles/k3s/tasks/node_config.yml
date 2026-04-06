@@ -5,9 +5,9 @@
 - name: Apply node labels and taints
   become: yes
   block:
-    - name: Apply labels to kube02 (homekit-bridge)
+    - name: Apply labels to kube02 (homeautomation)
       ansible.builtin.command: |
-        kubectl label nodes kube02 homekit-bridge=true --overwrite
+        kubectl label nodes kube02 homekit-bridge- homeautomation=true --overwrite
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
       changed_when: true

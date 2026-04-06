@@ -52,6 +52,23 @@ ingress:
         hosts:
           - nzbget.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: nzbget.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: nzbget-lan-tls
+        hosts:
+          - nzbget.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

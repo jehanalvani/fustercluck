@@ -18,6 +18,8 @@ spec:
   isCA: true
   commonName: homelab-ca
   secretName: homelab-ca-secret
+  duration: 87600h    # 10 years — appropriate for a root CA
+  renewBefore: 720h   # renew 30 days before expiry
   privateKey:
     algorithm: ECDSA
     size: 256

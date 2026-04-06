@@ -23,7 +23,7 @@ ansible-playbook 20-size_config.yml --vault-id fustercluck@passfile.txt
 # Create k8s secrets from vault-encrypted values
 ansible-playbook create_secrets.yml --vault-id fustercluck@passfile.txt
 
-# Deploy all applications via Helm (supports --tags media, plex, monitoring, homebridge, security)
+# Deploy all applications via Helm (supports --tags media, plex, monitoring, homeautomation, security)
 ansible-playbook deploy_apps.yml --vault-id fustercluck@passfile.txt --tags media
 
 # Encrypt a new secret value
@@ -41,7 +41,7 @@ ansible-playbook <playbook> --check --vault-id fustercluck@passfile.txt
 | Host | IP | Role | Special |
 |------|----|------|---------|
 | kube01.local | 10.0.1.30 | k3s control plane | Traefik ingress, klipper-lb |
-| kube02.local | 10.0.1.50 | Worker | `homekit-bridge=true` label |
+| kube02.local | 10.0.1.50 | Worker | `homeautomation=true` label |
 | kube03.local | 10.0.1.49 | Worker | `monitoring=true` label |
 | 20-size.local | 10.0.1.203 | NFS server, GPU, media | `dedicated=media:NoSchedule` taint, Pi-hole |
 
@@ -74,7 +74,7 @@ All apps use the **bjw-s/app-template** OCI Helm chart (v3.6.1). App values live
 - **media**: nzbget, transmission, radarr, sonarr, lidarr, readarr, prowlarr, ombi
 - **plex**: Plex (GPU-accelerated, pinned to 20-size via taint toleration + nodeSelector)
 - **monitoring**: prometheus, grafana, influxdb, node-exporter (DaemonSet), kube-state-metrics, alloy (→ Grafana Cloud)
-- **homebridge**: homebridge (hostNetwork=true, affinity to kube02)
+- **homeautomation**: home-assistant (hostNetwork=true, pinned to kube02)
 - **security**: shinobi (video surveillance, pinned to 20-size)
 
 ### Storage

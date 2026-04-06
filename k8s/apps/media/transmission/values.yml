@@ -134,6 +134,23 @@ ingress:
         hosts:
           - transmission.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: transmission.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: transmission-lan-tls
+        hosts:
+          - transmission.lan
+
 persistence:
   config:
     type: persistentVolumeClaim

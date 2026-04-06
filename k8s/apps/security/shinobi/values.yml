@@ -108,6 +108,23 @@ ingress:
         hosts:
           - shinobi.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: shinobi.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: shinobi-lan-tls
+        hosts:
+          - shinobi.lan
+
 persistence:
   config:
     type: persistentVolumeClaim
@@ -126,10 +143,12 @@ persistence:
       - path: /recordings
 
   db:
-    type: persistentVolumeClaim
-    storageClass: nfs-client
-    size: 1Gi
-    accessMode: ReadWriteOnce
+    # hostPath instead of NFS PVC: MariaDB startup chown runs as root, which NFS
+    # root_squash maps to anonuid=1002 (not mysql UID 105), causing startup failure.
+    # Since shinobi is always pinned to 20-size, hostPath gives direct local access
+    # where root is real root — no squash. Data already lives at this path.
+    type: hostPath
+    hostPath: /whidbey/configs/security/shinobi-db
     globalMounts:
       - path: /var/lib/mysql
 

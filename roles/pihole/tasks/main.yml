@@ -14,7 +14,7 @@
 
 - name: Create macvlan shim systemd service
   ansible.builtin.copy:
-    dest: /etc/systemd/system/macvlan-pihole-shim.service
+    dest: /etc/systemd/system/macvlan-shim.service
     mode: "0644"
     content: |
       [Unit]
@@ -25,16 +25,16 @@
       [Service]
       Type=oneshot
       RemainAfterExit=yes
-      ExecStartPre=-/sbin/ip link del macvlan-pihole-shim
-      ExecStart=/sbin/ip link add macvlan-pihole-shim link {{ pihole_lan_interface }} type macvlan mode bridge
-      ExecStart=/sbin/ip addr add {{ pihole_host_shim_ip }}/32 dev macvlan-pihole-shim
-      ExecStart=/sbin/ip link set macvlan-pihole-shim up
-      ExecStart=/sbin/ip route add {{ pihole_ip }}/32 dev macvlan-pihole-shim
-      ExecStop=/sbin/ip link del macvlan-pihole-shim
+      ExecStartPre=-/sbin/ip link del macvlan-shim
+      ExecStart=/sbin/ip link add macvlan-shim link {{ pihole_lan_interface }} type macvlan mode bridge
+      ExecStart=/sbin/ip addr add {{ pihole_host_shim_ip }}/32 dev macvlan-shim
+      ExecStart=/sbin/ip link set macvlan-shim up
+      ExecStart=/sbin/ip route add {{ pihole_ip }}/32 dev macvlan-shim
+      ExecStop=/sbin/ip link del macvlan-shim
 
       [Install]
       WantedBy=multi-user.target
-  notify: Enable and start macvlan-pihole-shim
+  notify: Enable and start macvlan-shim
 
 - name: Create systemd-resolved global DNS config
   ansible.builtin.file:
@@ -48,7 +48,7 @@
     mode: "0644"
     content: |
       # Global DNS config — not bound to eth0 interface, so traffic uses the
-      # kernel routing table and reaches Pi-hole via the macvlan-pihole-shim.
+      # kernel routing table and reaches Pi-hole via the macvlan-shim.
       [Resolve]
       DNS={{ pihole_ip }}
       FallbackDNS={{ pihole_dhcp_fallback_dns }} 1.1.1.1
@@ -113,6 +113,13 @@
   ansible.builtin.copy:
     content: "dhcp-option=6,{{ pihole_ip }},{{ pihole_dhcp_fallback_dns }}\n"
     dest: "{{ pihole_dnsmasq_path }}/03-dhcp-dns-fallback.conf"
+    mode: "0644"
+  notify: Restart Pi-hole container
+
+- name: Configure .lan wildcard DNS to Traefik
+  ansible.builtin.copy:
+    content: "address=/.lan/10.0.1.30\n"
+    dest: "{{ pihole_dnsmasq_path }}/04-lan-wildcard.conf"
     mode: "0644"
   notify: Restart Pi-hole container
 

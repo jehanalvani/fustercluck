@@ -8,7 +8,8 @@
 #   media namespace:    nzbget, transmission, radarr, sonarr, lidarr, readarr, prowlarr, ombi
 #   plex namespace:     plex (GPU-accelerated, pinned to media node)
 #   monitoring:         node-exporter (DaemonSet), kube-state-metrics, alloy (DaemonSet → Grafana Cloud)
-#   homebridge:         homebridge (hostNetwork, pinned to kube02)
+#   homeautomation:     home-assistant (hostNetwork, pinned to kube02)
+#   homeautomation:     home-assistant (hostNetwork, pinned to kube02)
 #   security:           shinobi (multi-container, pinned to media node)
 #
 # Prerequisites:
@@ -20,6 +21,7 @@
 #   ansible-playbook deploy_apps.yml
 #   ansible-playbook deploy_apps.yml --tags media
 #   ansible-playbook deploy_apps.yml --tags plex,monitoring
+#   ansible-playbook deploy_apps.yml --tags homeautomation
 
 - hosts: k3s_server
   name: Deploy all applications to k3s cluster
@@ -198,32 +200,20 @@
       tags: [monitoring, alloy]
 
     # -------------------------------------------------------------------------
-    # Homebridge namespace
+    # Home automation namespace
     # -------------------------------------------------------------------------
 
-    - name: Deploy mosquitto
+    - name: Deploy home-assistant
       kubernetes.core.helm:
-        name: mosquitto
+        name: home-assistant
         chart_ref: oci://ghcr.io/bjw-s/helm/app-template
         chart_version: "3.6.1"
-        release_namespace: homebridge
+        release_namespace: homeautomation
         create_namespace: false
         state: present
         values_files:
-          - /home/ansible/k8s/apps/homebridge/mosquitto/values.yml
-      tags: [homebridge, mosquitto]
-
-    - name: Deploy homebridge
-      kubernetes.core.helm:
-        name: homebridge
-        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
-        chart_version: "3.6.1"
-        release_namespace: homebridge
-        create_namespace: false
-        state: present
-        values_files:
-          - /home/ansible/k8s/apps/homebridge/values.yml
-      tags: [homebridge]
+          - /home/ansible/k8s/apps/homeautomation/home-assistant/values.yml
+      tags: [homeautomation, home-assistant]
 
     # -------------------------------------------------------------------------
     # Security namespace

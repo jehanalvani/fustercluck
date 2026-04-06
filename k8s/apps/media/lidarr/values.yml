@@ -51,6 +51,23 @@ ingress:
         hosts:
           - lidarr.alvani.me
 
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: lidarr.lan
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: lidarr-lan-tls
+        hosts:
+          - lidarr.lan
+
 persistence:
   config:
     type: persistentVolumeClaim
