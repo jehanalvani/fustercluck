@@ -1,0 +1,112 @@
+blueprint:
+  name: "Lutron Pico — Light Remote"
+  description: >
+    On/Off/Raise/Lower control the primary light. Stop toggles lights
+    together: if primary is on, turns all off; otherwise turns all on at 60%.
+    Secondary light is optional — omit for single-light rooms.
+  domain: automation
+  input:
+    remote_device:
+      name: Remote
+      description: The Lutron Pico light remote device
+      selector:
+        device:
+          integration: lutron_caseta
+    primary_light:
+      name: Primary Light
+      description: Light controlled by On/Off/Raise/Lower and Stop
+      selector:
+        entity:
+          domain: light
+    secondary_light:
+      name: Secondary Light (optional)
+      description: Additional light toggled by Stop. Leave empty for single-light rooms.
+      default: ""
+      selector:
+        entity:
+          domain: light
+
+trigger:
+  - trigger: device
+    device_id: !input remote_device
+    domain: lutron_caseta
+    type: release
+    subtype: "on"
+    id: "on"
+  - trigger: device
+    device_id: !input remote_device
+    domain: lutron_caseta
+    type: release
+    subtype: "off"
+    id: "off"
+  - trigger: device
+    device_id: !input remote_device
+    domain: lutron_caseta
+    type: press
+    subtype: raise
+    id: raise
+  - trigger: device
+    device_id: !input remote_device
+    domain: lutron_caseta
+    type: press
+    subtype: lower
+    id: lower
+  - trigger: device
+    device_id: !input remote_device
+    domain: lutron_caseta
+    type: release
+    subtype: stop
+    id: stop
+
+action:
+  - variables:
+      _primary: !input primary_light
+      _secondary: !input secondary_light
+  - choose:
+      - conditions: "{{ trigger.id == 'on' }}"
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input primary_light
+            data:
+              brightness_pct: 100
+
+      - conditions: "{{ trigger.id == 'off' }}"
+        sequence:
+          - action: light.turn_off
+            target:
+              entity_id: !input primary_light
+
+      - conditions: "{{ trigger.id == 'raise' }}"
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input primary_light
+            data:
+              brightness_step_pct: 10
+
+      - conditions: "{{ trigger.id == 'lower' }}"
+        sequence:
+          - action: light.turn_on
+            target:
+              entity_id: !input primary_light
+            data:
+              brightness_step_pct: -10
+
+      - conditions: "{{ trigger.id == 'stop' }}"
+        sequence:
+          - if:
+              - "{{ is_state(_primary, 'on') }}"
+            then:
+              - action: light.turn_off
+                target:
+                  entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
+            else:
+              - action: light.turn_on
+                target:
+                  entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
+                data:
+                  brightness_pct: 60
+
+mode: single
+max_exceeded: silent

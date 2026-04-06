@@ -1,0 +1,106 @@
+# HA Package: Light Remotes
+# Managed by Ansible — create_ha_config.yml
+# Do not edit on the server — changes will be overwritten on next run.
+#
+# All Lutron Pico light remote automations. Uses the light_pico_remote blueprint.
+# Remotes controlling HomeKit-managed switches are excluded until migrated.
+#
+# To add a new remote:
+#   1. Get device ID from HA → Settings → Devices → search Lutron
+#   2. Add an entry below using the blueprint
+#   3. Run: ansible-playbook create_ha_config.yml --vault-id fustercluck@passfile.txt
+#   4. Reload HA config: Developer Tools → YAML → Reload Automations
+
+automation:
+
+  # ── Main Bedroom ──────────────────────────────────────────────────────────
+  # Two remotes, each person controls their own lamp as primary.
+  # Stop toggles both lamps together.
+
+  - alias: "Main Bedroom — Jehan's Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: f777cb31b48d7e4bc3b6ff7440f6f485
+        primary_light: light.jehans_lamp
+        secondary_light: light.lindsays_lamp
+    mode: single
+
+  - alias: "Main Bedroom — Lindsay's Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 11f744fece55e887200f1eab13bd6d50
+        primary_light: light.lindsays_lamp
+        secondary_light: light.jehans_lamp
+    mode: single
+
+  # ── Front Porch ───────────────────────────────────────────────────────────
+
+  - alias: "Front Porch — Pico Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 9bfa0205f0d2f9b6faf44f82320caa04
+        primary_light: light.front_porch_lights
+    mode: single
+
+  # ── Garage Entry ──────────────────────────────────────────────────────────
+  # Note: Garage Entry GE Pico controls garage lights via HomeKit — excluded.
+
+  - alias: "Garage Entry — Hallway Light Pico"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 097df2a9cf25c0a9948573cb8dc8ff04
+        primary_light: light.garage_entry_main_lights
+    mode: single
+
+  # ── Stairwell ─────────────────────────────────────────────────────────────
+
+  - alias: "Stairwell — Pico Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 9554e2942c4ca83e61ec16d2eed47eac
+        primary_light: light.stairwell_light
+    mode: single
+
+  # ── Upstairs Hallway ──────────────────────────────────────────────────────
+  # Two remotes at opposite ends of the hallway, same light zone.
+
+  - alias: "Upstairs Hallway — Laundry Side Pico"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: ea344d4fb59522327656c33dc5b5f08c
+        primary_light: light.upstairs_hallway_main_lights
+    mode: single
+
+  - alias: "Upstairs Hallway — Master Bedroom Door Pico"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 98e07ed0a2f1d0d06def38a2d0f60276
+        primary_light: light.upstairs_hallway_main_lights
+    mode: single
+
+  # ── Pending — awaiting light entity mapping ───────────────────────────────
+
+  # Aubrey's Room Aubrey's Remote — shade remote, not a light remote. Excluded.
+
+  # Iain's Room Iain's Bedroom Remote — shade remote, not a light remote. Excluded.
+
+  # Living Room Back Door Pico — controls living_room_overhead via Lutron directly. Excluded for now.
+
+  # Master Bathroom Master Bath Remote — shade remote, not a light remote. Excluded.
+
+  - alias: "Office — Pico Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: 2ca35e2409d5001b45d1b6d29a6d3671
+        primary_light: light.office_lamp
+    mode: single
+
+  # Unassigned Play Room Remote — shade remote for Lindsay's Office/Guest Room. Excluded.

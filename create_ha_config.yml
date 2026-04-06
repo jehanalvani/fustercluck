@@ -1,0 +1,92 @@
+---
+# Home Assistant Config Playbook
+#
+# Writes HA config files directly to the NFS-backed config volume on 20-size.
+# Run this whenever credentials change, after a fresh HA deploy, or after
+# editing any file under roles/homeassistant/files/.
+#
+# Files managed:
+#   configuration.yaml          — Core HA config (packages, homekit, http, logger)
+#   blueprints/automation/      — Reusable automation blueprints
+#   packages/light_remotes.yaml — Git-managed light remote automations
+#   secrets.yaml                — Amcrest RTSP/snapshot URLs
+#
+# automations.yaml is NOT managed here — HA owns it for UI-created automations.
+# Git-managed automations live in packages/ (light_remotes.yaml, etc.).
+# After deploying, reload HA: Developer Tools → YAML → All YAML configuration.
+#
+# UI-configured integrations store credentials in HA's .storage/core.config_entries.
+# They cannot read from secrets.yaml. If HA needs to be rebuilt, retrieve credentials
+# from vault (roles/homeassistant/vars/vault.yml) and re-add via the HA UI:
+#   Cameras:    ONVIF integration (Settings → Add Integration → ONVIF)
+#               host: 10.0.1.157/163/164, port: 80, user: admin
+#               password: vault_amcrest_admin_password (admin group required for motion events)
+#               secrets.yaml also has RTSP URLs for stream user (viewer group) if needed
+#   Netgear:    host 10.0.1.1, user admin, password vault_netgear_admin_password
+#   Hue:        bridge 10.0.1.66, api_key vault_hue_api_key
+#   OpenGarage: host 10.0.1.9, device_key vault_opengarage_device_key
+#   Lutron:     pair via zeroconf — certs auto-generated to lutron_caseta-*.pem
+#
+# Usage:
+#   ansible-playbook create_ha_config.yml --vault-id fustercluck@passfile.txt
+
+- hosts: cluster
+  name: Write Home Assistant config files to NFS
+  remote_user: ansible
+  become: no
+  gather_facts: false
+  vars_files:
+    - vars/vars.yml
+    - roles/amcrest/vars/vault.yml
+
+  vars:
+    ha_config_path: /whidbey/configs/homeautomation/home-assistant-config
+    amcrest_stream_user: stream
+    amcrest_stream_pass: "{{ vault_amcrest_stream_password }}"
+    cameras:
+      - name: Backyard Camera
+        key: backyard
+        ip: 10.0.1.157
+      - name: Front Porch Camera
+        key: front_porch
+        ip: 10.0.1.163
+      - name: Driveway Camera
+        key: driveway
+        ip: 10.0.1.164
+
+  tasks:
+
+    - name: Deploy configuration.yaml
+      ansible.builtin.copy:
+        src: roles/homeassistant/files/configuration.yaml
+        dest: "{{ ha_config_path }}/configuration.yaml"
+        mode: "0644"
+
+    - name: Deploy HA blueprints
+      ansible.builtin.copy:
+        src: roles/homeassistant/files/blueprints/
+        dest: "{{ ha_config_path }}/blueprints/"
+        mode: "0644"
+
+    - name: Deploy HA packages
+      ansible.builtin.copy:
+        src: roles/homeassistant/files/packages/
+        dest: "{{ ha_config_path }}/packages/"
+        mode: "0644"
+
+    - name: Write secrets.yaml
+      ansible.builtin.copy:
+        dest: "{{ ha_config_path }}/secrets.yaml"
+        mode: "0600"
+        content: |
+          # Managed by Ansible — create_ha_config.yml
+          # Do not edit manually — changes will be overwritten on next run
+          #
+          # UI-configured integration credentials (Netgear, Hue, OpenGarage) are
+          # documented in roles/homeassistant/vars/vault.yml. They live in HA's
+          # .storage/core.config_entries and do not use !secret substitution.
+
+          {% for cam in cameras %}
+          camera_{{ cam.key }}_rtsp_url: "rtsp://{{ amcrest_stream_user }}:{{ amcrest_stream_pass }}@{{ cam.ip }}/cam/realmonitor?channel=1&subtype=0"
+          camera_{{ cam.key }}_snapshot_url: "http://{{ amcrest_stream_user }}:{{ amcrest_stream_pass }}@{{ cam.ip }}/cgi-bin/snapshot.cgi"
+          {% endfor %}

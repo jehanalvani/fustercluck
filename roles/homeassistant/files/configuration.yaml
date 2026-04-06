@@ -1,0 +1,79 @@
+# Managed by Ansible — create_ha_config.yml
+# Do not edit on the server — changes will be overwritten on next run.
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Git-managed config lives in packages/. Each file is a self-contained
+# set of automations/scripts/etc. UI-created automations stay in automations.yaml.
+homeassistant:
+  packages: !include_dir_named packages
+
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+http:
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 10.0.1.30
+
+homekit:
+  - name: Home Assistant Bridge
+    port: 21063
+    filter:
+      include_domains:
+        - light
+        - cover
+      include_entities:
+        - cover.opengarage
+        - binary_sensor.opengarage_vehicle
+        - switch.garage_lights
+        - switch.kitchen_cabinet
+        - switch.living_room_fireplace
+      exclude_entities:
+        - light.living_room
+        - light.office
+        - light.master_bedroom
+        - light.aubrey_s_room
+  - name: Backyard Camera
+    port: 21064
+    mode: accessory
+    filter:
+      include_entities:
+        - camera.backyard
+    entity_config:
+      camera.backyard:
+        linked_motion_sensor: binary_sensor.backyard_cell_motion_detection
+  - name: Front Porch Camera
+    port: 21065
+    mode: accessory
+    filter:
+      include_entities:
+        - camera.front_porch
+    entity_config:
+      camera.front_porch:
+        linked_motion_sensor: binary_sensor.general_cell_motion_detection
+  - name: Driveway Camera
+    port: 21066
+    mode: accessory
+    filter:
+      include_entities:
+        - camera.driveway
+    entity_config:
+      camera.driveway:
+        linked_motion_sensor: binary_sensor.driveway_cell_motion_detection
+
+
+logger:
+  default: warning
+  logs:
+    homeassistant.components.lutron_caseta: debug
+    homeassistant.components.automation: debug
+    pylutron_caseta: debug
+    pylutron_caseta.smartbridge: debug
+    pylutron_caseta.leap: debug

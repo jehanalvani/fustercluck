@@ -1,0 +1,12 @@
+---
+# Home Assistant integration credentials — sourced from 1Password HomeLab vault
+#
+# These are used to document credentials for UI-configured integrations that store
+# their state in HA's .storage/core.config_entries. If HA needs to be rebuilt,
+# re-add via the HA UI using these values.
+#
+# Also consumed by create_ha_config.yml for any YAML-managed HA configuration.
+
+vault_netgear_admin_password: "{{ lookup('pipe', 'op read \"op://HomeLab/Netgear Orbi Router/password\"') }}"
+vault_hue_api_key: "{{ lookup('pipe', 'op read \"op://HomeLab/Hue Bridge/api_key\"') }}"
+vault_opengarage_device_key: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenGarage/password\"') }}"
