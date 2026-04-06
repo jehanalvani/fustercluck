@@ -8,7 +8,7 @@ This is a home lab infrastructure-as-code project using Ansible to provision and
 
 ## Common Commands
 
-All playbooks require the vault password file:
+`ansible.cfg` sets `vault_identity_list = fustercluck@passfile.txt`, so the `--vault-id` flag is optional for most playbooks (required only when `ansible.cfg` is not in scope, e.g. running from a different directory).
 
 ```bash
 # Full cluster init (common → k3s server → agents → node labels/taints)
@@ -44,10 +44,10 @@ ansible-playbook <playbook> --check --vault-id fustercluck@passfile.txt
 
 | Host | IP | Role | Special |
 |------|----|------|---------|
-| kube01.local | 10.0.1.30 | k3s control plane | Traefik ingress, klipper-lb |
+| kube01.local | 10.0.1.30 | k3s control plane | Traefik ingress, klipper-lb, Pi-hole (Docker/macvlan, 10.0.1.250) |
 | kube02.local | 10.0.1.50 | Worker | `homeautomation=true` label |
 | kube03.local | 10.0.1.49 | Worker | `monitoring=true` label |
-| 20-size.local | 10.0.1.203 | NFS server, GPU, media | `dedicated=media:NoSchedule` taint, Pi-hole |
+| 20-size.local | 10.0.1.203 | NFS server, GPU, media | `dedicated=media:NoSchedule` taint |
 
 ## Deployment Order
 
@@ -63,10 +63,12 @@ For a fresh cluster:
 
 ### Ansible Roles
 
-- **common**: Baseline for all nodes — users, packages, `/etc/hosts` population (critical: k3s Go tools need static DNS, not mDNS), cgroups, libseccomp2 workaround
+- **common**: Baseline for all nodes — users, packages, `/etc/hosts` population (critical: k3s Go tools need static DNS, not mDNS), cgroups, libseccomp2 workaround, static network config
 - **k3s**: Cluster install split into `server.yml`, `agent.yml`, `node_config.yml` (labels/taints), `kubeconfig.yml`
 - **docker**: Docker CE install on 20-size and kube01
 - **pihole**: Pi-hole v6 on Docker with macvlan (`lan` driver) on **kube01** — gets its own LAN IP (10.0.1.250), runs DHCP for the 10.0.1.0/24 subnet. DHCP leases hand out the router (10.0.1.1) as secondary DNS fallback.
+- **amcrest**: Amcrest camera config — NTP setup and vault-encrypted credentials for ONVIF/RTSP access
+- **homeassistant**: HA deployment support — vault credentials (Netgear, Hue, OpenGarage) and git-managed config files under `files/`
 
 ### Why Pi-hole is not on k8s
 
@@ -74,7 +76,7 @@ Pi-hole runs as a Docker container on kube01 with a macvlan network rather than 
 
 ### Kubernetes Applications
 
-All apps use the **bjw-s/app-template** OCI Helm chart (v3.6.1). App values live in `k3s/apps/`.
+All apps use the **bjw-s/app-template** OCI Helm chart (v3.6.1). App values live in `k8s/apps/`.
 
 - **media**: nzbget, transmission, radarr, sonarr, lidarr, readarr, prowlarr, ombi
 - **plex**: Plex (GPU-accelerated, pinned to 20-size via taint toleration + nodeSelector)
@@ -145,7 +147,11 @@ Split-horizon DNS via Pi-hole:
 - `*.alvani.me` resolves to 10.0.1.30 (kube01/Traefik) on LAN
 - Other domains use Unlocator (185.37.37.37) + Cloudflare (1.1.1.1) upstream
 
-TLS via cert-manager + Let's Encrypt using Cloudflare DNS-01 challenge. Cloudflare API token is stored as vault var and created as `cert-manager/cloudflare-api-token` secret.
+TLS via cert-manager with two issuers:
+- `letsencrypt-issuer` — public certs via Let's Encrypt DNS-01 (Cloudflare). Token stored as vault var → `cert-manager/cloudflare-api-token` secret.
+- `homelab-ca-issuer` — internal CA for `*.lan` services (Traefik dashboard, Pi-hole, etc.)
+
+CoreDNS is patched via `k8s/infrastructure/coredns/` to forward `.lan` queries to Pi-hole (10.0.1.250), preventing NXDOMAIN from external resolvers.
 
 ### Global Variables
 
