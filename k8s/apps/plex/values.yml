@@ -33,7 +33,7 @@ controllers:
           VERSION: docker
           # Advertise the correct external address so Plex registers properly with plex.tv.
           # Must match the public IP:port forwarded by the router to any k3s node.
-          ADVERTISE_IP: "http://50.54.134.200:32400"
+          ADVERTISE_IP: "http://50.35.124.100:32400"
           # PLEX_CLAIM is only needed for initial registration with plex.tv
           # Once configured, this can be removed from the values file
           PLEX_CLAIM:
@@ -121,8 +121,8 @@ ingress:
 
 persistence:
   config:
-    type: persistentVolumeClaim
-    existingClaim: plex-config-pvc
+    type: hostPath
+    hostPath: /seatac/plex/config
     globalMounts:
       - path: /config
   transcode:
@@ -130,7 +130,7 @@ persistence:
     globalMounts:
       - path: /transcode
   media:
-    type: persistentVolumeClaim
-    existingClaim: plex-media-pvc
+    type: hostPath
+    hostPath: /snoqualmie/media
     globalMounts:
       - path: /media

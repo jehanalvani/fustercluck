@@ -4,6 +4,7 @@ blueprint:
     On/Off/Raise/Lower control the primary light. Stop toggles lights
     together: if primary is on, turns all off; otherwise turns all on at 60%.
     Secondary light is optional — omit for single-light rooms.
+    Stop Action overrides the default Stop behaviour when provided.
   domain: automation
   input:
     remote_device:
@@ -25,6 +26,14 @@ blueprint:
       selector:
         entity:
           domain: light
+    stop_action:
+      name: Stop Action (optional)
+      description: >
+        Custom action sequence for the Stop button. When set, replaces the
+        default light-toggle behaviour entirely.
+      default: []
+      selector:
+        action: {}
 
 trigger:
   - trigger: device
@@ -62,6 +71,7 @@ action:
   - variables:
       _primary: !input primary_light
       _secondary: !input secondary_light
+      _stop_action: !input stop_action
   - choose:
       - conditions: "{{ trigger.id == 'on' }}"
         sequence:
@@ -95,18 +105,22 @@ action:
 
       - conditions: "{{ trigger.id == 'stop' }}"
         sequence:
-          - if:
-              - "{{ is_state(_primary, 'on') }}"
-            then:
-              - action: light.turn_off
-                target:
-                  entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
-            else:
-              - action: light.turn_on
-                target:
-                  entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
-                data:
-                  brightness_pct: 60
+          - choose:
+              - conditions: "{{ _stop_action | length > 0 }}"
+                sequence: !input stop_action
+            default:
+              - if:
+                  - "{{ is_state(_primary, 'on') }}"
+                then:
+                  - action: light.turn_off
+                    target:
+                      entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
+                else:
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ [_primary] + ([_secondary] if _secondary else []) }}"
+                    data:
+                      brightness_pct: 60
 
 mode: single
 max_exceeded: silent

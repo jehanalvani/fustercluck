@@ -1,0 +1,24 @@
+---
+- name: Deploy SearXNG settings
+  ansible.builtin.template:
+    src: searxng_settings.yml.j2
+    dest: "{{ searxng_config_path }}/settings.yml"
+    mode: "0644"
+    owner: ansible
+    group: users
+  notify: Restart SearXNG
+
+- name: Deploy SearXNG container
+  community.docker.docker_container:
+    name: searxng
+    image: "{{ searxng_image }}"
+    restart_policy: unless-stopped
+    state: started
+    networks:
+      - name: "{{ aistack_network }}"
+    ports:
+      - "10.0.1.203:{{ searxng_port }}:8080"
+    volumes:
+      - "{{ searxng_config_path }}/settings.yml:/etc/searxng/settings.yml:ro"
+    env:
+      SEARXNG_SECRET: "{{ searxng_secret_key }}"

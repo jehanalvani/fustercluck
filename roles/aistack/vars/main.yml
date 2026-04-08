@@ -1,0 +1,5 @@
+---
+# Non-secret vars — vault vars referenced here for clarity
+anthropic_api_key: "{{ vault_anthropic_api_key }}"
+litellm_master_key: "{{ vault_litellm_master_key }}"
+searxng_secret_key: "{{ vault_searxng_secret_key }}"

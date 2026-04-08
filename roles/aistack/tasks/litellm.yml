@@ -1,0 +1,29 @@
+---
+- name: Deploy LiteLLM config
+  ansible.builtin.template:
+    src: litellm_config.yml.j2
+    dest: "{{ litellm_config_path }}/config.yml"
+    mode: "0640"
+    owner: ansible
+    group: users
+  notify: Restart LiteLLM
+
+- name: Deploy LiteLLM container
+  community.docker.docker_container:
+    name: litellm
+    image: "{{ litellm_image }}"
+    restart_policy: unless-stopped
+    state: started
+    command: ["--config", "/app/config.yml", "--port", "4000"]
+    networks:
+      - name: "{{ aistack_network }}"
+    ports:
+      # Bind to LAN IP only
+      - "10.0.1.203:{{ litellm_port }}:4000"
+    volumes:
+      - "{{ litellm_config_path }}/config.yml:/app/config.yml:ro"
+    env:
+      ANTHROPIC_API_KEY: "{{ anthropic_api_key }}"
+      LITELLM_MASTER_KEY: "{{ litellm_master_key }}"
+      # Disable telemetry
+      LITELLM_TELEMETRY: "False"

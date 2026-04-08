@@ -87,9 +87,32 @@ automation:
         primary_light: light.upstairs_hallway_main_lights
     mode: single
 
-  # ── Pending — awaiting light entity mapping ───────────────────────────────
+  # ── Aubrey's Room ─────────────────────────────────────────────────────────
+  # Stop overrides default light-toggle: plays/pauses Aubrey's Station on Sonos.
 
-  # Aubrey's Room Aubrey's Remote — shade remote, not a light remote. Excluded.
+  - alias: "Aubrey's Room — Pico Light Remote"
+    use_blueprint:
+      path: light_pico_remote.yaml
+      input:
+        remote_device: ba79c48d591efeed59abf12fb16075e2
+        primary_light: light.aubreys_lamp
+        stop_action:
+          - if:
+              - "{{ is_state('media_player.aubreys_room', 'playing') }}"
+            then:
+              - action: media_player.media_pause
+                target:
+                  entity_id: media_player.aubreys_room
+            else:
+              - action: media_player.play_media
+                target:
+                  entity_id: media_player.aubreys_room
+                data:
+                  media_content_id: "x-sonosapi-radio:radio%3ara.u-55d434b2db990bc81abb70ff757aa95f?sid=204&flags=0&sn=28"
+                  media_content_type: music
+    mode: single
+
+  # ── Pending — awaiting light entity mapping ───────────────────────────────
 
   # Iain's Room Iain's Bedroom Remote — shade remote, not a light remote. Excluded.
 

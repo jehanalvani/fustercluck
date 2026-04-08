@@ -1,0 +1,17 @@
+---
+- name: Restart Docker
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+
+- name: Restart LiteLLM
+  community.docker.docker_container:
+    name: litellm
+    state: started
+    restart: yes
+
+- name: Restart SearXNG
+  community.docker.docker_container:
+    name: searxng
+    state: started
+    restart: yes

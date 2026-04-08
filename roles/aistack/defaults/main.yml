@@ -1,0 +1,36 @@
+---
+# AI stack defaults — override in vars/main.yml or host_vars
+
+# Base path for all AI stack config and data on 20-size
+aistack_base_path: /whidbey/configs/aistack
+
+# Ollama
+ollama_image: ollama/ollama:latest
+ollama_port: 11434
+ollama_models_path: "{{ aistack_base_path }}/ollama"
+# Model pulled on first deploy. Pull additional models manually:
+#   docker exec ollama ollama pull <model>
+ollama_default_model: llama3.1:8b
+
+# LiteLLM
+litellm_image: ghcr.io/berriai/litellm:main-latest
+litellm_port: 4000
+litellm_config_path: "{{ aistack_base_path }}/litellm"
+# Primary model (local): used for routine tasks, never leaves the house
+litellm_local_model: ollama/llama3.1:8b
+# Fallback model (external): explicit escalation only — requires ANTHROPIC_API_KEY in vault
+litellm_fallback_model: anthropic/claude-sonnet-4-6
+
+# Qdrant
+qdrant_image: qdrant/qdrant:latest
+qdrant_port: 6333
+qdrant_grpc_port: 6334
+qdrant_data_path: "{{ aistack_base_path }}/qdrant"
+
+# SearXNG
+searxng_image: searxng/searxng:latest
+searxng_port: 8080
+searxng_config_path: "{{ aistack_base_path }}/searxng"
+
+# Internal Docker network (all AI stack containers communicate on this)
+aistack_network: ai-stack

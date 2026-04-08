@@ -127,18 +127,14 @@ ingress:
 
 persistence:
   config:
-    type: persistentVolumeClaim
-    storageClass: nfs-client
-    size: 2Gi
-    accessMode: ReadWriteOnce
+    type: hostPath
+    hostPath: /whidbey/configs/security/shinobi-config
     globalMounts:
       - path: /config
 
   recordings:
-    type: persistentVolumeClaim
-    storageClass: nfs-client
-    size: 500Gi
-    accessMode: ReadWriteOnce
+    type: hostPath
+    hostPath: /whidbey/configs/security/shinobi-recordings
     globalMounts:
       - path: /recordings
 

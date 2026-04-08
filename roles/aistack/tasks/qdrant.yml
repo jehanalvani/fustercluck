@@ -1,0 +1,14 @@
+---
+- name: Deploy Qdrant container
+  community.docker.docker_container:
+    name: qdrant
+    image: "{{ qdrant_image }}"
+    restart_policy: unless-stopped
+    state: started
+    networks:
+      - name: "{{ aistack_network }}"
+    ports:
+      - "10.0.1.203:{{ qdrant_port }}:6333"
+      - "10.0.1.203:{{ qdrant_grpc_port }}:6334"
+    volumes:
+      - "{{ qdrant_data_path }}:/qdrant/storage"

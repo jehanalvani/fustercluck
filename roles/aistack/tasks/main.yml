@@ -1,0 +1,27 @@
+---
+- name: Create AI stack config directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+    owner: ansible
+    group: users
+  loop:
+    - "{{ aistack_base_path }}"
+    - "{{ ollama_models_path }}"
+    - "{{ litellm_config_path }}"
+    - "{{ qdrant_data_path }}"
+    - "{{ searxng_config_path }}"
+
+- import_tasks: nvidia_runtime.yml
+  tags: nvidia
+
+- import_tasks: network.yml
+- import_tasks: ollama.yml
+  tags: ollama
+- import_tasks: litellm.yml
+  tags: litellm
+- import_tasks: qdrant.yml
+  tags: qdrant
+- import_tasks: searxng.yml
+  tags: searxng

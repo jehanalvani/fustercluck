@@ -1,0 +1,33 @@
+---
+- name: Deploy Ollama container (GPU-accelerated)
+  community.docker.docker_container:
+    name: ollama
+    image: "{{ ollama_image }}"
+    restart_policy: unless-stopped
+    state: started
+    runtime: nvidia
+    networks:
+      - name: "{{ aistack_network }}"
+    ports:
+      # Bind to LAN IP only — not exposed to internet
+      - "10.0.1.203:{{ ollama_port }}:11434"
+    volumes:
+      - "{{ ollama_models_path }}:/root/.ollama"
+    env:
+      NVIDIA_VISIBLE_DEVICES: all
+      OLLAMA_HOST: "0.0.0.0"
+
+- name: Wait for Ollama to be ready
+  ansible.builtin.uri:
+    url: "http://{{ ansible_host }}:{{ ollama_port }}"
+    status_code: 200
+  register: ollama_health
+  until: ollama_health.status == 200
+  retries: 12
+  delay: 5
+
+- name: Pull default model ({{ ollama_default_model }})
+  ansible.builtin.command:
+    cmd: docker exec ollama ollama pull {{ ollama_default_model }}
+  register: ollama_pull
+  changed_when: "'already up to date' not in ollama_pull.stdout"

@@ -1,0 +1,72 @@
+use_default_settings: true
+
+general:
+  instance_name: "fustercluck-search"
+  # Debug off in production
+  debug: false
+  # Don't send crash reports anywhere
+  donation_url: false
+
+server:
+  secret_key: "{{ searxng_secret_key }}"
+  # Only accept connections from the Docker bridge (LiteLLM/OpenClaw)
+  bind_address: "0.0.0.0"
+  port: 8080
+  # Allow JSON output for programmatic use by OpenClaw
+  public_instance: false
+
+ui:
+  default_theme: simple
+  results_on_new_tab: false
+
+search:
+  safe_search: 0
+  # Return results as JSON when requested (needed for agent use)
+  formats:
+    - html
+    - json
+
+# Privacy: disable all tracking, no external resources loaded
+enabled_plugins:
+  - Hash_plugin
+  - Search_on_category_select
+  - Tracker_URL_remover
+
+# Engines — curated for quality + privacy
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    use_mobile_ui: false
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: ddg
+
+  - name: brave
+    engine: brave
+    shortcut: brave
+
+  - name: wikipedia
+    engine: wikipedia
+    shortcut: wp
+    categories: general
+
+  - name: github
+    engine: github
+    shortcut: gh
+    categories: it
+
+  - name: stackoverflow
+    engine: stackoverflow
+    shortcut: so
+    categories: it
+
+  # Disable engines that require accounts or leak identity
+  - name: bing
+    engine: bing
+    disabled: true
+
+  - name: yahoo
+    engine: yahoo
+    disabled: true

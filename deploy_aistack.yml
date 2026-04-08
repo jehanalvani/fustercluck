@@ -1,0 +1,20 @@
+---
+# AI stack: Ollama (local inference) + LiteLLM (routing proxy) +
+#           Qdrant (vector memory) + SearXNG (private search)
+# All services run as Docker containers on 20-size.
+#
+# Usage:
+#   ansible-playbook deploy_aistack.yml --vault-id fustercluck@passfile.txt
+#   ansible-playbook deploy_aistack.yml --vault-id fustercluck@passfile.txt --tags ollama
+#
+# Tags: ollama, litellm, qdrant, searxng
+
+- hosts: 20-size.local
+  remote_user: ansible
+  become: yes
+  gather_facts: true
+  vars_files:
+    - vars/vars.yml
+    - roles/aistack/vars/vault.yml
+  roles:
+    - role: aistack

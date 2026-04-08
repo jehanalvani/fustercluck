@@ -27,6 +27,9 @@ ansible-playbook create_secrets.yml --vault-id fustercluck@passfile.txt
 # Run after editing any file under roles/homeassistant/files/, then reload HA YAML config
 ansible-playbook create_ha_config.yml
 
+# Deploy AI stack (Ollama, LiteLLM, Qdrant, SearXNG) on 20-size
+ansible-playbook deploy_aistack.yml --vault-id fustercluck@passfile.txt
+
 # Deploy all applications via Helm (supports --tags media, plex, monitoring, homeautomation, security)
 ansible-playbook deploy_apps.yml --vault-id fustercluck@passfile.txt --tags media
 
@@ -118,7 +121,7 @@ HA config is split between git-managed files (deployed by `create_ha_config.yml`
 | Living Room Back Door | Lutron direct | light.living_room_overhead | — |
 | Garage Entry GE Pico | HomeKit | switch.garage_lights | — |
 | Living Room Pico (2-button) | HomeKit | switch.living_room_fireplace | — |
-| Aubrey's Room Remote | Shade remote | — | — |
+| Aubrey's Room Pico | ✓ automated | light.aubreys_lamp | stop = play/pause media_player.aubreys_room |
 | Iain's Room Remote | Shade remote | — | — |
 | Master Bathroom Remote | Shade remote | — | — |
 | Play Room Remote | Shade remote (Lindsay's office) | — | — |

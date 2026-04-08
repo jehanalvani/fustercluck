@@ -1,0 +1,25 @@
+model_list:
+  # Local model — runs on 20-size GPU, data never leaves the house
+  - model_name: local
+    litellm_params:
+      model: {{ litellm_local_model }}
+      api_base: http://ollama:{{ ollama_port }}
+
+  # External fallback — explicit escalation only, requires conscious choice by OpenClaw/user
+  - model_name: claude
+    litellm_params:
+      model: {{ litellm_fallback_model }}
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+litellm_settings:
+  # Drop unsupported params rather than erroring (Ollama doesn't support all OpenAI params)
+  drop_params: True
+  # Log all requests locally so we always know what went where
+  success_callback: []
+  failure_callback: []
+
+general_settings:
+  master_key: {{ litellm_master_key }}
+  store_model_in_db: False
+  # Disable LiteLLM telemetry
+  disable_spend_logs: False

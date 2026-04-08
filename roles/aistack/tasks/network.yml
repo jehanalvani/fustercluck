@@ -1,0 +1,6 @@
+---
+- name: Create AI stack Docker bridge network
+  community.docker.docker_network:
+    name: "{{ aistack_network }}"
+    driver: bridge
+    state: present

@@ -1,0 +1,33 @@
+---
+# Installs NVIDIA Container Toolkit so Docker can access the GPU.
+# The k8s NVIDIA device plugin and Docker's nvidia runtime are separate —
+# this is required even though Plex already uses the GPU via k8s.
+
+- name: Add NVIDIA Container Toolkit GPG key
+  ansible.builtin.shell:
+    cmd: >
+      curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey |
+      gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+    creates: /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+
+- name: Add NVIDIA Container Toolkit apt repo
+  ansible.builtin.shell:
+    cmd: >
+      curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list |
+      sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' |
+      tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+- name: Install NVIDIA Container Toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: yes
+
+- name: Configure nvidia runtime for Docker
+  ansible.builtin.command:
+    cmd: nvidia-ctk runtime configure --runtime=docker
+  notify: Restart Docker
+
+- name: Flush handlers to restart Docker before container deployment
+  ansible.builtin.meta: flush_handlers
