@@ -8,6 +8,17 @@
   changed_when: false
   failed_when: false
 
+- name: Install Chrome dependencies (Ubuntu 24.04 renamed libasound2 → libasound2t64)
+  ansible.builtin.apt:
+    name:
+      - libasound2t64
+      - libatk-bridge2.0-0
+      - libgtk-3-0
+      - libxss1
+    state: present
+    update_cache: yes
+  when: chrome_check.rc != 0
+
 - name: Download Google Chrome deb
   ansible.builtin.get_url:
     url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -15,10 +26,15 @@
     mode: "0644"
   when: chrome_check.rc != 0
 
-- name: Install Google Chrome
+- name: Install Google Chrome (force-depends for libasound2 rename)
+  ansible.builtin.command: dpkg -i --force-depends /tmp/google-chrome-stable.deb
+  when: chrome_check.rc != 0
+  register: chrome_dpkg
+  changed_when: chrome_dpkg.rc == 0
+
+- name: Fix any broken packages after Chrome install
   ansible.builtin.apt:
-    deb: /tmp/google-chrome-stable.deb
-    state: present
+    state: fixed
   when: chrome_check.rc != 0
 
 - name: Remove Chrome deb
