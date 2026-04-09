@@ -131,6 +131,18 @@
   register: memory_qdrant_install
   changed_when: "'already installed' not in memory_qdrant_install.stdout"
 
+- name: Configure memory-qdrant plugin
+  ansible.builtin.shell: >
+    sudo -u openclaw {{ openclaw_bin_path }} config set
+    plugins.memory-qdrant.enabled true
+    plugins.memory-qdrant.qdrantUrl http://10.0.1.203:6333
+    plugins.memory-qdrant.autoCapture true
+    plugins.memory-qdrant.allowPIICapture false
+    plugins.memory-qdrant.autoRecall true
+    plugins.memory-qdrant.persistToDisk true
+    plugins.memory-qdrant.storagePath /home/openclaw/.openclaw/memory/
+  changed_when: true
+
 - name: Install openclaw wrapper script
   ansible.builtin.copy:
     dest: /usr/local/bin/openclaw
