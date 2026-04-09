@@ -38,6 +38,7 @@ ingress:
     className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-issuer
+      traefik.ingress.kubernetes.io/router.middlewares: kube-system-basic-auth@kubernetescrd
     hosts:
       - host: readarr.alvani.me
         paths:

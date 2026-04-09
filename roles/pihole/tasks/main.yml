@@ -235,11 +235,11 @@
 
 - name: Remove adlists not in Ansible config
   ansible.builtin.uri:
-    url: "http://{{ pihole_ip }}/api/lists/{{ item.id }}"
+    url: "http://{{ pihole_ip }}/api/lists/{{ item.id }}?type={{ item.type }}"
     method: DELETE
     headers:
       sid: "{{ pihole_auth.json.session.sid }}"
-    status_code: [200, 204]
+    status_code: [200, 204, 404]
   loop: "{{ pihole_current_lists.json.lists }}"
   when: item.address not in (pihole_adlists | map(attribute='address') | list)
   changed_when: true

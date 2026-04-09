@@ -55,6 +55,8 @@ pihole_local_hosts:
   # .lan as its local domain, which overrides dnsmasq address=/.lan/ wildcards.
   - { ip: "10.0.1.30", hostname: "home-assistant.lan" }
   - { ip: "10.0.1.30", hostname: "homeassistant.lan" }
+  - { ip: "10.0.1.30", hostname: "openclaw.lan" }
+  - { ip: "10.0.1.30", hostname: "searxng.alvani.me" }
   - { ip: "10.0.1.30", hostname: "lidarr.lan" }
   - { ip: "10.0.1.30", hostname: "nzbget.lan" }
   - { ip: "10.0.1.30", hostname: "ombi.lan" }
@@ -83,3 +85,4 @@ pihole_dhcp_hosts:
   - { mac: "DC:A6:32:11:6A:A7", ip: "10.0.1.49",  name: "kube03" }
   - { mac: "B4:2E:99:A6:31:F2", ip: "10.0.1.44",  name: "gms" }
   - { mac: "28:AF:42:18:3E:2C", ip: "10.0.1.183", name: "samsung-living-room-tv" }
+  - { mac: "3E:44:CB:42:12:F3", ip: "10.0.1.17",  name: "MarvinsMacMini" }
