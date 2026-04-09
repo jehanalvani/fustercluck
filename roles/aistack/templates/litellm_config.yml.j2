@@ -21,5 +21,5 @@ litellm_settings:
 general_settings:
   master_key: {{ litellm_master_key }}
   store_model_in_db: False
-  # Disable LiteLLM telemetry
-  disable_spend_logs: False
+  disable_spend_logs: True
+  disable_reset_budget: True

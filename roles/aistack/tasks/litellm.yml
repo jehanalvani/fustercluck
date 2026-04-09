@@ -25,5 +25,4 @@
     env:
       ANTHROPIC_API_KEY: "{{ anthropic_api_key }}"
       LITELLM_MASTER_KEY: "{{ litellm_master_key }}"
-      # Disable telemetry
       LITELLM_TELEMETRY: "False"

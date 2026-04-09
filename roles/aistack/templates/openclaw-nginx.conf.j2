@@ -1,0 +1,73 @@
+# Reverse proxy for OpenClaw canvas UI
+# OpenClaw gateway binds to 127.0.0.1 only (local mode), so nginx bridges it to the LAN.
+#
+# LiteLLM shim: OpenClaw calls /v1/chat/completions, but LiteLLM's /v1/ path requires
+# a Postgres DB for master key auth. The /chat/completions path (no /v1/ prefix) bypasses
+# this requirement. This block rewrites and strips the auth header so requests pass through.
+server {
+    listen 127.0.0.1:{{ litellm_shim_port }};
+    access_log off;
+
+    location /v1/ {
+        rewrite ^/v1/(.*)$ /$1 break;
+        proxy_pass http://10.0.1.203:{{ litellm_port }};
+        proxy_set_header Authorization "";
+        proxy_set_header Host $host;
+    }
+}
+#
+# Webhook requests carry a password in the query string — log only the path,
+# not the full URI, to avoid writing credentials to disk.
+log_format openclaw '$remote_addr "$request_method $uri $server_protocol" $status';
+
+server {
+    listen 10.0.1.203:{{ openclaw_proxy_port }};
+    access_log /var/log/nginx/openclaw.log openclaw;
+    client_body_buffer_size 16k;
+    client_max_body_size 1m;
+
+    # The SPA router bases itself at /__openclaw__/ and constructs some paths relative
+    # to that prefix, but the gateway only serves certain resources at root or at the
+    # bare /__openclaw/ API prefix:
+    #
+    #   /__openclaw__/favicon.svg        → gateway only has it at /favicon.svg
+    #   /__openclaw__/__openclaw/foo     → should be /__openclaw/foo (API)
+    #
+    # Two targeted rewrites handle these; everything else (assets/, avatar/, etc.)
+    # is served correctly at /__openclaw__/ by the gateway and passes through unchanged.
+
+    # Static icons: served by gateway at root, not under /__openclaw__/
+    location ~* "^/__openclaw__/(favicon[^/]*|apple-touch-icon[^/]*)$" {
+        rewrite "^/__openclaw__/(.+)$" /$1 break;
+        proxy_pass http://127.0.0.1:{{ openclaw_gateway_port }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header x-bluebubbles-guid "";
+    }
+
+    # Double-prefix API calls: SPA constructs __openclaw/foo relative to /__openclaw__/
+    # producing /__openclaw__/__openclaw/foo — rewrite to /__openclaw/foo
+    location ^~ "/__openclaw__/__openclaw/" {
+        rewrite "^/__openclaw__/(__openclaw/.+)$" /$1 break;
+        proxy_pass http://127.0.0.1:{{ openclaw_gateway_port }};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header x-bluebubbles-guid "";
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:{{ openclaw_gateway_port }};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        # BlueBubbles sends its server GUID in x-bluebubbles-guid, which OpenClaw
+        # would compare against the configured password and reject. Clear it so
+        # OpenClaw falls back to the ?password= query param instead.
+        proxy_set_header x-bluebubbles-guid "";
+        proxy_read_timeout 3600s;
+    }
+}

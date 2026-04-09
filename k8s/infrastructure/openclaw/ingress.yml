@@ -1,0 +1,62 @@
+# OpenClaw canvas ingress for openclaw.lan (LAN-only)
+#
+# OpenClaw runs as a systemd service on 20-size (10.0.1.203) and binds its
+# gateway/canvas to 127.0.0.1 only. A local nginx proxy on 20-size forwards
+# 10.0.1.203:18790 → 127.0.0.1:18789, giving Traefik a routable endpoint.
+# The .lan wildcard in Pi-hole (address=/.lan/10.0.1.30) resolves openclaw.lan
+# to Traefik on the LAN. Not externally reachable — homelab CA cert only.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openclaw
+  labels:
+    name: openclaw
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw
+  namespace: openclaw
+spec:
+  ports:
+    - name: http
+      port: 18790
+      targetPort: 18790
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: openclaw
+  namespace: openclaw
+subsets:
+  - addresses:
+      - ip: 10.0.1.203
+    ports:
+      - name: http
+        port: 18790
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: openclaw
+  namespace: openclaw
+  annotations:
+    cert-manager.io/cluster-issuer: homelab-ca-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: openclaw.lan
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: openclaw
+                port:
+                  name: http
+  tls:
+    - secretName: openclaw-lan-tls
+      hosts:
+        - openclaw.lan

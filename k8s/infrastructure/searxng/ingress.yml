@@ -1,0 +1,61 @@
+# SearXNG ingress for searxng.alvani.me
+#
+# SearXNG runs as a Docker container on 20-size (10.0.1.203:8080).
+# Exposed externally via Traefik + Let's Encrypt. Basic auth required
+# to prevent public use of the search instance.
+# Pi-hole DNS: searxng.alvani.me → 10.0.1.30 (add manually in Pi-hole UI).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: searxng
+  labels:
+    name: searxng
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng
+  namespace: searxng
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: searxng
+  namespace: searxng
+subsets:
+  - addresses:
+      - ip: 10.0.1.203
+    ports:
+      - name: http
+        port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: searxng
+  namespace: searxng
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-issuer
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: searxng.alvani.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: searxng
+                port:
+                  name: http
+  tls:
+    - secretName: searxng-tls
+      hosts:
+        - searxng.alvani.me

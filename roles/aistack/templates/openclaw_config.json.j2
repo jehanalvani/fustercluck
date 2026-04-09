@@ -1,0 +1,57 @@
+{
+  "models": {
+    "providers": {
+      "ollama": {
+        "baseUrl": "http://10.0.1.203:{{ ollama_port }}",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "qwen2.5:7b",
+            "name": "Qwen 2.5 7B (local)",
+            "reasoning": false,
+            "input": ["text"],
+            "contextWindow": 32768,
+            "maxTokens": 2048
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "ollama/qwen2.5:7b"
+      },
+      "llm": {
+        "idleTimeoutSeconds": 0
+      },
+      "sandbox": {
+        "mode": "all"
+      }
+    }
+  },
+  "tools": {
+    "web": {
+      "search": {
+        "provider": "searxng"
+      }
+    }
+  },
+  "channels": {
+    "bluebubbles": {
+      "serverUrl": "{{ bluebubbles_server_url }}",
+      "password": "{{ bluebubbles_password }}",
+      "webhookPath": "/bluebubbles-webhook",
+      "dmPolicy": "pairing",
+      "groupPolicy": "allowlist"
+    }
+  },
+  "gateway": {
+    "mode": "local",
+    "port": {{ openclaw_gateway_port }},
+    "trustedProxies": ["127.0.0.1"],
+    "controlUi": {
+      "allowedOrigins": ["https://openclaw.lan"]
+    }
+  }
+}

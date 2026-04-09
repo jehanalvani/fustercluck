@@ -1,0 +1,18 @@
+[Unit]
+Description=OpenClaw Gateway
+After=network.target
+
+[Service]
+Type=simple
+User=openclaw
+Group=openclaw
+Environment=HOME=/home/openclaw
+Environment=SEARXNG_BASE_URL=http://10.0.1.203:{{ searxng_port }}
+ExecStart={{ openclaw_bin_path }} gateway
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

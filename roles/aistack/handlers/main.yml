@@ -15,3 +15,17 @@
     name: searxng
     state: started
     restart: yes
+
+- name: Reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Restart OpenClaw
+  ansible.builtin.systemd:
+    name: openclaw-gateway
+    state: restarted
+
+- name: Restart nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: restarted
