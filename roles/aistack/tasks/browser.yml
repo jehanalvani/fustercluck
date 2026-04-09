@@ -1,0 +1,39 @@
+---
+# Install Google Chrome (not snap Chromium — snap's AppArmor confinement
+# interferes with how OpenClaw spawns and monitors the browser process)
+
+- name: Check if Google Chrome is installed
+  ansible.builtin.command: google-chrome-stable --version
+  register: chrome_check
+  changed_when: false
+  failed_when: false
+
+- name: Download Google Chrome deb
+  ansible.builtin.get_url:
+    url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    dest: /tmp/google-chrome-stable.deb
+    mode: "0644"
+  when: chrome_check.rc != 0
+
+- name: Install Google Chrome
+  ansible.builtin.apt:
+    deb: /tmp/google-chrome-stable.deb
+    state: present
+  when: chrome_check.rc != 0
+
+- name: Remove Chrome deb
+  ansible.builtin.file:
+    path: /tmp/google-chrome-stable.deb
+    state: absent
+  when: chrome_check.rc != 0
+
+- name: Install Playwright Chromium for OpenClaw
+  ansible.builtin.command: >
+    node /usr/lib/node_modules/openclaw/node_modules/playwright-core/cli.js install chromium
+  become: yes
+  become_user: openclaw
+  environment:
+    HOME: /home/openclaw
+    PLAYWRIGHT_BROWSERS_PATH: /home/openclaw/.openclaw/browsers
+  register: playwright_install
+  changed_when: "'already installed' not in playwright_install.stdout"

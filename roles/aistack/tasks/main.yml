@@ -25,5 +25,7 @@
   tags: qdrant
 - import_tasks: searxng.yml
   tags: searxng
+- import_tasks: browser.yml
+  tags: browser
 - import_tasks: openclaw.yml
   tags: openclaw
