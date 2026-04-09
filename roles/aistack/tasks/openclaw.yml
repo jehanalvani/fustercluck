@@ -1,0 +1,154 @@
+---
+- name: Create openclaw service user
+  ansible.builtin.user:
+    name: openclaw
+    system: yes
+    shell: /usr/sbin/nologin
+    home: /home/openclaw
+    create_home: yes
+    comment: OpenClaw gateway service user
+    # docker group grants effective root (can mount paths, run privileged containers)
+    # Required for OpenClaw sandbox mode to isolate agent execution via Docker
+    groups: docker
+    append: yes
+
+# Install Node.js via NodeSource if not already present or outdated (need v18+)
+- name: Check Node.js version
+  ansible.builtin.command: node --version
+  register: node_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Node.js via NodeSource
+  when: >
+    node_version_check.rc != 0 or
+    (node_version_check.stdout | regex_replace('^v(\\d+)\\..*', '\\1') | int) < 18
+  block:
+    - name: Download NodeSource setup script
+      ansible.builtin.get_url:
+        url: https://deb.nodesource.com/setup_lts.x
+        dest: /tmp/nodesource_setup.sh
+        mode: "0755"
+
+    - name: Run NodeSource setup script
+      ansible.builtin.command: bash /tmp/nodesource_setup.sh
+      changed_when: true
+
+    - name: Install nodejs package
+      ansible.builtin.apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+
+    - name: Remove NodeSource setup script
+      ansible.builtin.file:
+        path: /tmp/nodesource_setup.sh
+        state: absent
+
+- name: Install OpenClaw globally via npm
+  ansible.builtin.command: npm install -g openclaw@latest
+  register: openclaw_npm_install
+  changed_when: "'up to date' not in openclaw_npm_install.stdout"
+
+- name: Find npm global prefix
+  ansible.builtin.command: npm config get prefix
+  register: npm_prefix
+  changed_when: false
+
+- name: Set openclaw_bin_path fact
+  ansible.builtin.set_fact:
+    openclaw_bin_path: "{{ npm_prefix.stdout | trim }}/bin/openclaw"
+
+- name: Create OpenClaw config directory
+  ansible.builtin.file:
+    path: "{{ openclaw_config_dir }}"
+    state: directory
+    mode: "0750"
+    owner: openclaw
+    group: openclaw
+
+- name: Create OpenClaw workspace directory
+  ansible.builtin.file:
+    path: "{{ openclaw_config_dir }}/workspace"
+    state: directory
+    mode: "0750"
+    owner: openclaw
+    group: openclaw
+
+- name: Sync OpenClaw workspace files
+  ansible.builtin.synchronize:
+    src: "{{ playbook_dir }}/../OpenClaw/workspace/"
+    dest: "{{ openclaw_config_dir }}/workspace/"
+    delete: yes
+    rsync_opts:
+      - "--chown=openclaw:openclaw"
+  notify: Restart OpenClaw
+
+- name: Deploy OpenClaw config
+  ansible.builtin.template:
+    src: openclaw_config.json.j2
+    dest: "{{ openclaw_config_dir }}/openclaw.json"
+    mode: "0640"
+    owner: openclaw
+    group: openclaw
+  notify: Restart OpenClaw
+
+- name: Deploy OpenClaw systemd service
+  ansible.builtin.template:
+    src: openclaw-gateway.service.j2
+    dest: /etc/systemd/system/openclaw-gateway.service
+    mode: "0644"
+  notify:
+    - Reload systemd
+    - Restart OpenClaw
+
+- name: Enable and start OpenClaw gateway service
+  ansible.builtin.systemd:
+    name: openclaw-gateway
+    enabled: yes
+    state: started
+    daemon_reload: yes
+
+- name: Allow jehan to run openclaw as openclaw user without password
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/openclaw
+    mode: "0440"
+    validate: "visudo -cf %s"
+    content: |
+      # Allow jehan to run openclaw CLI and manage state files as the openclaw service user
+      jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
+      jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
+
+- name: Install openclaw wrapper script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/openclaw
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      exec sudo -u openclaw /usr/bin/openclaw "$@"
+
+# nginx reverse proxy so Traefik can reach the openclaw canvas from the LAN
+# (OpenClaw local mode binds to 127.0.0.1 only)
+- name: Install nginx
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  notify: Restart nginx
+
+- name: Deploy openclaw nginx proxy config
+  ansible.builtin.template:
+    src: openclaw-nginx.conf.j2
+    dest: /etc/nginx/conf.d/openclaw.conf
+    mode: "0644"
+  notify: Restart nginx
+
+- name: Enable and start nginx
+  ansible.builtin.systemd:
+    name: nginx
+    enabled: yes
+    state: started
