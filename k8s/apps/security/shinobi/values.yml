@@ -4,8 +4,10 @@
 #
 # FFmpeg note: Shinobi's bundled image ships FFmpeg 4.3.9 (Debian Bullseye) which segfaults on
 # H.264 multi-slice streams from Amcrest cameras. The init container downloads a static 7.x build
-# from johnvansickle.com into an emptyDir at /ffmpeg-bin. PATH is prepended in the container env
-# so Shinobi finds the static binary immediately on startup — no postStart race window.
+# from johnvansickle.com into an emptyDir at /ffmpeg-bin. Shinobi's detection logic (libs/ffmpeg/
+# utils.js) hardcodes fs.existsSync('/usr/bin/ffmpeg') — it ignores PATH entirely. The emptyDir
+# is therefore also mounted at /usr/bin/ffmpeg via subPath so the static binary shadows the
+# bundled one at the path Shinobi actually checks.
 
 controllers:
   main:
@@ -95,6 +97,7 @@ ingress:
     className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-issuer
+      traefik.ingress.kubernetes.io/router.middlewares: kube-system-basic-auth@kubernetescrd
     hosts:
       - host: shinobi.alvani.me
         paths:
@@ -156,3 +159,7 @@ persistence:
           - path: /ffmpeg-bin
         main:
           - path: /ffmpeg-bin
+          # Shinobi hardcodes /usr/bin/ffmpeg via fs.existsSync() — ignores PATH.
+          # Overlay the static 7.x binary directly over the bundled 4.3.9 binary.
+          - path: /usr/bin/ffmpeg
+            subPath: ffmpeg

@@ -65,6 +65,43 @@
         - videos
       tags: nfs
 
+    # 4GB swapfile on the root NVMe filesystem — buffer against OOM kills.
+    # ZFS pools (seatac/snoqualmie/whidbey) are NFS exports and must never be used for swap.
+    - name: Create swapfile
+      ansible.builtin.command: fallocate -l 4G /swapfile
+      args:
+        creates: /swapfile
+      tags: swap
+
+    - name: Set swapfile permissions
+      ansible.builtin.file:
+        path: /swapfile
+        mode: "0600"
+        owner: root
+        group: root
+      tags: swap
+
+    - name: Format swapfile
+      ansible.builtin.command: mkswap /swapfile
+      when: ansible_swaptotal_mb == 0
+      tags: swap
+
+    - name: Enable swapfile
+      ansible.builtin.command: swapon /swapfile
+      when: ansible_swaptotal_mb == 0
+      tags: swap
+
+    - name: Persist swapfile in /etc/fstab
+      ansible.posix.mount:
+        src: /swapfile
+        name: none
+        fstype: swap
+        opts: sw
+        dump: "0"
+        passno: "0"
+        state: present
+      tags: swap
+
     - name: "Install pipx, setuptools, virtualenv if not already"
       apt: 
         name:

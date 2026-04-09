@@ -31,6 +31,13 @@ controller:
           # No type check — nodes without Docker simply won't have the socket
 
 alloy:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
 
   # Mount host log paths for pod log collection
   mounts:
@@ -435,10 +442,3 @@ alloy:
         }
       }
 
-resources:
-  requests:
-    cpu: 100m
-    memory: 128Mi
-  limits:
-    cpu: 500m
-    memory: 256Mi
