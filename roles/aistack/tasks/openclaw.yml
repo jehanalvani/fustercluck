@@ -119,6 +119,13 @@
       jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
       jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
 
+- name: Install memory-qdrant plugin
+  ansible.builtin.command: clawhub install memory-qdrant
+  become: yes
+  become_user: openclaw
+  register: memory_qdrant_install
+  changed_when: "'already installed' not in memory_qdrant_install.stdout"
+
 - name: Install openclaw wrapper script
   ansible.builtin.copy:
     dest: /usr/local/bin/openclaw

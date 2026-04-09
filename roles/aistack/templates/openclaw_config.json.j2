@@ -46,6 +46,17 @@
       "groupPolicy": "allowlist"
     }
   },
+  "plugins": {
+    "memory-qdrant": {
+      "enabled": true,
+      "qdrantUrl": "http://10.0.1.203:6333",
+      "autoCapture": true,
+      "allowPIICapture": false,
+      "autoRecall": true,
+      "persistToDisk": true,
+      "storagePath": "/home/openclaw/.openclaw/memory/"
+    }
+  },
   "gateway": {
     "mode": "local",
     "port": {{ openclaw_gateway_port }},
