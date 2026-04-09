@@ -30,10 +30,14 @@
 - name: Install Playwright Chromium for OpenClaw
   ansible.builtin.command: >
     node /usr/lib/node_modules/openclaw/node_modules/playwright-core/cli.js install chromium
-  become: yes
-  become_user: openclaw
   environment:
-    HOME: /home/openclaw
     PLAYWRIGHT_BROWSERS_PATH: /home/openclaw/.openclaw/browsers
   register: playwright_install
   changed_when: "'already installed' not in playwright_install.stdout"
+
+- name: Fix Playwright browsers ownership
+  ansible.builtin.file:
+    path: /home/openclaw/.openclaw/browsers
+    owner: openclaw
+    group: openclaw
+    recurse: yes
