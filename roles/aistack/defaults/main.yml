@@ -16,6 +16,12 @@ ollama_default_model: llama3.1:8b
 litellm_image: ghcr.io/berriai/litellm:main-latest
 litellm_port: 4000
 litellm_config_path: "{{ aistack_base_path }}/litellm"
+litellm_db_name: litellm
+litellm_db_user: litellm
+
+# LiteLLM PostgreSQL
+litellm_postgres_image: postgres:16-alpine
+litellm_postgres_data_path: "{{ aistack_base_path }}/litellm-postgres"
 # Primary model (local): used for routine tasks, never leaves the house
 litellm_local_model: ollama/llama3.1:8b
 # Fallback model (external): explicit escalation only — requires ANTHROPIC_API_KEY in vault

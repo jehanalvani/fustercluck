@@ -1,4 +1,27 @@
 ---
+- name: Create LiteLLM PostgreSQL data directory
+  ansible.builtin.file:
+    path: "{{ litellm_postgres_data_path }}"
+    state: directory
+    mode: "0750"
+    owner: root
+    group: root
+
+- name: Deploy LiteLLM PostgreSQL container
+  community.docker.docker_container:
+    name: litellm-postgres
+    image: "{{ litellm_postgres_image }}"
+    restart_policy: unless-stopped
+    state: started
+    networks:
+      - name: "{{ aistack_network }}"
+    volumes:
+      - "{{ litellm_postgres_data_path }}:/var/lib/postgresql/data"
+    env:
+      POSTGRES_DB: "{{ litellm_db_name }}"
+      POSTGRES_USER: "{{ litellm_db_user }}"
+      POSTGRES_PASSWORD: "{{ litellm_db_password }}"
+
 - name: Deploy LiteLLM config
   ansible.builtin.template:
     src: litellm_config.yml.j2
@@ -26,3 +49,4 @@
       ANTHROPIC_API_KEY: "{{ anthropic_api_key }}"
       LITELLM_MASTER_KEY: "{{ litellm_master_key }}"
       LITELLM_TELEMETRY: "False"
+      DATABASE_URL: "postgresql://{{ litellm_db_user }}:{{ litellm_db_password }}@litellm-postgres:5432/{{ litellm_db_name }}"
