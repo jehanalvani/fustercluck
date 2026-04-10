@@ -49,6 +49,11 @@
   ansible.builtin.command: npm install -g openclaw@latest
   register: openclaw_npm_install
   changed_when: "'up to date' not in openclaw_npm_install.stdout"
+  retries: 3
+  delay: 10
+  until: openclaw_npm_install.rc == 0
+  environment:
+    NODE_OPTIONS: "--max-old-space-size=512"
 
 - name: Find npm global prefix
   ansible.builtin.command: npm config get prefix
