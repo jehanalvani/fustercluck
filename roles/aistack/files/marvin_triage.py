@@ -177,7 +177,7 @@ def parse_date_short(date_str):
 def fetch_batch(acct, folder, batch):
     """Fetch up to `batch` messages from `folder`. Returns list of dicts with UIDs."""
     conn = imap_connect(acct)
-    conn.select(folder, readonly=True)
+    conn.select(imap_quote(folder), readonly=True)
 
     _, data = conn.uid("SEARCH", None, "ALL")
     uids = list(reversed(data[0].split()[-batch:])) if data[0] else []
@@ -275,7 +275,7 @@ def move_uid(conn, uid, to_folder):
 def move_message(acct, uid, from_folder, to_folder):
     """Move a single message by UID between folders."""
     conn = imap_connect(acct)
-    conn.select(from_folder)
+    conn.select(imap_quote(from_folder))
     move_uid(conn, uid, to_folder)
     conn.logout()
 
@@ -284,7 +284,7 @@ def dedup_window_shopping(acct, sender_domain, ws_imap_folder, dry_run=False):
     """Archive any existing messages in Window Shopping from the same root domain."""
     root = root_domain(sender_domain)
     conn = imap_connect(acct)
-    conn.select(ws_imap_folder)
+    conn.select(imap_quote(ws_imap_folder))
 
     _, data = conn.uid("SEARCH", None, f'FROM "@{root}"')
     uids = data[0].split() if data[0] else []
@@ -1007,7 +1007,7 @@ def cmd_window_shopping(args, config):
     ws_imap = FOLDER_MAP["Window Shopping"]
 
     conn = imap_connect(acct)
-    conn.select(ws_imap)
+    conn.select(imap_quote(ws_imap))
     _, data = conn.uid("SEARCH", None, "ALL")
     uids = data[0].split() if data[0] else []
     conn.logout()

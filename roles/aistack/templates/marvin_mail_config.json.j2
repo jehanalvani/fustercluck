@@ -1,0 +1,78 @@
+{
+  "accounts": {
+    "marvin": {
+      "email": "marvin@packet.works",
+      "imap_host": "imap.fastmail.com",
+      "imap_port": 993,
+      "smtp_host": "smtp.fastmail.com",
+      "smtp_port": 587,
+      "password": "{{ fastmail_marvin_app_password }}"
+    },
+    "jehan": {
+      "email": "jehan@jehanalvani.com",
+      "imap_host": "imap.fastmail.com",
+      "imap_port": 993,
+      "smtp_host": "smtp.fastmail.com",
+      "smtp_port": 587,
+      "password": "{{ fastmail_jehan_app_password }}"
+    }
+  },
+  "litellm": {
+    "url": "http://127.0.0.1:14000/v1/chat/completions",
+    "key": "{{ litellm_master_key }}",
+    "model": "local"
+  },
+  "protected": {
+    "max_age_hours": 168,
+    "domains": [
+      "millcreeklittleleague.com",
+      "macrohealth.com",
+      "everettsd.org",
+      "edupoint.com",
+      "instructure.com",
+      "parentsquare.com",
+      "clever.com",
+      "naviance.com",
+      "k12insight.com",
+      "tylertech.com",
+      "mystop.com",
+      "durhamschoolservices.com"
+    ],
+    "addresses": [
+      "noreply@notify.glossgenius.com",
+      "drive-shares-dm-noreply@google.com"
+    ]
+  },
+  "window_shopping": {
+    "folder": "Window Shopping",
+    "domains": [
+      "beyondyoga.com",
+      "vuoriclothing.com",
+      "aloyoga.com",
+      "americangiant.com",
+      "griotsgarage.com",
+      "rennline.com",
+      "thecrocodile.com",
+      "negativeunderwear.com",
+      "evo.com",
+      "faherty.com",
+      "bespoke-post.com",
+      "huckberry.com"
+    ]
+  },
+  "reading_list": {
+    "folder": "Reading List",
+    "domains": [
+      "bytebytego.com",
+      "journalclub.io",
+      "economist.com",
+      "morningbrew.com",
+      "nationalcioreview.com",
+      "theburnerseattle.com"
+    ],
+    "addresses": [
+      "pebblehunting@substack.com",
+      "TheAthletic@e1.theathletic.com"
+    ]
+  }
+}
