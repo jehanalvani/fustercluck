@@ -87,6 +87,8 @@
     delete: yes
     rsync_opts:
       - "--exclude=.git"
+      - "--exclude=memory/"
+      - "--exclude=MEMORY.md"
   notify: Restart OpenClaw
 
 - name: Fix workspace ownership
@@ -96,6 +98,38 @@
     group: openclaw
     recurse: yes
 
+# Agent-writable dirs/files inside the workspace — create if absent, never overwrite
+- name: Create workspace memory directory for daily logs
+  ansible.builtin.file:
+    path: "{{ openclaw_config_dir }}/workspace/memory"
+    state: directory
+    mode: "0750"
+    owner: openclaw
+    group: openclaw
+
+- name: Create initial MEMORY.md if absent
+  ansible.builtin.copy:
+    dest: "{{ openclaw_config_dir }}/workspace/MEMORY.md"
+    content: |
+      # Memory
+
+      *(Marvin writes here — curated long-term facts about the household)*
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+
+- name: Allow jehan to run openclaw as openclaw user without password
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/openclaw
+    mode: "0440"
+    validate: "visudo -cf %s"
+    content: |
+      # Allow jehan to run openclaw CLI and manage state files as the openclaw service user
+      jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
+      jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
+
+# Deploy config first (without plugin-specific keys) so openclaw CLI is usable
 - name: Deploy OpenClaw config
   ansible.builtin.template:
     src: openclaw_config.json.j2
@@ -120,21 +154,6 @@
     enabled: yes
     state: started
     daemon_reload: yes
-
-- name: Allow jehan to run openclaw as openclaw user without password
-  ansible.builtin.copy:
-    dest: /etc/sudoers.d/openclaw
-    mode: "0440"
-    validate: "visudo -cf %s"
-    content: |
-      # Allow jehan to run openclaw CLI and manage state files as the openclaw service user
-      jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
-      jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
-
-- name: Install memory-qdrant skill
-  ansible.builtin.shell: "sudo -u openclaw {{ openclaw_bin_path }} skills install memory-qdrant"
-  register: memory_qdrant_install
-  changed_when: "'already installed' not in memory_qdrant_install.stdout"
 
 - name: Install openclaw wrapper script
   ansible.builtin.copy:

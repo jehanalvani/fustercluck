@@ -7,7 +7,7 @@
         "models": [
           {
             "id": "local",
-            "name": "Ollama qwen2.5:7b (local)",
+            "name": "Ollama {{ litellm_local_model | replace('ollama/', '') }} (local)",
             "reasoning": false,
             "input": ["text"],
             "contextWindow": 32768,
@@ -34,9 +34,12 @@
         "idleTimeoutSeconds": 0
       },
       "sandbox": {
-        "mode": "all"
+        "mode": "off"
       }
     }
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
   },
   "tools": {
     "web": {
@@ -51,7 +54,7 @@
       "serverUrl": "{{ bluebubbles_server_url }}",
       "password": "{{ bluebubbles_password }}",
       "webhookPath": "/bluebubbles-webhook",
-      "dmPolicy": "pairing",
+      "dmPolicy": "open",
       "groupPolicy": "allowlist"
     }
   },

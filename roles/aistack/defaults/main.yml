@@ -44,8 +44,6 @@ aistack_network: ai-stack
 # OpenClaw
 openclaw_gateway_port: 18789
 openclaw_config_dir: /home/openclaw/.openclaw
-# Default model: local Ollama model
-openclaw_agent_model: "qwen2.5:7b"
 
 # Port nginx listens on to proxy openclaw canvas to the LAN (openclaw binds to 127.0.0.1 only)
 openclaw_proxy_port: 18790
