@@ -28,6 +28,7 @@ import email.mime.text
 import email.utils
 import html as _html
 import imaplib
+import importlib.util
 import json
 import re
 import smtplib
@@ -39,9 +40,49 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
-CONFIG_PATH = Path("/home/openclaw/.openclaw/marvin-mail.json")
-PATTERNS_PATH = Path("/home/openclaw/.openclaw/triage-patterns.json")
-CUSTOM_FOLDERS_PATH = Path("/home/openclaw/.openclaw/triage-folders.json")
+CONFIG_PATH   = Path("/home/openclaw/.openclaw/marvin-mail.json")
+ACCOUNTS_BASE = Path("/home/openclaw/.openclaw/accounts")
+
+# ── Spam pre-filter (lazy import from marvin-spam-check) ─────────────────────
+# Loaded once on first use. Falls back gracefully if the script isn't present.
+_SPAM_SCAN_FN = None
+
+def _get_spam_scanner():
+    global _SPAM_SCAN_FN
+    if _SPAM_SCAN_FN is not None:
+        return _SPAM_SCAN_FN
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "marvin_spam_check", "/usr/local/bin/marvin-spam-check"
+        )
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _SPAM_SCAN_FN = mod.scan_message
+    except Exception as exc:
+        print(f"[warn] spam checker unavailable: {exc}", file=sys.stderr)
+        _SPAM_SCAN_FN = False  # don't retry
+    return _SPAM_SCAN_FN or None
+
+
+# ── Per-account path helpers ──────────────────────────────────────────────────
+
+def _acct_dir(account_id: str) -> Path:
+    return ACCOUNTS_BASE / account_id
+
+def _patterns_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "triage-patterns.json"
+
+def _folders_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "triage-folders.json"
+
+def _pending_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "pending.json"
+
+def _spam_log_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "spam-log.json"
+
+def _logs_dir(account_id: str) -> Path:
+    return _acct_dir(account_id) / "logs"
 
 LABELS = [
     "Spam",
@@ -128,6 +169,40 @@ def load_config():
         sys.exit(f"Config not found: {CONFIG_PATH}")
 
 
+def load_profile(account_id: str) -> dict:
+    """Load per-account profile.json. Returns empty dict if not present."""
+    p = _acct_dir(account_id) / "profile.json"
+    if p.exists():
+        try:
+            return json.loads(p.read_text())
+        except Exception:
+            pass
+    return {}
+
+
+def select_model(litellm_cfg: dict, model_tier: str) -> str:
+    """Pick the LiteLLM model name based on the account's model_tier.
+
+    local_only  → local_model (content never leaves homelab)
+    local_strong → strong_model if available, else local_model
+    cloud_ok    → configured default (may be local or cloud)
+    """
+    if model_tier == "local_only":
+        return litellm_cfg.get("local_model", litellm_cfg["model"])
+    if model_tier == "local_strong":
+        return litellm_cfg.get("strong_model",
+               litellm_cfg.get("local_model", litellm_cfg["model"]))
+    return litellm_cfg["model"]
+
+
+def append_run_log(account_id: str, entry: dict):
+    """Append a structured JSON line to the account triage log."""
+    d = _logs_dir(account_id)
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "triage.log", "a") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
 def decode_header_value(value):
     if not value:
         return ""
@@ -174,23 +249,31 @@ def parse_date_short(date_str):
         return (date_str or "")[:5]
 
 
-def fetch_batch(acct, folder, batch):
-    """Fetch up to `batch` messages from `folder`. Returns list of dicts with UIDs."""
+def fetch_batch(acct, folder, batch, full_body=False):
+    """Fetch up to `batch` messages from `folder`. Returns list of dicts with UIDs.
+
+    full_body=True fetches RFC822 (headers + body) instead of headers only.
+    Used by spam-only pass so scan_message() has body and link signals.
+    The parsed message object is stored as "_parsed_msg" for the spam pre-filter.
+    """
     conn = imap_connect(acct)
     conn.select(imap_quote(folder), readonly=True)
 
     _, data = conn.uid("SEARCH", None, "ALL")
     uids = list(reversed(data[0].split()[-batch:])) if data[0] else []
 
+    fetch_spec = "(RFC822)" if full_body else "(RFC822.HEADER)"
+
     messages = []
     for uid in uids:
-        _, hdr_data = conn.uid("FETCH", uid, "(RFC822.HEADER)")
+        _, hdr_data = conn.uid("FETCH", uid, fetch_spec)
         if (not hdr_data
                 or hdr_data[0] is None
                 or not isinstance(hdr_data[0], tuple)
                 or not isinstance(hdr_data[0][1], bytes)):
             continue
-        parsed = email.message_from_bytes(hdr_data[0][1])
+        raw_bytes = hdr_data[0][1]
+        parsed = email.message_from_bytes(raw_bytes)
         date_str = parsed.get("Date", "")
         try:
             timestamp = email.utils.parsedate_to_datetime(date_str).timestamp()
@@ -204,6 +287,7 @@ def fetch_batch(acct, folder, batch):
             "timestamp": timestamp,
             "unsubscribe": _parse_list_unsubscribe(parsed.get("List-Unsubscribe", "")),
             "message_id": (parsed.get("Message-ID") or "").strip(),
+            "_parsed_msg": parsed,  # retained for spam pre-filter; not sent to LLM
         })
 
     conn.logout()
@@ -305,14 +389,15 @@ def dedup_window_shopping(acct, sender_domain, ws_imap_folder, dry_run=False):
     return archived
 
 
-def load_patterns():
-    if PATTERNS_PATH.exists():
-        return json.loads(PATTERNS_PATH.read_text())
+def load_patterns(account_id: str):
+    p = _patterns_path(account_id)
+    if p.exists():
+        return json.loads(p.read_text())
     return {"domains": {}, "addresses": {}}
 
 
-def save_patterns(patterns):
-    PATTERNS_PATH.write_text(json.dumps(patterns, indent=2, ensure_ascii=False))
+def save_patterns(patterns, account_id: str):
+    _patterns_path(account_id).write_text(json.dumps(patterns, indent=2, ensure_ascii=False))
 
 
 def record_pattern(from_header, label, patterns):
@@ -367,8 +452,7 @@ LABEL_EMOJI = {
     "Trash":                      "🗑️",
 }
 
-PENDING_PATH   = Path("/home/openclaw/.openclaw/triage-pending.json")
-SPAM_LOG_PATH  = Path("/home/openclaw/.openclaw/spam-log.json")
+# PENDING_PATH and SPAM_LOG_PATH are now per-account — see _pending_path() / _spam_log_path()
 
 # Labels shown individually in proposal email; bulk labels get count-only
 BULK_LABELS = {"Spam", "Archive", "Trash"}
@@ -380,39 +464,42 @@ SPAM_FAST_LABELS = {"Spam", "Trash"}
 IMMEDIATE_LABELS = {"Spam", "Trash", "Archive", "Shipping Info", "Window Shopping", "Reading List"}
 
 
-def append_spam_log(entries):
-    """Append moved-spam entries to the daily spam log."""
+def append_spam_log(entries, account_id: str):
+    """Append moved-spam entries to the per-account daily spam log."""
+    p = _spam_log_path(account_id)
     existing = []
-    if SPAM_LOG_PATH.exists():
+    if p.exists():
         try:
-            existing = json.loads(SPAM_LOG_PATH.read_text())
+            existing = json.loads(p.read_text())
         except Exception:
             pass
     existing.extend(entries)
-    SPAM_LOG_PATH.write_text(json.dumps(existing, ensure_ascii=False))
+    p.write_text(json.dumps(existing, ensure_ascii=False))
 
 
-def pop_spam_log():
-    """Read and delete the spam log. Returns list of entries (may be empty)."""
-    if not SPAM_LOG_PATH.exists():
+def pop_spam_log(account_id: str):
+    """Read and delete the per-account spam log. Returns list of entries (may be empty)."""
+    p = _spam_log_path(account_id)
+    if not p.exists():
         return []
     try:
-        entries = json.loads(SPAM_LOG_PATH.read_text())
-        SPAM_LOG_PATH.unlink()
+        entries = json.loads(p.read_text())
+        p.unlink()
         return entries
     except Exception:
         return []
 
 
-def _apply_custom_folders():
-    """Load triage-folders.json and extend LABELS, FOLDER_MAP, LABEL_EMOJI, BULK_LABELS, SYSTEM_PROMPT."""
+def _apply_custom_folders(account_id: str = "jehan"):
+    """Load per-account triage-folders.json and extend LABELS, FOLDER_MAP, LABEL_EMOJI, BULK_LABELS, SYSTEM_PROMPT."""
     global SYSTEM_PROMPT
-    if not CUSTOM_FOLDERS_PATH.exists():
+    path = _folders_path(account_id)
+    if not path.exists():
         return
     try:
-        data = json.loads(CUSTOM_FOLDERS_PATH.read_text())
+        data = json.loads(path.read_text())
     except Exception as exc:
-        print(f"[warn] Could not load {CUSTOM_FOLDERS_PATH}: {exc}", file=sys.stderr)
+        print(f"[warn] Could not load {path}: {exc}", file=sys.stderr)
         return
     extras = []
     for f in data.get("folders", []):
@@ -435,21 +522,22 @@ def _apply_custom_folders():
         SYSTEM_PROMPT = SYSTEM_PROMPT + "\n" + "\n".join(extras)
 
 
-def save_pending(batch_id, account, source_folder, results):
+def save_pending(batch_id, account_id, source_folder, results):
     data = {
         "batch_id": batch_id,
-        "account": account,
+        "account": account_id,
         "source_folder": source_folder,
         "status": "pending",
         "messages": results,
     }
-    PENDING_PATH.write_text(json.dumps(data, indent=2, ensure_ascii=False))
+    _pending_path(account_id).write_text(json.dumps(data, indent=2, ensure_ascii=False))
 
 
-def load_pending():
-    if not PENDING_PATH.exists():
+def load_pending(account_id: str):
+    p = _pending_path(account_id)
+    if not p.exists():
         return None
-    return json.loads(PENDING_PATH.read_text())
+    return json.loads(p.read_text())
 
 
 _EMAIL_CSS = """\
@@ -708,22 +796,36 @@ def _build_summary_html(sort_id, source_folder, results, counts, now, spam_log=N
     p.append(f'<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>{total}</strong></td></tr>')
     p.append('</tbody></table><hr>')
     _build_triage_sections(p, sort_id, source_folder, results, counts)
+    suspicious_results = [r for r in results if r.get("heuristic_verdict") == "suspicious"]
+    if suspicious_results:
+        p.append('<hr><h2>⚠ Suspicious (heuristic flag)</h2>')
+        p.append('<p>Caught by pre-filter on header signals, routed to Spam without LLM. '
+                 'Reply <code>not spam: &lt;sender&gt;</code> to correct any.</p>')
+        p.append('<table><thead><tr><th>Date</th><th>From</th><th>Subject</th></tr></thead><tbody>')
+        for r in suspicious_results:
+            p.append(f'<tr><td>{e(r.get("date",""))}</td>'
+                     f'<td>{e(r.get("from","")[:50])}</td>'
+                     f'<td>{e(r.get("subject","")[:70])}</td></tr>')
+        p.append('</tbody></table>')
     if spam_log:
         spam_counts = Counter(e2["label"] for e2 in spam_log)
+        spam_suspicious_log = [e2 for e2 in spam_log if e2.get("heuristic_verdict") == "suspicious"]
         p.append(f'<hr><h2>Fast-pass \u2014 {len(spam_log)} caught overnight</h2>')
         p.append('<table><thead><tr><th>Destination</th><th style="text-align:right">Count</th></tr></thead><tbody>')
         for label, count in spam_counts.most_common():
             p.append(f'<tr><td>{_html.escape(LABEL_EMOJI.get(label,""))} {_html.escape(label)}</td>'
                      f'<td style="text-align:right">{count}</td></tr>')
         p.append('</tbody></table>')
-    p.append(f'<hr><p><small>Sort ID: <code>{e(sort_id)}</code> · Use ↩ to send feedback</small></p>')
+        if spam_suspicious_log:
+            p.append(f'<p><em>{len(spam_suspicious_log)} flagged as suspicious (heuristic, not LLM)</em></p>')
+    p.append(f'<hr><p><small>Sort ID: <code>{e(sort_id)}</code> · Use ↩ to send feedback or reply "more" for another batch</small></p>')
     return _wrap_html('\n'.join(p))
 
 
-def send_proposal(config, batch_id, source_folder, results):
+def send_proposal(config, batch_id, source_folder, results, account_id="jehan"):
     """Send a formatted triage proposal email — no moves have happened yet."""
     marvin = config["accounts"]["marvin"]
-    jehan = config["accounts"]["jehan"]
+    jehan  = config["accounts"].get(account_id, config["accounts"]["jehan"])
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     counts = Counter(r["label"] for r in results)
@@ -792,7 +894,8 @@ def send_proposal(config, batch_id, source_folder, results):
 
     body_md = "\n".join(lines)
     body_html = _build_proposal_html(batch_id, source_folder, results, counts, moves, now)
-    subject = f"[Marvin] {moves} to move · reply approve"
+    acct_prefix = f"{account_id}: " if account_id != "jehan" else ""
+    subject = f"[Marvin] {acct_prefix}{moves} to move · reply approve"
     try:
         _smtp_send_html(marvin, jehan, subject, body_md, body_html=body_html)
         print(f"  Proposal sent to {jehan['email']}", file=sys.stderr)
@@ -800,10 +903,10 @@ def send_proposal(config, batch_id, source_folder, results):
         print(f"  [warn] Failed to send proposal: {e}", file=sys.stderr)
 
 
-def send_summary(config, source_folder, results, errors, spam_log=None):
-    """Send a triage summary email from marvin to jehan."""
+def send_summary(config, source_folder, results, errors, account_id="jehan", spam_log=None):
+    """Send a triage summary email from marvin to the account owner (or jehan if not configured)."""
     marvin = config["accounts"]["marvin"]
-    jehan = config["accounts"]["jehan"]
+    jehan  = config["accounts"].get(account_id, config["accounts"]["jehan"])
 
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
     total = len(results)
@@ -851,9 +954,32 @@ def send_summary(config, source_folder, results, errors, spam_log=None):
             )
         lines.append("")
 
+    # Suspicious — heuristic flag, routed to Spam
+    suspicious_results = [r for r in results if r.get("heuristic_verdict") == "suspicious"]
+    if suspicious_results:
+        lines += [
+            "---",
+            "",
+            f"## ⚠ Suspicious (heuristic flag) — {len(suspicious_results)} routed to Spam",
+            "",
+            "These were caught by the pre-filter on header signals and sent to Spam "
+            "without LLM classification. Reply `not spam: <sender>` to correct any.",
+            "",
+            "| Date | From | Subject |",
+            "|---|---|---|",
+        ]
+        for r in suspicious_results:
+            lines.append(
+                f"| {_md_cell(r.get('date', ''))} "
+                f"| {_md_cell(r.get('from', '')[:45])} "
+                f"| {_md_cell(r.get('subject', '')[:60])} |"
+            )
+        lines.append("")
+
     # Spam fast-pass section
     if spam_log:
         spam_counts = Counter(e["label"] for e in spam_log)
+        spam_suspicious_log = [e for e in spam_log if e.get("heuristic_verdict") == "suspicious"]
         spam_total = len(spam_log)
         lines += [
             "---",
@@ -866,6 +992,11 @@ def send_summary(config, source_folder, results, errors, spam_log=None):
         for label, count in spam_counts.most_common():
             emoji = LABEL_EMOJI.get(label, "")
             lines.append(f"| {emoji} {label} | {count} |")
+        if spam_suspicious_log:
+            lines += [
+                "",
+                f"*{len(spam_suspicious_log)} flagged as suspicious (heuristic, not LLM)*",
+            ]
         lines.append("")
 
     body_md = "\n".join(lines)
@@ -873,7 +1004,10 @@ def send_summary(config, source_folder, results, errors, spam_log=None):
     body_html = _build_summary_html(sort_id, source_folder, results, counts, now, spam_log=spam_log)
     top3 = ", ".join(f"{lbl} {c}" for lbl, c in counts.most_common(3))
     spam_note = f" · +{len(spam_log)} fast-pass" if spam_log else ""
-    subject = f"[Marvin] Sorted {total}{spam_note} · {top3}"
+    suspicious_results = [r for r in results if r.get("heuristic_verdict") == "suspicious"]
+    suspicious_note = f" · {len(suspicious_results)}⚠" if suspicious_results else ""
+    acct_prefix = f"{account_id}: " if account_id != "jehan" else ""
+    subject = f"[Marvin] {acct_prefix}Sorted {total}{spam_note}{suspicious_note} · {top3}"
     try:
         _smtp_send_html(marvin, jehan, subject, body_md, body_html=body_html)
         print(f"  Summary sent to {jehan['email']}", file=sys.stderr)
@@ -883,32 +1017,71 @@ def send_summary(config, source_folder, results, errors, spam_log=None):
 
 def cmd_run(args, config):
     acct = config["accounts"][args.account]
-    litellm_cfg = config["litellm"]
-    protected_cfg = config.get("protected", {})
-    ws_cfg = config.get("window_shopping", {})
-    ws_imap = FOLDER_MAP["Window Shopping"]
-    rl_cfg = config.get("reading_list", {})
+    profile      = load_profile(args.account)
+    model_tier   = profile.get("model_tier", "cloud_ok")
+    litellm_cfg  = {**config["litellm"], "model": select_model(config["litellm"], model_tier)}
+    # Per-account mail preferences override global config (fall back to top-level for jehan compat)
+    protected_cfg = profile.get("protected", config.get("protected", {}))
+    ws_cfg        = profile.get("window_shopping", config.get("window_shopping", {}))
+    ws_imap       = FOLDER_MAP["Window Shopping"]
+    rl_cfg        = profile.get("reading_list", config.get("reading_list", {}))
     max_age_hours = protected_cfg.get("max_age_hours", 0)
     now_ts = time.time()
 
     print(f"Fetching {args.batch} messages from {args.folder}...", file=sys.stderr)
-    messages = fetch_batch(acct, args.folder, args.batch)
+    # Spam-only pass fetches full RFC822 so scan_message() has body + link signals.
+    # Full sort fetches headers only for speed; spam pre-filter runs on headers alone.
+    messages = fetch_batch(acct, args.folder, args.batch, full_body=args.spam_only)
 
     if not messages:
         print("No messages found.")
         return
 
-    patterns = load_patterns()
+    patterns = load_patterns(args.account)
     results = []
     errors = 0
     skipped = 0
+    spam_check_caught = 0
+    spam_check_suspicious = 0
 
     spam_moved = []
+    scan_message = _get_spam_scanner()
 
     for msg in messages:
-        # Classify first — needed to decide whether age gate applies
+        # ── Spam pre-filter ───────────────────────────────────────────────────
+        # Run heuristic scanner before LLM. In spam-only mode the full message
+        # was fetched above; in full sort only headers are available (partial
+        # coverage — header signals still catch obvious phishing/BEC).
+        # Both likely_scam and suspicious route to Spam; tracked separately.
+        heuristic_label = None
+        heuristic_verdict = None
+        if scan_message:
+            parsed_msg = msg.get("_parsed_msg")
+            if parsed_msg is not None:
+                spam_result = scan_message(parsed_msg)
+                heuristic_verdict = spam_result["verdict"]
+                if heuristic_verdict == "likely_scam":
+                    heuristic_label = "Spam"
+                    spam_check_caught += 1
+                    print(
+                        f"  UID {msg['uid']:>6}  [heuristic LIKELY SCAM"
+                        f" score={spam_result['score']:.2f}]  {msg['from'][:40]}",
+                        file=sys.stderr,
+                    )
+                elif heuristic_verdict == "suspicious":
+                    heuristic_label = "Spam"
+                    spam_check_suspicious += 1
+                    print(
+                        f"  UID {msg['uid']:>6}  [heuristic SUSPICIOUS"
+                        f" score={spam_result['score']:.2f}]  {msg['from'][:40]}",
+                        file=sys.stderr,
+                    )
+
+        # ── Classify ─────────────────────────────────────────────────────────
+        # Heuristic verdict takes priority; falls through to pattern match then LLM.
         label = (
-            brand_label(msg["from"], protected_cfg, "INBOX")
+            heuristic_label
+            or brand_label(msg["from"], protected_cfg, "INBOX")
             or brand_label(msg["from"], ws_cfg, "Window Shopping")
             or brand_label(msg["from"], rl_cfg, "Reading List")
             or classify(msg["from"], msg["subject"], litellm_cfg)
@@ -932,7 +1105,10 @@ def cmd_run(args, config):
 
         imap_folder = FOLDER_MAP[label]
         staying = (imap_folder == args.folder)
-        results.append({**msg, "label": label})
+        result_entry = {**msg, "label": label}
+        if heuristic_verdict in ("likely_scam", "suspicious"):
+            result_entry["heuristic_verdict"] = heuristic_verdict
+        results.append(result_entry)
 
         if args.dry_run:
             action = "stay" if staying else f"→  {label}"
@@ -951,10 +1127,13 @@ def cmd_run(args, config):
                 record_pattern(msg["from"], label, patterns)
                 print(f"  UID {msg['uid']:>6}  →  {label}  ({msg['from'][:40]})")
                 if args.spam_only:
-                    spam_moved.append({
+                    entry = {
                         "ts": now_ts, "uid": msg["uid"],
                         "from": msg["from"], "subject": msg["subject"], "label": label,
-                    })
+                    }
+                    if heuristic_verdict in ("likely_scam", "suspicious"):
+                        entry["heuristic_verdict"] = heuristic_verdict
+                    spam_moved.append(entry)
             except Exception as e:
                 print(f"  [error] UID {msg['uid']}: {e}", file=sys.stderr)
                 errors += 1
@@ -967,25 +1146,46 @@ def cmd_run(args, config):
         for r in results:
             r["imap_folder"] = FOLDER_MAP[r["label"]]
         save_pending(batch_id, args.account, args.folder, results)
-        save_patterns(patterns)
-        send_proposal(config, batch_id, args.folder, results)
+        save_patterns(patterns, args.account)
+        send_proposal(config, batch_id, args.folder, results, account_id=args.account)
         print(f"\nProposal sent. Batch ID: {batch_id}")
-        print(f"Pending file: {PENDING_PATH}")
+        print(f"Pending file: {_pending_path(args.account)}")
         print("Run `marvin-triage execute` after approval.")
     elif args.dry_run:
         pass  # already printed per-message above
     elif args.spam_only:
-        save_patterns(patterns)
+        save_patterns(patterns, args.account)
         if spam_moved:
-            append_spam_log(spam_moved)
+            append_spam_log(spam_moved, args.account)
             print(f"\nSpam fast-pass: {len(spam_moved)} moved → spam log.")
         else:
             print("\nSpam fast-pass: nothing to move.")
     else:
-        save_patterns(patterns)
+        save_patterns(patterns, args.account)
         if not args.no_notify and results:
-            spam_log = pop_spam_log()
-            send_summary(config, args.folder, results, errors, spam_log=spam_log)
+            spam_log = pop_spam_log(args.account)
+            send_summary(config, args.folder, results, errors,
+                         account_id=args.account, spam_log=spam_log)
+
+    # Structured run log (always, even dry-run — useful for audit)
+    if not args.spam_only:
+        run_type = "dry_run" if args.dry_run else ("propose" if args.propose else "full_sort")
+    else:
+        run_type = "spam_only"
+    append_run_log(args.account, {
+        "ts":                datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "account":           args.account,
+        "run_type":          run_type,
+        "source_folder":     args.folder,
+        "batch":             args.batch,
+        "model_tier":        model_tier,
+        "sorted":            len(results),
+        "by_label":          dict(Counter(r["label"] for r in results)),
+        "errors":            errors,
+        "skipped":           skipped,
+        "spam_check_caught":     spam_check_caught,
+        "spam_check_suspicious": spam_check_suspicious,
+    })
 
     print()
     print("── Summary ──────────────────────────────")
@@ -1039,14 +1239,14 @@ def cmd_window_shopping(args, config):
 
 def cmd_patterns(args):
     """Show high-confidence sender→label patterns, separated by promotion path."""
-    patterns = load_patterns()
+    patterns = load_patterns(args.account)
 
-    # Load sieve state to skip already-pending/dismissed entries
-    _sieve_state_path = Path("/home/openclaw/.openclaw/sieve-state.json")
+    # Load per-account sieve state to skip already-pending/dismissed entries
     sieve_state = {}
-    if _sieve_state_path.exists():
+    _ss_path = _acct_dir(args.account) / "sieve-state.json"
+    if _ss_path.exists():
         try:
-            sieve_state = json.loads(_sieve_state_path.read_text())
+            sieve_state = json.loads(_ss_path.read_text())
         except Exception:
             pass
     pending_set   = set(sieve_state.get("pending",   {}).keys())
@@ -1229,11 +1429,12 @@ def cmd_folders(args, config):
 
     imap_to_label = {v: k for k, v in FOLDER_MAP.items()}
 
-    # Load custom folder file to know what's already registered there
+    # Load per-account custom folder file to know what's already registered there
     custom_imap = set()
-    if CUSTOM_FOLDERS_PATH.exists():
+    _cf_path = _folders_path(args.account)
+    if _cf_path.exists():
         try:
-            cdata = json.loads(CUSTOM_FOLDERS_PATH.read_text())
+            cdata = json.loads(_cf_path.read_text())
             custom_imap = {f.get("imap", f.get("name", "")) for f in cdata.get("folders", [])}
         except Exception:
             pass
@@ -1258,13 +1459,13 @@ def cmd_folders(args, config):
     print(f"{len(unknown)} unmapped folder(s).")
 
     if not args.sync:
-        print(f"\nRun with --sync to add stubs to {CUSTOM_FOLDERS_PATH}")
+        print(f"\nRun with --sync to add stubs to {_cf_path}")
         return
 
-    # Load or create custom folders file
-    if CUSTOM_FOLDERS_PATH.exists():
+    # Load or create per-account custom folders file
+    if _cf_path.exists():
         try:
-            cdata = json.loads(CUSTOM_FOLDERS_PATH.read_text())
+            cdata = json.loads(_cf_path.read_text())
         except Exception:
             cdata = {"folders": []}
     else:
@@ -1285,8 +1486,8 @@ def cmd_folders(args, config):
         added += 1
 
     if added:
-        CUSTOM_FOLDERS_PATH.write_text(json.dumps(cdata, indent=2, ensure_ascii=False))
-        print(f"Added {added} stub(s) to {CUSTOM_FOLDERS_PATH}")
+        _cf_path.write_text(json.dumps(cdata, indent=2, ensure_ascii=False))
+        print(f"Added {added} stub(s) to {_cf_path}")
         print(f"Edit the file to add descriptions, then re-run triage.")
     else:
         print("No new stubs needed.")
@@ -1294,9 +1495,9 @@ def cmd_folders(args, config):
 
 def cmd_execute(args, config):
     """Execute a pending proposal batch."""
-    pending = load_pending()
+    pending = load_pending(args.account)
     if not pending:
-        sys.exit(f"No pending batch found at {PENDING_PATH}")
+        sys.exit(f"No pending batch found at {_pending_path(args.account)}")
     if pending["status"] == "executed":
         sys.exit(f"Batch {pending['batch_id']} already executed.")
 
@@ -1327,8 +1528,8 @@ def cmd_execute(args, config):
 
     if not args.dry_run:
         pending["status"] = "executed"
-        PENDING_PATH.write_text(json.dumps(pending, indent=2, ensure_ascii=False))
-        send_summary(config, source, messages, errors)
+        _pending_path(args.account).write_text(json.dumps(pending, indent=2, ensure_ascii=False))
+        send_summary(config, source, messages, errors, account_id=args.account)
         print(f"\nDone. {moved} moved, {errors} errors. Summary sent.")
     else:
         print(f"\n[dry-run: {len(moves)} would be moved]")
@@ -1361,19 +1562,21 @@ def main():
     p_exec.add_argument("--dry-run", action="store_true")
 
     p_pat = sub.add_parser("patterns", help="Show high-confidence Sieve promotion candidates")
+    p_pat.add_argument("--account", default="jehan")
     p_pat.add_argument("--min-count", type=int, default=3)
     p_pat.add_argument("--min-confidence", type=float, default=0.8)
 
     p_folders = sub.add_parser("folders", help="List IMAP folders and their triage mapping status")
     p_folders.add_argument("--account", default="jehan")
     p_folders.add_argument("--sync", action="store_true",
-                           help=f"Add unmapped folders as stubs to {CUSTOM_FOLDERS_PATH}")
+                           help="Add unmapped folders as stubs to the per-account triage-folders.json")
 
-    sub.add_parser("resend", help="Resend the pending proposal email without re-classifying")
+    p_resend = sub.add_parser("resend", help="Resend the pending proposal email without re-classifying")
+    p_resend.add_argument("--account", default="jehan")
 
     args = parser.parse_args()
     config = load_config()
-    _apply_custom_folders()
+    _apply_custom_folders(getattr(args, "account", "jehan"))
 
     if args.cmd == "run":
         cmd_run(args, config)
@@ -1386,11 +1589,13 @@ def main():
     elif args.cmd == "folders":
         cmd_folders(args, config)
     elif args.cmd == "resend":
-        pending = load_pending()
+        account_id = getattr(args, "account", "jehan")
+        pending = load_pending(account_id)
         if not pending:
-            sys.exit(f"No pending batch found at {PENDING_PATH}")
+            sys.exit(f"No pending batch found at {_pending_path(account_id)}")
         print(f"Resending proposal for batch {pending['batch_id']} ({len(pending['messages'])} messages)…", file=sys.stderr)
-        send_proposal(config, pending["batch_id"], pending["source_folder"], pending["messages"])
+        send_proposal(config, pending["batch_id"], pending["source_folder"], pending["messages"],
+                      account_id=account_id)
         print("Done.", file=sys.stderr)
 
 

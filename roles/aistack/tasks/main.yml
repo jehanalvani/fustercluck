@@ -10,7 +10,6 @@
     - "{{ aistack_base_path }}"
     - "{{ ollama_models_path }}"
     - "{{ litellm_config_path }}"
-    - "{{ qdrant_data_path }}"
     - "{{ searxng_config_path }}"
 
 - import_tasks: nvidia_runtime.yml
@@ -21,11 +20,11 @@
   tags: ollama
 - import_tasks: litellm.yml
   tags: litellm
-- import_tasks: qdrant.yml
-  tags: qdrant
 - import_tasks: searxng.yml
   tags: searxng
 - import_tasks: browser.yml
   tags: browser
 - import_tasks: openclaw.yml
   tags: openclaw
+- import_tasks: mail_calendar.yml
+  tags: mail_calendar

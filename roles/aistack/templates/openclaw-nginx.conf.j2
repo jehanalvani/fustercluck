@@ -8,11 +8,23 @@ server {
     listen 127.0.0.1:{{ litellm_shim_port }};
     access_log off;
 
+    # Strip /v1/ prefix — LiteLLM's non-prefixed paths bypass DB-backed key validation.
+    # Include the master key so LiteLLM passes auth regardless of which key table path is hit.
+    # Long read timeout: GTX 1060 cold-starts can take 90s+ for first inference.
     location /v1/ {
         rewrite ^/v1/(.*)$ /$1 break;
         proxy_pass http://10.0.1.203:{{ litellm_port }};
-        proxy_set_header Authorization "";
+        proxy_set_header Authorization "Bearer {{ litellm_master_key }}";
         proxy_set_header Host $host;
+        proxy_read_timeout 300s;
+    }
+
+    # Catch non-/v1/ paths (health checks, model probes, etc.) — pass through with auth.
+    location / {
+        proxy_pass http://10.0.1.203:{{ litellm_port }};
+        proxy_set_header Authorization "Bearer {{ litellm_master_key }}";
+        proxy_set_header Host $host;
+        proxy_read_timeout 300s;
     }
 }
 #

@@ -2,8 +2,15 @@ model_list:
   # Local model — runs on 20-size GPU, data never leaves the house
   - model_name: local
     litellm_params:
-      model: {{ litellm_local_model }}
+      # ollama_chat uses /api/chat with native tool support; ollama/ (/api/generate) embeds tool
+      # schemas as text which causes the model to output JSON instead of plain text replies.
+      model: ollama_chat/{{ litellm_local_model | replace('ollama/', '') }}
       api_base: http://ollama:{{ ollama_port }}
+      # GTX 1060 6 GB: 4096 default is too small (system prompt ~8.8k tokens → full truncation).
+      # 8192 requires ~1 GB KV cache vs 512 MB at 4096 — fits with ~260 MB free.
+      # num_keep protects the system prompt from context-window eviction.
+      num_ctx: 8192
+      num_keep: 7000
 
   # External fallback — explicit escalation only, requires conscious choice by OpenClaw/user
   - model_name: claude

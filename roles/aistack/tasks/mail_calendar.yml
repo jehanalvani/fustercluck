@@ -1,0 +1,340 @@
+---
+# Mail and calendar access for Marvin
+# Requires vault vars: vault_fastmail_marvin_app_password, vault_fastmail_jehan_app_password
+# See roles/aistack/vars/vault.yml for instructions on adding those values.
+#
+# Multi-tenant: mail_accounts.yml defines the household account list.
+# Add a new member: add entry to mail_accounts.yml + vault var + re-run with --tags mail_calendar
+
+- name: Load household mail accounts
+  ansible.builtin.include_vars:
+    file: mail_accounts.yml
+
+- name: Fix any broken apt packages before installing
+  ansible.builtin.apt:
+    state: fixed
+
+- name: Install khal, vdirsyncer, and python3-markdown
+  ansible.builtin.apt:
+    name:
+      - khal
+      - vdirsyncer
+      - python3-markdown
+    state: present
+
+- name: Create calendar and vdirsyncer directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: openclaw
+    group: openclaw
+    mode: "0700"
+  loop:
+    - /home/openclaw/.config/khal
+    - /home/openclaw/.config/vdirsyncer
+    - /home/openclaw/.openclaw/calendars/marvin
+    - /home/openclaw/.openclaw/calendars/jehan
+    - /home/openclaw/.openclaw/vdirsyncer/status
+    - /home/openclaw/.openclaw/khal
+
+# ── Per-account directory provisioning ───────────────────────────────────────
+
+- name: Create accounts base directory
+  ansible.builtin.file:
+    path: /home/openclaw/.openclaw/accounts
+    state: directory
+    owner: openclaw
+    group: openclaw
+    mode: "0750"
+
+- name: Create per-account base and logs directories
+  ansible.builtin.file:
+    path: "{{ dirpath }}"
+    state: directory
+    owner: openclaw
+    group: openclaw
+    mode: "0750"
+  loop: "{{ mail_accounts | product(['', 'logs']) | list }}"
+  vars:
+    dirpath: "/home/openclaw/.openclaw/accounts/{{ item[0].id }}{% if item[1] %}/{{ item[1] }}{% endif %}"
+
+- name: Deploy per-account profile.json
+  ansible.builtin.template:
+    src: account_profile.json.j2
+    dest: "/home/openclaw/.openclaw/accounts/{{ item.id }}/profile.json"
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  loop: "{{ mail_accounts }}"
+
+- name: Create initial triage-patterns.json if absent
+  ansible.builtin.copy:
+    dest: "/home/openclaw/.openclaw/accounts/{{ item.id }}/triage-patterns.json"
+    content: |
+      {"domains": {}, "addresses": {}}
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  loop: "{{ mail_accounts }}"
+
+- name: Create initial triage-folders.json if absent
+  ansible.builtin.copy:
+    dest: "/home/openclaw/.openclaw/accounts/{{ item.id }}/triage-folders.json"
+    content: |
+      {"folders": []}
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  loop: "{{ mail_accounts }}"
+
+- name: Create initial sieve-state.json if absent
+  ansible.builtin.copy:
+    dest: "/home/openclaw/.openclaw/accounts/{{ item.id }}/sieve-state.json"
+    content: |
+      {"pending": {}, "dismissed": {}}
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  loop: "{{ mail_accounts }}"
+
+# Migrate jehan's flat files to per-account directory (idempotent — force: no)
+- name: Migrate jehan triage-patterns.json to per-account directory
+  ansible.builtin.copy:
+    src: /home/openclaw/.openclaw/triage-patterns.json
+    dest: /home/openclaw/.openclaw/accounts/jehan/triage-patterns.json
+    remote_src: yes
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  ignore_errors: yes
+
+- name: Migrate jehan triage-folders.json to per-account directory
+  ansible.builtin.copy:
+    src: /home/openclaw/.openclaw/triage-folders.json
+    dest: /home/openclaw/.openclaw/accounts/jehan/triage-folders.json
+    remote_src: yes
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  ignore_errors: yes
+
+- name: Migrate jehan sieve-state.json to per-account directory
+  ansible.builtin.copy:
+    src: /home/openclaw/.openclaw/sieve-state.json
+    dest: /home/openclaw/.openclaw/accounts/jehan/sieve-state.json
+    remote_src: yes
+    force: no
+    owner: openclaw
+    group: openclaw
+    mode: "0640"
+  ignore_errors: yes
+
+# ── Config and scripts ────────────────────────────────────────────────────────
+
+- name: Deploy vdirsyncer config
+  ansible.builtin.template:
+    src: vdirsyncer_config.j2
+    dest: /home/openclaw/.config/vdirsyncer/config
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+
+- name: Deploy khal config
+  ansible.builtin.template:
+    src: khal_config.j2
+    dest: /home/openclaw/.config/khal/config
+    owner: openclaw
+    group: openclaw
+    mode: "0644"
+
+- name: Deploy marvin-mail credentials
+  ansible.builtin.template:
+    src: marvin_mail_config.json.j2
+    dest: /home/openclaw/.openclaw/marvin-mail.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+
+- name: Deploy marvin-mail script
+  ansible.builtin.copy:
+    src: marvin_mail.py
+    dest: /usr/local/bin/marvin-mail
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-triage script
+  ansible.builtin.copy:
+    src: marvin_triage.py
+    dest: /usr/local/bin/marvin-triage
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy triage folder definitions (jehan default — per-account migration handled above)
+  ansible.builtin.copy:
+    src: triage_folders.json
+    dest: /home/openclaw/.openclaw/triage-folders.json
+    owner: openclaw
+    group: openclaw
+    mode: "0644"
+
+- name: Deploy marvin-feedback script
+  ansible.builtin.copy:
+    src: marvin_feedback.py
+    dest: /usr/local/bin/marvin-feedback
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-spam-check script
+  ansible.builtin.copy:
+    src: marvin_spam_check.py
+    dest: /usr/local/bin/marvin-spam-check
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-mail-exporter script
+  ansible.builtin.copy:
+    src: marvin_mail_exporter.py
+    dest: /usr/local/bin/marvin-mail-exporter
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create node_exporter textfile collector directory
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile_collector
+    state: directory
+    owner: root
+    group: openclaw
+    mode: "0775"
+  # openclaw user writes .prom files; node_exporter pod reads them via hostPath (runs as root)
+
+# ── Cron jobs ─────────────────────────────────────────────────────────────────
+# Scoped per account. marvin-feedback stays global (reads marvin INBOX, applies to jehan).
+
+# Remove old hardcoded single-account crons (replaced by per-account loops below)
+- name: Remove old hardcoded spam fast-pass cron
+  ansible.builtin.cron:
+    name: marvin spam fast-pass
+    state: absent
+    user: openclaw
+
+- name: Remove old hardcoded full sort cron
+  ansible.builtin.cron:
+    name: marvin full sort
+    state: absent
+    user: openclaw
+
+- name: Remove old hardcoded window-shopping flush cron
+  ansible.builtin.cron:
+    name: marvin window-shopping flush
+    state: absent
+    user: openclaw
+
+- name: Set up marvin-feedback cron (every 30 minutes — global, processes marvin INBOX)
+  ansible.builtin.cron:
+    name: marvin feedback processing
+    minute: "*/30"
+    job: >-
+      /usr/local/bin/marvin-feedback
+      >>/home/openclaw/.openclaw/feedback.log 2>&1
+    user: openclaw
+
+- name: Set up spam fast-pass cron per account (every hour)
+  ansible.builtin.cron:
+    name: "marvin spam fast-pass {{ item.id }}"
+    minute: "0"
+    job: >-
+      /usr/local/bin/marvin-triage run --account {{ item.id }} --spam-only --batch 200
+      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+  when: item.email != ''
+
+- name: Set up full sort cron per account (daily 6:30 AM)
+  ansible.builtin.cron:
+    name: "marvin full sort {{ item.id }}"
+    hour: "6"
+    minute: "30"
+    job: >-
+      /usr/local/bin/marvin-triage run --account {{ item.id }} --batch 500
+      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+  when: item.email != ''
+
+- name: Set up Window Shopping Monday flush cron per account
+  ansible.builtin.cron:
+    name: "marvin window-shopping flush {{ item.id }}"
+    weekday: "1"
+    hour: "6"
+    minute: "0"
+    job: >-
+      /usr/local/bin/marvin-triage window-shopping --account {{ item.id }}
+      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+  when: item.email != ''
+
+- name: Set up monthly pattern report cron (1st of month, 7 AM — jehan only for now)
+  ansible.builtin.cron:
+    name: marvin pattern report
+    day: "1"
+    hour: "7"
+    minute: "0"
+    job: >-
+      /usr/local/bin/marvin-feedback report
+      >>/home/openclaw/.openclaw/feedback.log 2>&1
+    user: openclaw
+
+- name: Set up marvin-mail-exporter cron (every 15 minutes)
+  ansible.builtin.cron:
+    name: marvin mail exporter
+    minute: "*/15"
+    job: >-
+      /usr/local/bin/marvin-mail-exporter
+      >>/home/openclaw/.openclaw/mail-exporter.log 2>&1
+    user: openclaw
+
+- name: Set up vdirsyncer sync cron (every 15 minutes)
+  ansible.builtin.cron:
+    name: vdirsyncer sync for openclaw
+    minute: "*/15"
+    job: >-
+      /usr/bin/vdirsyncer sync
+      >>/home/openclaw/.openclaw/vdirsyncer/sync.log 2>&1
+    user: openclaw
+
+# Run vdirsyncer discover on first deploy to initialize collection list.
+# Pipes 'yes' to auto-confirm all discovered collections.
+# Skipped on subsequent deploys; safe to re-run manually with:
+#   sudo -u openclaw vdirsyncer discover
+- name: Check if vdirsyncer has been discovered
+  ansible.builtin.stat:
+    path: /home/openclaw/.openclaw/vdirsyncer/.discovered
+  register: vdirsyncer_discovered
+
+- name: Discover vdirsyncer collections (first-time only)
+  ansible.builtin.shell: sudo -u openclaw bash -c 'yes | /usr/bin/vdirsyncer discover'
+  become: yes
+  register: vdirsyncer_discover
+  failed_when: false
+  changed_when: false
+  when: not vdirsyncer_discovered.stat.exists
+
+- name: Mark vdirsyncer collections as discovered
+  ansible.builtin.file:
+    path: /home/openclaw/.openclaw/vdirsyncer/.discovered
+    state: touch
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+  when: not vdirsyncer_discovered.stat.exists

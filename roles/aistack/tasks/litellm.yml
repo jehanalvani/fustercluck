@@ -1,11 +1,10 @@
 ---
 - name: Create LiteLLM PostgreSQL data directory
+  # Do NOT manage permissions here — PostgreSQL initializes this directory and sets
+  # ownership to UID 999 (postgres). Re-chowning to root breaks DB startup.
   ansible.builtin.file:
     path: "{{ litellm_postgres_data_path }}"
     state: directory
-    mode: "0750"
-    owner: root
-    group: root
 
 - name: Deploy LiteLLM PostgreSQL container
   community.docker.docker_container:

@@ -1,0 +1,40 @@
+---
+# Household mail accounts — source of truth for multi-tenant mail pipeline.
+#
+# Each entry provisions:
+#   /home/openclaw/.openclaw/accounts/{id}/
+#     profile.json          (model_tier, privacy, role)
+#     triage-patterns.json  (learned sender→folder patterns)
+#     triage-folders.json   (custom folder definitions)
+#     sieve-state.json      (Sieve promotion state)
+#     logs/                 (structured JSON run logs)
+#
+# Vault var naming convention:
+#   credentials: vault_fastmail_{id}_app_password
+#   email:       vault_fastmail_{id}_email  (if not hardcoded below)
+#
+# Promotion path: develop on jehan → adult accounts → minor accounts
+# Adding a new member: add entry here + vault var + re-run aistack playbook with --tags mail_calendar
+
+mail_accounts:
+  - id: jehan
+    email: jehan@jehanalvani.com
+    role: owner          # can admin other accounts
+    model_tier: cloud_ok # cloud_ok | local_strong | local_only
+    privacy: adult
+
+  - id: lindsay
+    email: "{{ vault_fastmail_lindsay_email | default('') }}"
+    role: adult
+    model_tier: cloud_ok
+    privacy: adult
+
+  # Kids: uncomment and fill in when onboarding.
+  # model_tier is forced to local_only by the template regardless of value set here.
+  #
+  # - id: [firstname]
+  #   email: "{{ vault_fastmail_[firstname]_email | default('') }}"
+  #   role: minor
+  #   model_tier: local_only   # enforced by template — content never leaves homelab
+  #   privacy: minor
+  #   guardian: jehan

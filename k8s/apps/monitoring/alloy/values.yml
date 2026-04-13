@@ -29,6 +29,10 @@ controller:
         hostPath:
           path: /var/run/docker.sock
           # No type check — nodes without Docker simply won't have the socket
+      - name: openclaw-accounts
+        hostPath:
+          path: /home/openclaw/.openclaw/accounts
+          type: DirectoryOrCreate
 
 alloy:
   resources:
@@ -53,6 +57,9 @@ alloy:
         readOnly: true
       - name: docker-sock
         mountPath: /var/run/docker.sock
+        readOnly: true
+      - name: openclaw-accounts
+        mountPath: /home/openclaw/.openclaw/accounts
         readOnly: true
 
   # Persistent WAL directory — survives pod restarts and network blips.
@@ -439,6 +446,53 @@ alloy:
         stage.replace {
           expression = `(glc_[A-Za-z0-9+/]+=*)`
           replace    = "<grafana-cloud-key-redacted>"
+        }
+      }
+
+      // =========================================================
+      // MARVIN MAIL LOGS
+      // =========================================================
+
+      // Tail per-account triage logs — one JSON line per run.
+      // Path (on 20-size): /home/openclaw/.openclaw/accounts/{id}/logs/triage.log
+      // Mounted at the same path via the openclaw-accounts hostPath volume.
+      local.file_match "mail_logs" {
+        path_targets = [{
+          __path__ = "/home/openclaw/.openclaw/accounts/*/logs/triage.log",
+          job      = "marvin/mail",
+          node     = env("NODE_NAME"),
+        }]
+        sync_period = "30s"
+      }
+
+      loki.source.file "mail_logs" {
+        targets    = local.file_match.mail_logs.targets
+        forward_to = [loki.process.mail_logs_json.receiver]
+      }
+
+      // Parse structured JSON run logs and promote key fields to Loki labels.
+      // Each line: {"ts":..., "account":..., "run_type":..., "model_tier":...,
+      //             "sorted":N, "by_label":{...}, "errors":N, "skipped":N}
+      loki.process "mail_logs_json" {
+        forward_to = [loki.write.grafana_cloud.receiver]
+
+        stage.json {
+          expressions = {
+            account    = "account",
+            run_type   = "run_type",
+            model_tier = "model_tier",
+            sorted     = "sorted",
+            errors     = "errors",
+          }
+        }
+
+        // Low-cardinality fields → Loki labels (efficient stream filtering)
+        stage.labels {
+          values = {
+            account    = "",
+            run_type   = "",
+            model_tier = "",
+          }
         }
       }
 

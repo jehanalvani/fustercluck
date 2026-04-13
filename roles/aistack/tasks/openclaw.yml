@@ -128,6 +128,10 @@
       # Allow jehan to run openclaw CLI and manage state files as the openclaw service user
       jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
       jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-triage
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-mail
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-feedback
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-spam-check
 
 # Deploy config first (without plugin-specific keys) so openclaw CLI is usable
 - name: Deploy OpenClaw config

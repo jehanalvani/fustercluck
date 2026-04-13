@@ -33,10 +33,25 @@ import urllib.request
 from pathlib import Path
 
 CONFIG_PATH          = Path("/home/openclaw/.openclaw/marvin-mail.json")
-PATTERNS_PATH        = Path("/home/openclaw/.openclaw/triage-patterns.json")
-CUSTOM_FOLDERS_PATH  = Path("/home/openclaw/.openclaw/triage-folders.json")
-SIEVE_STATE_PATH     = Path("/home/openclaw/.openclaw/sieve-state.json")
+ACCOUNTS_BASE        = Path("/home/openclaw/.openclaw/accounts")
 FASTMAIL_CONFIG_PATH = Path("/home/openclaw/fastmail-config")
+
+# Legacy flat paths (kept for reference during migration only)
+_LEGACY_PATTERNS_PATH    = Path("/home/openclaw/.openclaw/triage-patterns.json")
+_LEGACY_SIEVE_STATE_PATH = Path("/home/openclaw/.openclaw/sieve-state.json")
+
+
+def _acct_dir(account_id: str) -> Path:
+    return ACCOUNTS_BASE / account_id
+
+def _patterns_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "triage-patterns.json"
+
+def _sieve_state_path_for(account_id: str) -> Path:
+    return _acct_dir(account_id) / "sieve-state.json"
+
+def _folders_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "triage-folders.json"
 FEEDBACK_MODEL = "claude"
 
 # Weight added to correct-label count to outweigh accumulated misclassifications
@@ -48,16 +63,21 @@ FOLDER_NAMES = [
     "Mayfield HoA", "Kickstarted", "Correspondence", "Spam", "Trash",
 ]
 
-# Extend FOLDER_NAMES from triage-folders.json (same file triage uses)
-if CUSTOM_FOLDERS_PATH.exists():
+def _extend_folder_names_from(path: Path):
+    """Load custom folders from a triage-folders.json and extend FOLDER_NAMES."""
+    if not path.exists():
+        return
     try:
-        _cf = json.loads(CUSTOM_FOLDERS_PATH.read_text())
+        _cf = json.loads(path.read_text())
         for _f in _cf.get("folders", []):
             _name = _f.get("name", "").strip()
             if _name and _name not in FOLDER_NAMES:
                 FOLDER_NAMES.append(_name)
     except Exception:
         pass
+
+# Extend from jehan's per-account folders file at import time (feedback is jehan-scoped for now)
+_extend_folder_names_from(_folders_path("jehan"))
 
 # IMAP folder names that differ from the display label (modified UTF-7)
 IMAP_FOLDER_MAP = {
@@ -384,17 +404,18 @@ def infer_targets(items, litellm_cfg):
 
 # ── Pattern update ────────────────────────────────────────────────────────────
 
-def load_patterns():
-    if PATTERNS_PATH.exists():
+def load_patterns(account_id: str = "jehan"):
+    p = _patterns_path(account_id)
+    if p.exists():
         try:
-            return json.loads(PATTERNS_PATH.read_text())
+            return json.loads(p.read_text())
         except Exception:
             pass
     return {"domains": {}, "addresses": {}}
 
 
-def save_patterns(patterns):
-    PATTERNS_PATH.write_text(json.dumps(patterns, indent=2, ensure_ascii=False))
+def save_patterns(patterns, account_id: str = "jehan"):
+    _patterns_path(account_id).write_text(json.dumps(patterns, indent=2, ensure_ascii=False))
 
 
 def apply_corrections(corrections, patterns, jehan_acct=None, dry_run=False):
@@ -456,17 +477,18 @@ def _sieve_state_key(sender):
     return ("address" if "@" in sender else "domain") + ":" + sender
 
 
-def load_sieve_state():
-    if SIEVE_STATE_PATH.exists():
+def load_sieve_state(account_id: str = "jehan"):
+    p = _sieve_state_path_for(account_id)
+    if p.exists():
         try:
-            return json.loads(SIEVE_STATE_PATH.read_text())
+            return json.loads(p.read_text())
         except Exception:
             pass
     return {"pending": {}, "dismissed": {}}
 
 
-def save_sieve_state(state):
-    SIEVE_STATE_PATH.write_text(json.dumps(state, indent=2, ensure_ascii=False))
+def save_sieve_state(state, account_id: str = "jehan"):
+    _sieve_state_path_for(account_id).write_text(json.dumps(state, indent=2, ensure_ascii=False))
 
 
 def _generate_sieve_snippet(sender, label):
@@ -737,19 +759,23 @@ def _dismiss_patterns(entries, sieve_state, dry_run=False):
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def cmd_run(args):
-    config     = load_config()
-    marvin     = config["accounts"]["marvin"]
-    jehan      = config["accounts"]["jehan"]
-    litellm    = config["litellm"]
+    config      = load_config()
+    marvin      = config["accounts"]["marvin"]
+    account_id  = getattr(args, "account", "jehan")
+    jehan       = config["accounts"].get(account_id, config["accounts"]["jehan"])
+    litellm     = config["litellm"]
 
     conn = imap_connect(marvin)
     try:
         conn.select("INBOX")
         _, d1 = conn.search(None, 'SUBJECT "Feedback: "')
         _, d2 = conn.search(None, 'SUBJECT "Re: [Marvin] Pattern Report"')
+        _, d3 = conn.search(None, 'SUBJECT "Re: [Marvin] Sorted"')
         seen = set()
         uids = []
-        for u in (d1[0].split() if d1[0] else []) + (d2[0].split() if d2[0] else []):
+        for u in (d1[0].split() if d1[0] else []) + \
+                 (d2[0].split() if d2[0] else []) + \
+                 (d3[0].split() if d3[0] else []):
             if u not in seen:
                 seen.add(u)
                 uids.append(u)
@@ -763,8 +789,8 @@ def cmd_run(args):
         return
 
     print(f"Found {len(uids)} feedback email(s).", file=sys.stderr)
-    patterns      = load_patterns()
-    sieve_state   = load_sieve_state()
+    patterns      = load_patterns(account_id)
+    sieve_state   = load_sieve_state(account_id)
     total_applied = 0
     sieve_changed = False
 
@@ -808,6 +834,24 @@ def cmd_run(args):
             if (len(sieve_state.get("pending",   {})) != prev_pending or
                     len(sieve_state.get("dismissed", {})) != prev_dismissed):
                 sieve_changed = True
+        elif re.search(r'\[Marvin\] Sorted', subject, re.I):
+            # Reply to a triage summary — check for batch request
+            batch = _parse_batch_request(body)
+            if batch and not args.dry_run:
+                print(f"  Batch request: {batch} messages → firing triage in background", file=sys.stderr)
+                subprocess.Popen(
+                    ["/usr/local/bin/marvin-triage", "run",
+                     "--account", account_id, "--batch", str(batch)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+                ack_subject = f"Re: {subject}" if not subject.startswith("Re:") else subject
+                _smtp_send(marvin, jehan, ack_subject,
+                           f"Running another sort — {batch} messages. You'll get a summary when it's done.")
+            elif batch and args.dry_run:
+                print(f"  [dry-run] Would fire: marvin-triage run --account {account_id} --batch {batch}")
+            else:
+                print(f"  No batch request detected in reply to sorted summary.", file=sys.stderr)
         else:
             # Standard triage feedback email
             corrections, ambiguous = parse_feedback_body(body)
@@ -840,13 +884,37 @@ def cmd_run(args):
         print(f"\n[dry-run] Would apply {total_applied} correction(s).")
     else:
         if total_applied:
-            save_patterns(patterns)
-            print(f"\nApplied {total_applied} correction(s) \u2192 {PATTERNS_PATH}")
+            save_patterns(patterns, account_id)
+            print(f"\nApplied {total_applied} correction(s) \u2192 {_patterns_path(account_id)}")
         else:
             print("\nNo corrections to apply.")
         if sieve_changed:
-            save_sieve_state(sieve_state)
+            save_sieve_state(sieve_state, account_id)
             _write_sieve_pending_file(sieve_state)
+
+
+_BATCH_REQUEST_RE = re.compile(
+    r'\b(more|run|another|next batch|next|continue|keep going|sort more|go again)\b',
+    re.I,
+)
+_BATCH_SIZE_RE = re.compile(r'\b(\d{2,4})\b')
+_DEFAULT_BATCH = 500
+
+def _parse_batch_request(body: str):
+    """Return batch size if the reply body is a batch request, else None.
+
+    Accepts: 'more', 'run', 'another', 'next batch', 'continue', 'keep going', etc.
+    Optional number in the body overrides the default batch size (e.g. 'more 200').
+    Strips quoted reply lines before parsing so '>'-prefixed context doesn't match.
+    """
+    clean = "\n".join(
+        line for line in body.splitlines()
+        if not line.strip().startswith(">") and not re.match(r'^On .+ wrote:', line)
+    )
+    if not _BATCH_REQUEST_RE.search(clean):
+        return None
+    m = _BATCH_SIZE_RE.search(clean)
+    return int(m.group(1)) if m else _DEFAULT_BATCH
 
 
 def _smtp_send(from_acct, to_acct, subject, body):
@@ -923,9 +991,10 @@ def cmd_report(args):
     """Email a flat-table pattern summary. Reply to correct, promote to Sieve, or dismiss."""
     config      = load_config()
     marvin      = config["accounts"]["marvin"]
-    jehan       = config["accounts"]["jehan"]
-    patterns    = load_patterns()
-    sieve_state = load_sieve_state()
+    account_id  = getattr(args, "account", "jehan")
+    jehan       = config["accounts"].get(account_id, config["accounts"]["jehan"])
+    patterns    = load_patterns(account_id)
+    sieve_state = load_sieve_state(account_id)
     min_count   = args.min_count
 
     raw = []
@@ -1221,7 +1290,8 @@ def handle_report_reply(msg, body, patterns, jehan_acct, marvin_acct, litellm_cf
 
 def cmd_correct(args):
     """Apply a single sender correction directly to triage-patterns.json."""
-    patterns = load_patterns()
+    account_id = getattr(args, "account", "jehan")
+    patterns = load_patterns(account_id)
     sender = args.sender.lower().strip()
     key_type = "addresses" if "@" in sender else "domains"
     bucket = patterns[key_type].setdefault(sender, {})
@@ -1231,9 +1301,9 @@ def cmd_correct(args):
         print(f"  [dry-run] {sender}  {args.from_label} → {args.to_label}  (+{boost})")
         return
     bucket[args.to_label] = bucket.get(args.to_label, 0) + boost
-    save_patterns(patterns)
+    save_patterns(patterns, account_id)
     print(f"  {sender}  {args.from_label} → {args.to_label}  (+{boost})")
-    print(f"Saved → {PATTERNS_PATH}")
+    print(f"Saved → {_patterns_path(account_id)}")
 
 
 def main():
@@ -1242,15 +1312,18 @@ def main():
 
     p_run = sub.add_parser("run", help="Process feedback emails from inbox (default)")
     p_run.add_argument("--dry-run", action="store_true")
+    p_run.add_argument("--account", default="jehan", help="Target account for pattern updates")
 
     p_cor = sub.add_parser("correct", help="Apply a correction directly without an email")
     p_cor.add_argument("sender", help="Email address or domain")
     p_cor.add_argument("from_label", help="Wrong label to correct from")
     p_cor.add_argument("to_label", help="Correct destination label")
     p_cor.add_argument("--dry-run", action="store_true")
+    p_cor.add_argument("--account", default="jehan")
 
     p_rep = sub.add_parser("report", help="Email a pattern summary for config review")
     p_rep.add_argument("--dry-run", action="store_true")
+    p_rep.add_argument("--account", default="jehan")
     p_rep.add_argument("--min-count", type=int, default=5,
                        help="Minimum classification count to include (default: 5)")
 

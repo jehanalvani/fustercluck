@@ -1,0 +1,9 @@
+{
+  "id": "{{ item.id }}",
+  "email": "{{ item.email }}",
+  "role": "{{ item.role | default('adult') }}",
+  "model_tier": "{{ 'local_only' if item.role == 'minor' else (item.model_tier | default('cloud_ok')) }}",
+  "privacy": "{{ item.privacy | default('adult') }}"{% if item.role is defined and item.role == 'minor' %},
+  "guardian": "{{ item.guardian | default('jehan') }}"{% endif %}
+
+}

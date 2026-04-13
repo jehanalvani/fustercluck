@@ -6,3 +6,21 @@ searxng_secret_key: "{{ vault_searxng_secret_key }}"
 bluebubbles_password: "{{ vault_bluebubbles_password }}"
 ha_token: "{{ vault_ha_token }}"
 litellm_db_password: "{{ vault_litellm_db_password }}"
+
+# Fastmail app passwords — for marvin-mail (IMAP/SMTP) and vdirsyncer (CalDAV)
+# Create at: Fastmail → Settings → Password & Security → App Passwords
+#   marvin@packet.works: needs IMAP and CalDAV access
+#   jehan@jehanalvani.com: needs IMAP and CalDAV access
+# Naming convention: vault_fastmail_{account_id}_app_password
+#                    vault_fastmail_{account_id}_email  (for non-owner accounts)
+fastmail_marvin_app_password: "{{ vault_fastmail_marvin_app_password | default('') }}"
+fastmail_jehan_app_password: "{{ vault_fastmail_jehan_app_password | default('') }}"
+
+# Grafana — dashboard management
+# 1Password: op://HomeLab/Grafana - MarvinMail Dashboarding Service Account Token/credential
+# Not vaulted yet — no Ansible task consumes it. Vault when Grafana deploy automation is built.
+# grafana_marvinmail_dashboard_token: "{{ vault_grafana_marvinmail_dashboard_token }}"
+
+# Household accounts — add a var pair here for each entry in mail_accounts.yml
+fastmail_lindsay_email: "{{ vault_fastmail_lindsay_email | default('') }}"
+fastmail_lindsay_app_password: "{{ vault_fastmail_lindsay_app_password | default('') }}"
