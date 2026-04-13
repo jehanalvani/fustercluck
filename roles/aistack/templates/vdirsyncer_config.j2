@@ -1,0 +1,42 @@
+[general]
+status_path = "/home/openclaw/.openclaw/vdirsyncer/status"
+
+# --- Marvin's Fastmail calendars (marvin@packet.works) ---
+
+[pair marvin_calendars]
+a = "marvin_local"
+b = "marvin_fastmail"
+collections = ["from b", "from a"]
+conflict_resolution = "b wins"
+metadata = ["displayname"]
+
+[storage marvin_local]
+type = "filesystem"
+path = "/home/openclaw/.openclaw/calendars/marvin/"
+fileext = ".ics"
+
+[storage marvin_fastmail]
+type = "caldav"
+url = "https://caldav.fastmail.com/"
+username = "marvin@packet.works"
+password = "{{ fastmail_marvin_app_password }}"
+
+# --- Jehan's Fastmail calendars (jehan@jehanalvani.com) ---
+
+[pair jehan_calendars]
+a = "jehan_local"
+b = "jehan_fastmail"
+collections = ["from b", "from a"]
+conflict_resolution = "b wins"
+metadata = ["displayname"]
+
+[storage jehan_local]
+type = "filesystem"
+path = "/home/openclaw/.openclaw/calendars/jehan/"
+fileext = ".ics"
+
+[storage jehan_fastmail]
+type = "caldav"
+url = "https://caldav.fastmail.com/"
+username = "jehan@jehanalvani.com"
+password = "{{ fastmail_jehan_app_password }}"

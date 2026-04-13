@@ -1,0 +1,60 @@
+{
+  "folders": [
+    {
+      "name": "Clients/Flywheel",
+      "imap": "Clients/Flywheel",
+      "description": "Work correspondence for Flywheel client — project updates, contracts, meetings, billing, deliverables",
+      "emoji": "💼",
+      "bulk": false
+    },
+    {
+      "name": "Clients/Flywheel/Alerts",
+      "imap": "Clients/Flywheel/Alerts",
+      "description": "Automated system alerts, monitoring notifications, and infrastructure emails for Flywheel",
+      "emoji": "🔔",
+      "bulk": true
+    },
+    {
+      "name": "Clients/MacroHealth",
+      "imap": "Clients/MacroHealth",
+      "description": "Work correspondence for MacroHealth client — project updates, contracts, meetings, billing, deliverables",
+      "emoji": "💼",
+      "bulk": false
+    },
+    {
+      "name": "Clients/Verustek",
+      "imap": "Clients/Verustek",
+      "description": "Work correspondence for Verustek client — project updates, contracts, meetings, billing, deliverables",
+      "emoji": "💼",
+      "bulk": false
+    },
+    {
+      "name": "Household/Auto/'25 EX90",
+      "imap": "Household/Auto/'25 EX90",
+      "description": "Email specific to the 2025 Volvo EX90 — Volvo dealer, service appointments, Volvo Cars app, registration, charging, warranty",
+      "emoji": "🚗",
+      "bulk": false
+    },
+    {
+      "name": "Household/Auto/'88 911",
+      "imap": "Household/Auto/'88 911",
+      "description": "Email specific to the 1988 Porsche 911 — specialist shops, Porsche parts vendors (Pelican, Sunset, etc.), service",
+      "emoji": "🏎️",
+      "bulk": false
+    },
+    {
+      "name": "Household/Auto/'08 911",
+      "imap": "Household/Auto/'08 911",
+      "description": "Email specific to the 2008 Porsche 911 — dealer, specialist shops, Porsche parts vendors, service",
+      "emoji": "🏎️",
+      "bulk": false
+    },
+    {
+      "name": "Website",
+      "imap": "Website",
+      "description": "Domain registration, DNS, hosting, SSL certificates, web services, website project correspondence",
+      "emoji": "🌐",
+      "bulk": false
+    }
+  ]
+}

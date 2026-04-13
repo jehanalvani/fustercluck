@@ -6,3 +6,4 @@ facts
 *.op
 *.cfg
 passfile.txt
+roles/aistack/files/__pycache__/
