@@ -1,0 +1,68 @@
+---
+# Deploy the marvin Python package and wire up crons.
+#
+# Runs alongside existing marvin_triage.py crons during migration.
+# New crons start in --dry-run mode; remove the flag per-account when ready to cut over.
+
+- name: Install python3-venv
+  ansible.builtin.apt:
+    name: python3-venv
+    state: present
+
+- name: Sync marvin source to server
+  ansible.posix.synchronize:
+    src: "{{ playbook_dir }}/../marvin/"
+    dest: /opt/marvin-src/
+    delete: true
+    rsync_opts:
+      - "--exclude=__pycache__"
+      - "--exclude=*.pyc"
+      - "--exclude=.git"
+      - "--exclude=*.db"
+
+- name: Create marvin virtualenv
+  ansible.builtin.pip:
+    name: pip
+    state: latest
+    virtualenv: /home/openclaw/.venv/marvin
+    virtualenv_command: python3 -m venv
+  become_user: openclaw
+
+- name: Install marvin package into venv
+  ansible.builtin.pip:
+    name: /opt/marvin-src
+    state: latest
+    virtualenv: /home/openclaw/.venv/marvin
+  become_user: openclaw
+
+- name: Create world model directory
+  ansible.builtin.file:
+    path: /var/lib/marvin
+    state: directory
+    owner: openclaw
+    group: users
+    mode: "0755"
+
+- name: Install mail triage crons (dry-run — remove flag per account to cut over)
+  ansible.builtin.cron:
+    name: "marvin-mail-triage-{{ item.id }}"
+    user: openclaw
+    minute: "*/5"
+    job: >-
+      /home/openclaw/.venv/marvin/bin/marvin-mail triage
+      --account {{ item.id }}
+      --config /home/openclaw/.openclaw/marvin-mail.json
+      --dry-run
+      >> /home/openclaw/.openclaw/accounts/{{ item.id }}/logs/marvin-mail.log 2>&1
+  loop: "{{ mail_accounts }}"
+  when: item.email | default('') != ''
+
+- name: Install core queue cron
+  ansible.builtin.cron:
+    name: marvin-core-queue
+    user: openclaw
+    minute: "*/5"
+    job: >-
+      /home/openclaw/.venv/marvin/bin/marvin-core process-queue
+      --config /home/openclaw/.openclaw/marvin-mail.json
+      >> /var/log/marvin-core.log 2>&1

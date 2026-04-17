@@ -16,6 +16,7 @@
   tags: nvidia
 
 - import_tasks: network.yml
+  tags: network
 - import_tasks: ollama.yml
   tags: ollama
 - import_tasks: litellm.yml
@@ -28,3 +29,15 @@
   tags: openclaw
 - import_tasks: mail_calendar.yml
   tags: mail_calendar
+- import_tasks: ha.yml
+  tags: ha
+- import_tasks: health.yml
+  tags: health
+- import_tasks: notify.yml
+  tags: notify
+- import_tasks: marvin.yml
+  tags: marvin
+- import_tasks: netgear.yml
+  tags: netgear
+- import_tasks: pihole.yml
+  tags: pihole

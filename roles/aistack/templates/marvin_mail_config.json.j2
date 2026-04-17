@@ -1,4 +1,5 @@
 {
+  "notify_to": "jehan@jehanalvani.com",
   "accounts": {
     "marvin": {
       "email": "marvin@packet.works",
@@ -6,7 +7,8 @@
       "imap_port": 993,
       "smtp_host": "smtp.fastmail.com",
       "smtp_port": 587,
-      "password": "{{ fastmail_marvin_app_password }}"
+      "password": "{{ fastmail_marvin_app_password }}",
+      "model_tier": "local_only"
     },
     "jehan": {
       "email": "jehan@jehanalvani.com",
@@ -14,7 +16,8 @@
       "imap_port": 993,
       "smtp_host": "smtp.fastmail.com",
       "smtp_port": 587,
-      "password": "{{ fastmail_jehan_app_password }}"
+      "password": "{{ fastmail_jehan_app_password }}",
+      "model_tier": "cloud_ok"
     },
     "lindsay": {
       "email": "{{ fastmail_lindsay_email }}",
@@ -22,7 +25,8 @@
       "imap_port": 993,
       "smtp_host": "smtp.fastmail.com",
       "smtp_port": 587,
-      "password": "{{ fastmail_lindsay_app_password }}"
+      "password": "{{ fastmail_lindsay_app_password }}",
+      "model_tier": "cloud_ok"
     }
   },
   "litellm": {
@@ -34,7 +38,7 @@
     "cloud_model": "claude"
   },
   "protected": {
-    "max_age_hours": 168,
+    "max_age_hours": 24,
     "domains": [
       "millcreeklittleleague.com",
       "macrohealth.com",
