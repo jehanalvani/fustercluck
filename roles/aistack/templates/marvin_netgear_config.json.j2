@@ -1,0 +1,7 @@
+{
+  "router_ip": "{{ netgear_router_ip }}",
+  "soap_port": {{ netgear_soap_port | default(443) }},
+  "soap_ssl": {{ netgear_soap_ssl | default(true) | lower }},
+  "username": "admin",
+  "password": "{{ netgear_admin_password }}"
+}

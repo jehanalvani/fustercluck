@@ -1,0 +1,49 @@
+---
+# Netgear Orbi exporter — polls SOAP API (HTTPS port 443) for router metrics.
+# Writes /var/lib/node_exporter/textfile_collector/marvin_netgear.prom
+# node_exporter ships it to Grafana Cloud via Alloy.
+#
+# Prerequisites:
+#   - Traffic Meter enabled in Orbi UI: Advanced → Advanced Setup → Traffic Meter
+#   - netgear_router_ip and netgear_admin_password set in aistack vars/main.yml
+
+- name: Install python3.12-venv and acl (venv creation; acl required for Ansible become to unprivileged user)
+  ansible.builtin.apt:
+    name:
+      - python3.12-venv
+      - acl
+    state: present
+  become: true
+
+- name: Install pynetgear into openclaw virtualenv
+  ansible.builtin.pip:
+    name: pynetgear
+    virtualenv: /home/openclaw/.venv/netgear
+    virtualenv_command: python3 -m venv
+  become: true
+  become_user: openclaw
+
+- name: Deploy marvin-netgear-exporter script
+  ansible.builtin.copy:
+    src: marvin_netgear_exporter.py
+    dest: /usr/local/bin/marvin-netgear-exporter
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write marvin-netgear.json config
+  ansible.builtin.template:
+    src: marvin_netgear_config.json.j2
+    dest: /home/openclaw/.openclaw/marvin-netgear.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+
+- name: Set up marvin-netgear-exporter cron (every 5 minutes)
+  ansible.builtin.cron:
+    name: marvin netgear exporter
+    minute: "*/5"
+    job: >-
+      /home/openclaw/.venv/netgear/bin/python3 /usr/local/bin/marvin-netgear-exporter
+      >>/home/openclaw/.openclaw/netgear-exporter.log 2>&1
+    user: openclaw

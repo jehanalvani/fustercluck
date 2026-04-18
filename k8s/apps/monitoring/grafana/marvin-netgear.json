@@ -1,0 +1,394 @@
+{
+  "annotations": { "list": [] },
+  "description": "Netgear Orbi — WAN traffic, router health, and attached devices. Traffic metrics require Traffic Meter enabled: Orbi UI → Advanced → Advanced Setup → Traffic Meter.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "refresh": "5m",
+  "time": { "from": "now-24h", "to": "now" },
+  "timepicker": {},
+  "timezone": "America/Los_Angeles",
+  "title": "Marvin — Netgear Orbi",
+  "uid": "marvin-netgear",
+  "schemaVersion": 38,
+  "tags": ["marvin", "homelab", "netgear"],
+  "version": 1,
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "Orbi Status", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ],
+          "noValue": "No data", "unit": "short"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 }, "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_scrape_up", "instant": true, "legendFormat": "" } ],
+      "title": "SOAP API", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "unit": "s", "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 5, "x": 4, "y": 1 }, "id": 3,
+      "options": { "colorMode": "value", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_uptime_seconds", "instant": true, "legendFormat": "" } ],
+      "title": "Uptime", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "purple" },
+          "unit": "short", "noValue": "No data", "decimals": 0
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 5, "x": 9, "y": 1 }, "id": 4,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_attached_devices_total", "instant": true, "legendFormat": "" } ],
+      "title": "Attached Devices", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red",    "value": 90 }
+          ]},
+          "unit": "percent", "min": 0, "max": 100, "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 5, "x": 14, "y": 1 }, "id": 5,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_cpu_utilization_percent", "instant": true, "legendFormat": "" } ],
+      "title": "CPU", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red",    "value": 90 }
+          ]},
+          "unit": "percent", "min": 0, "max": 100, "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 5, "x": 19, "y": 1 }, "id": 6,
+      "options": { "colorMode": "background", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_mem_utilization_percent", "instant": true, "legendFormat": "" } ],
+      "title": "Memory", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 }, "id": 10, "title": "WAN Traffic", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "unit": "bytes", "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 6 }, "id": 11,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_traffic_today_upload_bytes", "instant": true, "legendFormat": "" } ],
+      "title": "Today — Upload", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "unit": "bytes", "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 6 }, "id": 12,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_traffic_today_download_bytes", "instant": true, "legendFormat": "" } ],
+      "title": "Today — Download", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "dark-orange" },
+          "unit": "bytes", "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 6 }, "id": 13,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_traffic_month_upload_bytes", "instant": true, "legendFormat": "" } ],
+      "title": "Month-to-Date — Upload", "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "dark-green" },
+          "unit": "bytes", "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 6 }, "id": 14,
+      "options": { "colorMode": "value", "graphMode": "area", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "netgear_traffic_month_download_bytes", "instant": true, "legendFormat": "" } ],
+      "title": "Month-to-Date — Download", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 10 }, "id": 20, "title": "WAN Throughput", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "description": "Real-time WAN throughput derived from 5-min traffic meter samples. Midnight resets are clamped to 0. Zoom in to 1–6h for best resolution.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "lineInterpolation": "linear",
+            "showPoints": "never",
+            "drawStyle": "line",
+            "gradientMode": "none"
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "Bps",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Upload" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Download" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 11 }, "id": 21,
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "clamp_min(deriv(netgear_traffic_today_upload_bytes[10m]), 0)",
+          "legendFormat": "Upload",
+          "instant": false
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "clamp_min(deriv(netgear_traffic_today_download_bytes[10m]), 0)",
+          "legendFormat": "Download",
+          "instant": false
+        }
+      ],
+      "title": "WAN Throughput (bytes/sec)", "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 }, "id": 30, "title": "Traffic Accumulation", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "description": "Cumulative WAN traffic for the current day. Resets to 0 at midnight — zoom out to see multiple days as a sawtooth, where each day's peak = that day's total usage.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "spanNulls": false,
+            "lineInterpolation": "linear",
+            "showPoints": "never",
+            "drawStyle": "line"
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Upload" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Download" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } } ]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 21 }, "id": 31,
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_traffic_today_upload_bytes",
+          "legendFormat": "Upload",
+          "instant": false
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_traffic_today_download_bytes",
+          "legendFormat": "Download",
+          "instant": false
+        }
+      ],
+      "title": "Daily Accumulation (zoom out for multi-day sawtooth)", "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "description": "Cumulative WAN traffic for the current month. Resets on the 1st. Zoom out to now-30d to see the full month arc.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "spanNulls": false,
+            "lineInterpolation": "linear",
+            "showPoints": "never",
+            "drawStyle": "line"
+          },
+          "color": { "mode": "palette-classic" },
+          "unit": "bytes",
+          "min": 0
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Upload" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "dark-orange" } } ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Download" },
+            "properties": [ { "id": "color", "value": { "mode": "fixed", "fixedColor": "dark-green" } } ]
+          }
+        ]
+      },
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 21 }, "id": 32,
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_traffic_month_upload_bytes",
+          "legendFormat": "Upload",
+          "instant": false
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_traffic_month_download_bytes",
+          "legendFormat": "Download",
+          "instant": false
+        }
+      ],
+      "title": "Monthly Accumulation (zoom out to now-30d for full month)", "type": "timeseries"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 }, "id": 40, "title": "Router Resources", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "lineInterpolation": "linear",
+            "showPoints": "never",
+            "drawStyle": "line"
+          },
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red",    "value": 90 }
+          ]},
+          "unit": "percent", "min": 0, "max": 100
+        }, "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 }, "id": 41,
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_cpu_utilization_percent",
+          "legendFormat": "CPU %",
+          "instant": false
+        }
+      ],
+      "title": "CPU Utilization", "type": "timeseries"
+    },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 2,
+            "fillOpacity": 15,
+            "spanNulls": false,
+            "lineInterpolation": "linear",
+            "showPoints": "never",
+            "drawStyle": "line"
+          },
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green",  "value": null },
+            { "color": "yellow", "value": 70 },
+            { "color": "red",    "value": 90 }
+          ]},
+          "unit": "percent", "min": 0, "max": 100
+        }, "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 }, "id": 42,
+      "options": {
+        "tooltip": { "mode": "single", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "calcs": ["mean", "max"] }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+          "expr": "netgear_mem_utilization_percent",
+          "legendFormat": "Memory %",
+          "instant": false
+        }
+      ],
+      "title": "Memory Utilization", "type": "timeseries"
+    }
+
+  ]
+}
