@@ -262,6 +262,44 @@ def parse_feedback_body(body):
     lines = body.splitlines()
     i = 0
 
+    # ── Separator format: user types above ---, context below ────────────────
+    # Subject carries the message identity; body has user input then --- then metadata.
+    sep_idx = next((i for i, ln in enumerate(lines) if ln.strip() == '---'), None)
+    if sep_idx is not None:
+        above = [ln.strip() for ln in lines[:sep_idx] if ln.strip()]
+        if not above:
+            # Nothing typed above --- → no feedback
+            return corrections, ambiguous
+        below_lines = lines[sep_idx + 1:]
+        user_text  = '\n'.join(above)
+        sorted_as  = None
+        msg_line_raw = None
+        for bl in below_lines:
+            bs = bl.strip()
+            if bs.startswith('Sorted as:'):
+                sorted_as = bs.split(':', 1)[1].strip()
+            elif re.search(r'\[uid:', bs):
+                msg_line_raw = bs
+        if sorted_as and msg_line_raw:
+            parsed = _parse_msg_line(msg_line_raw)
+            target = resolve_folder(user_text)
+            item = {
+                "section":  sorted_as,
+                "from_str": parsed["from_str"],
+                "subject":  parsed["subject"],
+                "uid":      parsed["uid"],
+                "mid":      parsed.get("mid", ""),
+                "target":   target,
+            }
+            if target:
+                corrections.append(item)
+            else:
+                # Freeform note — pass to Claude as a hint to improve classification
+                item["hint"] = user_text
+                ambiguous.append(item)
+            return corrections, ambiguous
+        # Metadata extraction failed — fall through to legacy parsing
+
     # ── New two-line format ───────────────────────────────────────────────────
     # Detect: line N matches a message header (contains em-dash + [uid:]),
     # line N+1 matches "Label -> ..."
@@ -361,11 +399,14 @@ def infer_targets(items, litellm_cfg):
 
     user_parts = []
     for i, item in enumerate(items, 1):
-        user_parts.append(
+        entry = (
             f"{i}. Currently routed to: {item['section']}\n"
             f"   From: {item['from_str']}\n"
             f"   Subject: {item['subject']}"
         )
+        if item.get("hint"):
+            entry += f"\n   User note: {item['hint']}"
+        user_parts.append(entry)
 
     payload = json.dumps({
         "model":       FEEDBACK_MODEL,
@@ -768,9 +809,9 @@ def cmd_run(args):
     conn = imap_connect(marvin)
     try:
         conn.select("INBOX")
-        _, d1 = conn.search(None, 'SUBJECT "Feedback: "')
-        _, d2 = conn.search(None, 'SUBJECT "Re: [Marvin] Pattern Report"')
-        _, d3 = conn.search(None, 'SUBJECT "Re: [Marvin] Sorted"')
+        _, d1 = conn.uid("SEARCH", None, 'SUBJECT "Feedback: "')
+        _, d2 = conn.uid("SEARCH", None, 'SUBJECT "Re: [Marvin] Pattern Report"')
+        _, d3 = conn.uid("SEARCH", None, 'SUBJECT "Re: [Marvin] Sorted"')
         seen = set()
         uids = []
         for u in (d1[0].split() if d1[0] else []) + \
@@ -795,7 +836,7 @@ def cmd_run(args):
     sieve_changed = False
 
     for uid in uids:
-        _, msg_data = conn.fetch(uid, "(RFC822)")
+        _, msg_data = conn.uid("FETCH", uid, "(RFC822)")
         if (not msg_data
                 or msg_data[0] is None
                 or not isinstance(msg_data[0], tuple)

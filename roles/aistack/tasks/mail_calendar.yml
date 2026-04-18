@@ -220,6 +220,23 @@
 # ── Cron jobs ─────────────────────────────────────────────────────────────────
 # Scoped per account. marvin-feedback stays global (reads marvin INBOX, applies to jehan).
 
+# Remove marvin-triage crons for accounts cut over to marvin-mail
+- name: Remove old marvin-triage spam scan cron (accounts cut over to marvin-mail)
+  ansible.builtin.cron:
+    name: "marvin spam scan {{ item }}"
+    state: absent
+    user: openclaw
+  loop:
+    - jehan
+
+- name: Remove old marvin-triage sort scan cron (accounts cut over to marvin-mail)
+  ansible.builtin.cron:
+    name: "marvin sort scan {{ item }}"
+    state: absent
+    user: openclaw
+  loop:
+    - jehan
+
 # Remove old hardcoded single-account crons (replaced by per-account loops below)
 - name: Remove old hardcoded spam fast-pass cron
   ansible.builtin.cron:
@@ -239,6 +256,21 @@
     state: absent
     user: openclaw
 
+# Remove old per-account crons with previous naming (replaced by spam/sort scan names below)
+- name: Remove old spam fast-pass per-account crons
+  ansible.builtin.cron:
+    name: "marvin spam fast-pass {{ item.id }}"
+    state: absent
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+
+- name: Remove old full sort per-account crons
+  ansible.builtin.cron:
+    name: "marvin full sort {{ item.id }}"
+    state: absent
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+
 - name: Set up marvin-feedback cron (every 30 minutes — global, processes marvin INBOX)
   ansible.builtin.cron:
     name: marvin feedback processing
@@ -248,24 +280,23 @@
       >>/home/openclaw/.openclaw/feedback.log 2>&1
     user: openclaw
 
-- name: Set up spam fast-pass cron per account (every hour)
+- name: Set up spam scan cron per account (every 5 minutes)
   ansible.builtin.cron:
-    name: "marvin spam fast-pass {{ item.id }}"
-    minute: "0"
+    name: "marvin spam scan {{ item.id }}"
+    minute: "*/5"
     job: >-
-      /usr/local/bin/marvin-triage run --account {{ item.id }} --spam-only --batch 200
+      /usr/local/bin/marvin-triage run --account {{ item.id }} --spam-scan --batch 200 --no-notify
       >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
   loop: "{{ mail_accounts }}"
   when: item.email != ''
 
-- name: Set up full sort cron per account (daily 6:30 AM)
+- name: Set up sort scan cron per account (every hour)
   ansible.builtin.cron:
-    name: "marvin full sort {{ item.id }}"
-    hour: "6"
-    minute: "30"
+    name: "marvin sort scan {{ item.id }}"
+    minute: "0"
     job: >-
-      /usr/local/bin/marvin-triage run --account {{ item.id }} --batch 500
+      /usr/local/bin/marvin-triage run --account {{ item.id }} --batch 50 --no-notify
       >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
   loop: "{{ mail_accounts }}"
@@ -279,6 +310,18 @@
     minute: "0"
     job: >-
       /usr/local/bin/marvin-triage window-shopping --account {{ item.id }}
+      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
+    user: openclaw
+  loop: "{{ mail_accounts }}"
+  when: item.email != ''
+
+- name: Set up daily mail digest cron per account (5:30 AM)
+  ansible.builtin.cron:
+    name: "marvin mail digest {{ item.id }}"
+    hour: "5"
+    minute: "30"
+    job: >-
+      /usr/local/bin/marvin-triage report --account {{ item.id }}
       >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
   loop: "{{ mail_accounts }}"

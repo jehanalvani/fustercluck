@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""marvin-triage — Stage 2 email classifier.
+"""marvin-triage — email triage: spam scan + sort scan.
 
-Reads a mail folder (default: INBOX), classifies each message with the local LLM,
-moves it to the correct destination, and records sender→folder patterns.
+Two scan modes:
+  Spam Scan  (--spam-scan)   Deterministic pre-filter. Fetches full message body for
+                             heuristic signals. Moves only Spam/Trash. No LLM call.
+                             Run frequently (every 5 min) to keep inbox clean.
+  Sort Scan  (default)       Semantic classifier. Fetches headers only; heuristic
+                             pre-filter runs first, then LLM classifies the rest.
+                             Moves everything to the right folder.
 
 Patterns accumulate in triage-patterns.json. High-confidence ones are
-promoted to Sieve rules (Stage 1) over time — run `patterns` to review.
+promoted to Sieve rules over time — run `patterns` to review.
 
 Window Shopping: known retail brands land here instead of Archive. Deduped
 to one message per brand on arrival; flushed to Archive every Monday morning.
 
 Usage:
   marvin-triage run            [--account jehan] [--folder INBOX] [--batch 20] [--dry-run]
+  marvin-triage report         [--account jehan] [--hours 24] [--dry-run]
   marvin-triage window-shopping [--account jehan] [--dry-run]
   marvin-triage patterns       [--min-count 3] [--min-confidence 0.8]
 
@@ -84,6 +90,62 @@ def _spam_log_path(account_id: str) -> Path:
 def _logs_dir(account_id: str) -> Path:
     return _acct_dir(account_id) / "logs"
 
+def _held_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "held-uids.json"
+
+
+NOTIFY_QUEUE_DIR = Path("/var/spool/marvin-notify")
+_HELD_TTL_DAYS = 7        # re-process held messages after this many days with no user response
+_NOTIFY_SMS_MAX_AGE_H = 72  # don't send iMessage for messages older than this (hours)
+
+
+def load_held(account_id: str) -> dict:
+    """Load held-UIDs dict, pruning entries older than _HELD_TTL_DAYS."""
+    p = _held_path(account_id)
+    if not p.exists():
+        return {}
+    try:
+        held = json.loads(p.read_text())
+        cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=_HELD_TTL_DAYS)).isoformat()
+        return {uid: v for uid, v in held.items() if v.get("ts", "") > cutoff}
+    except Exception:
+        return {}
+
+
+def save_held(account_id: str, held: dict):
+    _held_path(account_id).write_text(json.dumps(held, indent=2, ensure_ascii=False))
+
+
+def _sorted_path(account_id: str) -> Path:
+    return _acct_dir(account_id) / "sorted-uids.json"
+
+
+_SORTED_TTL_DAYS = 30  # re-evaluate INBOX stays after this many days
+
+
+def load_sorted_uids(account_id: str) -> dict:
+    """Load dict of UIDs already classified and left in INBOX, pruning old entries."""
+    p = _sorted_path(account_id)
+    if not p.exists():
+        return {}
+    try:
+        data = json.loads(p.read_text())
+        cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=_SORTED_TTL_DAYS)).isoformat()
+        return {uid: ts for uid, ts in data.items() if ts > cutoff}
+    except Exception:
+        return {}
+
+
+def save_sorted_uids(account_id: str, uids: dict):
+    _sorted_path(account_id).write_text(json.dumps(uids, ensure_ascii=False))
+
+
+def drop_notify(message: str):
+    """Write a notification payload to the file-drop queue for marvin-notify-drain."""
+    NOTIFY_QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+    fname = f"triage-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')}.json"
+    (NOTIFY_QUEUE_DIR / fname).write_text(json.dumps({"message": message}, ensure_ascii=False))
+
 LABELS = [
     "Spam",
     "Archive",
@@ -120,10 +182,38 @@ FOLDER_MAP = {
     "Trash":                      "Trash",
 }
 
-SYSTEM_PROMPT = """\
-You are an email classifier. Given a From address and Subject, output exactly one \
-destination folder from this list. Output the folder name only — no explanation, \
-no punctuation, nothing else.
+# Prompt is split into base + suffix so _apply_custom_folders can inject
+# custom folder definitions between them without burying the output instruction.
+_SYSTEM_PROMPT_BASE = """\
+You are an email classifier. Given a From address and Subject, output a JSON object \
+with these fields:
+
+{
+  "label": "<folder name>",
+  "legitimacy": "high" | "medium" | "low",
+  "classification": "high" | "medium" | "low",
+  "autonomy": "high" | "medium" | "low",
+  "urgency": "high" | "low",
+  "reason": "<one short sentence>"
+}
+
+Field definitions:
+  legitimacy — how genuine is this message?
+    high: clearly real, matches known sender patterns
+    medium: probably real but first-time sender, unusual domain, or slightly off-pattern
+    low: suspicious — mismatched domain, urgency manipulation, credential/payment pressure
+  classification — how confident are you in the label?
+    high: label is obvious from sender + subject
+    medium: probably correct but some ambiguity
+    low: genuinely ambiguous, could fit multiple labels
+  autonomy — should the system sort this without the user seeing it first?
+    high: safe to sort automatically
+    medium: user might want to know before it moves
+    low: user should decide
+  urgency — does this require timely action?
+    high: payment due, appointment, active transaction, security notice, deadline implied
+    low: no immediate action required
+  reason: one sentence explaining the label and any non-obvious confidence signals
 
 Folders:
 - Spam: obvious unsolicited bulk email, phishing, hard spam, retail/brand promotions, \
@@ -161,6 +251,10 @@ Key rules:
 - INBOX only when it needs a human response or tracks an active matter\
 """
 
+_SYSTEM_PROMPT_SUFFIX = "\n\nOutput only the JSON object. No explanation, no markdown."
+
+SYSTEM_PROMPT = _SYSTEM_PROMPT_BASE + _SYSTEM_PROMPT_SUFFIX
+
 
 def load_config():
     try:
@@ -183,15 +277,17 @@ def load_profile(account_id: str) -> dict:
 def select_model(litellm_cfg: dict, model_tier: str) -> str:
     """Pick the LiteLLM model name based on the account's model_tier.
 
-    local_only  → local_model (content never leaves homelab)
+    local_only   → local_model (content never leaves homelab)
     local_strong → strong_model if available, else local_model
-    cloud_ok    → configured default (may be local or cloud)
+    cloud_ok     → cloud_model if available, else default model
     """
     if model_tier == "local_only":
         return litellm_cfg.get("local_model", litellm_cfg["model"])
     if model_tier == "local_strong":
         return litellm_cfg.get("strong_model",
                litellm_cfg.get("local_model", litellm_cfg["model"]))
+    if model_tier == "cloud_ok":
+        return litellm_cfg.get("cloud_model", litellm_cfg["model"])
     return litellm_cfg["model"]
 
 
@@ -201,6 +297,40 @@ def append_run_log(account_id: str, entry: dict):
     d.mkdir(parents=True, exist_ok=True)
     with open(d / "triage.log", "a") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
+def append_moves_log(account_id: str, entries: list, run_type: str):
+    """Append per-message classification records to triage-moves.log for daily digest."""
+    if not entries:
+        return
+    d = _logs_dir(account_id)
+    d.mkdir(parents=True, exist_ok=True)
+    ts = datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    with open(d / "triage-moves.log", "a") as f:
+        for r in entries:
+            rec = {
+                "ts":         ts,
+                "account":    account_id,
+                "run_type":   run_type,
+                "uid":        r.get("uid"),
+                "from":       r.get("from", ""),
+                "subject":    r.get("subject", ""),
+                "date":       r.get("date", ""),
+                "label":      r["label"],
+                "routing":    r.get("routing", "sort"),
+                "message_id": r.get("message_id", ""),
+                "unsubscribe": r.get("unsubscribe"),
+            }
+            if r.get("heuristic_verdict"):
+                rec["heuristic_verdict"] = r["heuristic_verdict"]
+            if r.get("assessment"):
+                a = r["assessment"]
+                rec["legitimacy"]     = a.get("legitimacy", "")
+                rec["classification"] = a.get("classification", "")
+                rec["autonomy"]       = a.get("autonomy", "")
+                rec["urgency"]        = a.get("urgency", "")
+                rec["reason"]         = a.get("reason", "")
+            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
 
 def decode_header_value(value):
@@ -241,26 +371,26 @@ def imap_connect(acct):
 
 
 def parse_date_short(date_str):
-    """Parse an RFC 2822 date string to MM/DD, fallback to raw string."""
+    """Parse an RFC 2822 date string to 'Mon D, YYYY', fallback to raw string."""
     try:
         dt = email.utils.parsedate_to_datetime(date_str)
-        return dt.strftime("%m/%d")
+        return f"{dt.strftime('%b')} {dt.day}, {dt.year}"
     except Exception:
-        return (date_str or "")[:5]
+        return (date_str or "")[:12]
 
 
 def fetch_batch(acct, folder, batch, full_body=False):
     """Fetch up to `batch` messages from `folder`. Returns list of dicts with UIDs.
 
     full_body=True fetches RFC822 (headers + body) instead of headers only.
-    Used by spam-only pass so scan_message() has body and link signals.
+    Used by spam scan so scan_message() has body and link signals.
     The parsed message object is stored as "_parsed_msg" for the spam pre-filter.
     """
     conn = imap_connect(acct)
     conn.select(imap_quote(folder), readonly=True)
 
     _, data = conn.uid("SEARCH", None, "ALL")
-    uids = list(reversed(data[0].split()[-batch:])) if data[0] else []
+    uids = data[0].split()[:batch] if data[0] else []
 
     fetch_spec = "(RFC822)" if full_body else "(RFC822.HEADER)"
 
@@ -294,8 +424,69 @@ def fetch_batch(acct, folder, batch, full_body=False):
     return messages
 
 
-def classify(from_addr, subject, litellm_cfg):
-    """Call the local LLM and return a label from LABELS. Falls back to INBOX on failure."""
+def _normalize_label(raw: str) -> str:
+    """Map a raw LLM label string to a known LABELS entry, or INBOX as fallback."""
+    if raw in LABELS:
+        return raw
+    raw_lower = raw.lower()
+    for label in LABELS:
+        if label.lower() == raw_lower:
+            return label
+    for label in LABELS:
+        if label.lower() in raw_lower:
+            return label
+    return "INBOX"
+
+
+def _default_assessment(label: str = "INBOX", **overrides) -> dict:
+    """Return a conservative assessment dict — used on LLM failure or parse error."""
+    base = {
+        "label":          label,
+        "legitimacy":     "medium",
+        "classification": "low",
+        "autonomy":       "low",
+        "urgency":        "low",
+        "reason":         "",
+    }
+    base.update(overrides)
+    return base
+
+
+def _determine_action(assessment: dict) -> str:
+    """Map a classification assessment to a routing action.
+
+    Returns one of:
+      sort           — move to destination folder automatically
+      hold_notify    — leave in INBOX, send iMessage immediately
+      notify         — leave in INBOX, send iMessage immediately (uncertain)
+      digest_flag    — leave in INBOX, surface in daily digest
+      flag_legitimacy — leave in INBOX, flag for spam scanner training
+    """
+    leg  = assessment.get("legitimacy", "medium")
+    cls  = assessment.get("classification", "medium")
+    auto = assessment.get("autonomy", "medium")
+    urg  = assessment.get("urgency", "low")
+
+    if leg == "low":
+        return "flag_legitimacy"
+
+    high_confidence = (leg == "high" and cls in ("high", "medium") and auto == "high")
+
+    if high_confidence and urg == "high":
+        return "hold_notify"   # real, important, time-sensitive — user must respond
+    if high_confidence:
+        return "sort"
+    if urg == "high":
+        return "notify"        # uncertain but urgent — ping user now
+    return "digest_flag"       # uncertain, not urgent — surface in digest
+
+
+def classify(from_addr: str, subject: str, litellm_cfg: dict) -> dict:
+    """Call the LLM and return a classification assessment dict.
+
+    Always returns a dict with keys: label, legitimacy, classification,
+    autonomy, urgency, reason. Falls back to conservative defaults on any error.
+    """
     payload = json.dumps({
         "model": litellm_cfg["model"],
         "messages": [
@@ -303,7 +494,7 @@ def classify(from_addr, subject, litellm_cfg):
             {"role": "user", "content": f"From: {from_addr}\nSubject: {subject}"},
         ],
         "temperature": 0,
-        "max_tokens": 32,
+        "max_tokens": 128,
     }).encode()
 
     req = urllib.request.Request(
@@ -319,22 +510,46 @@ def classify(from_addr, subject, litellm_cfg):
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read())
         raw = result["choices"][0]["message"]["content"].strip()
+        usage = result.get("usage", {})
+        # LiteLLM proxy uses OpenAI field names; Anthropic native uses input_tokens
+        input_tokens  = usage.get("input_tokens",  0) or usage.get("prompt_tokens",     0)
+        output_tokens = usage.get("output_tokens", 0) or usage.get("completion_tokens", 0)
     except Exception as e:
         print(f"  [warn] LLM error: {e}", file=sys.stderr)
-        return "INBOX"
+        return _default_assessment(reason=f"LLM error: {e}")
 
-    if raw in LABELS:
-        return raw
-    raw_lower = raw.lower()
-    for label in LABELS:
-        if label.lower() == raw_lower:
-            return label
-    for label in LABELS:
-        if label.lower() in raw_lower:
-            return label
+    # Strip markdown code fences if the model wraps its output
+    if "```" in raw:
+        raw = re.sub(r"```(?:json)?", "", raw).strip().strip("`")
 
-    print(f"  [warn] unrecognised label '{raw}', defaulting to INBOX", file=sys.stderr)
-    return "INBOX"
+    # Try JSON parse first
+    try:
+        data = json.loads(raw)
+        label = _normalize_label(str(data.get("label", "INBOX")))
+        valid = ("high", "medium", "low")
+        return {
+            "label":          label,
+            "legitimacy":     data.get("legitimacy",     "medium") if data.get("legitimacy")     in valid else "medium",
+            "classification": data.get("classification", "medium") if data.get("classification") in valid else "medium",
+            "autonomy":       data.get("autonomy",       "medium") if data.get("autonomy")       in valid else "medium",
+            "urgency":        data.get("urgency",        "low")    if data.get("urgency")        in ("high", "low") else "low",
+            "reason":         str(data.get("reason", ""))[:200],
+            "input_tokens":   input_tokens,
+            "output_tokens":  output_tokens,
+        }
+    except (json.JSONDecodeError, AttributeError):
+        pass
+
+    # Fallback: model returned a plain label (old behaviour)
+    label = _normalize_label(raw)
+    if label != "INBOX" or raw.strip().lower() == "inbox":
+        print(f"  [warn] LLM returned plain label (not JSON): '{raw[:40]}'", file=sys.stderr)
+        return _default_assessment(label, reason="non-JSON response, confidence unknown",
+                                   input_tokens=input_tokens, output_tokens=output_tokens)
+
+    print(f"  [warn] unrecognised LLM response '{raw[:40]}', defaulting to INBOX", file=sys.stderr)
+    return _default_assessment(reason=f"unrecognised response: {raw[:40]}",
+                               input_tokens=input_tokens, output_tokens=output_tokens)
 
 
 def imap_quote(name):
@@ -457,7 +672,7 @@ LABEL_EMOJI = {
 # Labels shown individually in proposal email; bulk labels get count-only
 BULK_LABELS = {"Spam", "Archive", "Trash"}
 
-# Labels acted on by the spam fast-pass
+# Labels acted on by the spam scan
 SPAM_FAST_LABELS = {"Spam", "Trash"}
 
 # Labels that bypass the age gate — moved immediately even if message is recent
@@ -519,7 +734,7 @@ def _apply_custom_folders(account_id: str = "jehan"):
         if desc and not desc.startswith("TODO:"):
             extras.append(f"- {name}: {desc}")
     if extras:
-        SYSTEM_PROMPT = SYSTEM_PROMPT + "\n" + "\n".join(extras)
+        SYSTEM_PROMPT = _SYSTEM_PROMPT_BASE + "\n" + "\n".join(extras) + _SYSTEM_PROMPT_SUFFIX
 
 
 def save_pending(batch_id, account_id, source_folder, results):
@@ -582,7 +797,7 @@ th {
 td { border-bottom: 1px solid #e0e0e0; padding: 8px 16px 8px 0; vertical-align: middle; }
 td:last-child, th:last-child { padding-right: 0; }
 tr:last-child td { border-bottom: none; }
-.col-date  { width: 46px; white-space: nowrap; }
+.col-date  { width: 100px; white-space: nowrap; }
 .col-from  { width: 26%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
 @media screen and (max-width: 600px) {
   .col-date { display: none; }
@@ -610,6 +825,12 @@ details[open] > summary::before { content: "\\25BC\\FE0E"; }
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 .row-unsub:hover { color: #888888; }
+.overflow-summary {
+  font-size: 0.85em; color: #888888; cursor: pointer;
+  list-style: none; padding: 6px 0 2px 0; user-select: none;
+}
+.overflow-summary::-webkit-details-marker { display: none; }
+details.overflow { margin: 4px 0 0 0; }
 @media (prefers-color-scheme: dark) {
   body { color: #e8e8e8; background-color: #1c1c1e; }
   h1, h2, h3, h4, h5, h6 { color: #e8e8e8; }
@@ -720,11 +941,20 @@ def _build_triage_sections(p, ref_id, source_folder, results, counts):
             from_display = f"{name} <{addr}>" if name else addr
             mid_part = f" [mid: {msg_id_raw}]" if msg_id_raw else ""
             line1 = f"{date_val}  {from_display}  \u2014  {subj_val}  [uid: {uid_raw}]{mid_part}"
+            subj_preview = (subj_val or "")[:60]
+            labels_hint = " \u00b7 ".join(LABELS)
+            fb_body = (
+                f"\n\n\n---\n"
+                f"Sorted as: {label}\n"
+                f"Labels: {labels_hint}\n"
+                f"{line1}\n"
+                f"Sort ID: {ref_id}"
+            )
             row_href = (
                 "mailto:marvin@packet.works?subject="
-                + urllib.parse.quote(f"Feedback: {ref_id}", safe="")
+                + urllib.parse.quote(f'Feedback: "{subj_preview}" [uid:{uid_raw}]', safe="")
                 + "&body="
-                + urllib.parse.quote(f"{line1}\n{label} -> ", safe="")
+                + urllib.parse.quote(fb_body, safe="")
             )
             unsub_url = r.get("unsubscribe")
             unsub_link = (
@@ -755,6 +985,109 @@ def _build_triage_sections(p, ref_id, source_folder, results, counts):
     ]
     if bulk_parts:
         p.append('<hr><p>' + ' &nbsp;\u00b7&nbsp; '.join(bulk_parts) + '</p>')
+
+
+def _build_digest_sections(p, ref_id, moves_by_label, sample=5):
+    """Append per-label sections to p for the daily digest.
+
+    Each section is a <details> block (open by default) with a table of moves.
+    The first `sample` rows are always visible; overflow rows are wrapped in a
+    nested <details class="overflow"> with an "…and N more" summary.
+    """
+    e  = _html.escape
+    ea = lambda s: _html.escape(str(s), quote=True)
+
+    for label in LABELS:
+        items = moves_by_label.get(label, [])
+        if not items:
+            continue
+        # Skip items that stayed in source folder (routing=sort but label maps to INBOX)
+        moving = [m for m in items if m.get("routing") != "digest_flag" and m.get("routing") != "hold_notify"]
+        held   = [m for m in items if m.get("routing") in ("hold_notify", "notify", "flag_legitimacy", "digest_flag")]
+        display = moving  # show moved items in main section; held shown separately
+
+        if not display and not held:
+            continue
+
+        emoji = LABEL_EMOJI.get(label, "")
+        total = len(items)
+        p.append(f'<details open><summary>{e(emoji)} {e(label)} \u2014 {total}</summary>')
+
+        def _rows(rows):
+            p.append('<table><thead><tr>'
+                     '<th class="col-date">Date</th>'
+                     '<th class="col-from">From</th>'
+                     '<th>Subject</th>'
+                     '</tr></thead><tbody>')
+            for r in rows:
+                uid_raw    = r.get("uid", "")
+                date_val   = r.get("date", "")
+                frm_raw    = r.get("from", "")
+                subj_val   = r.get("subject", "")
+                msg_id_raw = r.get("message_id", "")
+                unsub_url  = r.get("unsubscribe")
+                name, addr = _parse_from(frm_raw)
+                display_from = name if name else addr
+                from_cell = f'<span title="{ea(frm_raw)}">{e(display_from[:30])}</span>'
+                from_display = f"{name} <{addr}>" if name else addr
+                mid_part = f" [mid: {msg_id_raw}]" if msg_id_raw else ""
+                line1 = f"{date_val}  {from_display}  \u2014  {subj_val}  [uid: {uid_raw}]{mid_part}"
+                subj_preview = (subj_val or "")[:60]
+                labels_hint = " \u00b7 ".join(LABELS)
+                fb_body = (
+                    f"\n\n\n---\n"
+                    f"Sorted as: {label}\n"
+                    f"Labels: {labels_hint}\n"
+                    f"{line1}\n"
+                    f"Sort ID: {ref_id}"
+                )
+                row_href = (
+                    "mailto:marvin@packet.works?subject="
+                    + urllib.parse.quote(f'Feedback: "{subj_preview}" [uid:{uid_raw}]', safe="")
+                    + "&body="
+                    + urllib.parse.quote(fb_body, safe="")
+                )
+                unsub_link = (
+                    f' <a class="row-unsub" href="{ea(unsub_url)}" title="Unsubscribe">unsub</a>'
+                    if unsub_url else ""
+                )
+                if msg_id_raw:
+                    msg_url   = "message://" + urllib.parse.quote(msg_id_raw, safe="")
+                    subj_cell = f'<a class="msg-link" href="{ea(msg_url)}">{e(subj_val)}</a>'
+                else:
+                    subj_cell = e(subj_val)
+                routing = r.get("routing", "sort")
+                reason_tip = ea((r.get("reason") or "")[:80])
+                routing_badge = (
+                    f' <span style="font-size:0.7em;color:#cc6600" title="{reason_tip}">[{e(routing)}]</span>'
+                    if routing != "sort" else ""
+                )
+                p.append(
+                    f'<tr>'
+                    f'<td class="col-date">{e(date_val)}</td>'
+                    f'<td class="col-from">{from_cell}</td>'
+                    f'<td>{subj_cell}{routing_badge}'
+                    f' <a class="row-feedback" href="{ea(row_href)}" title="Send feedback">\u21a9</a>'
+                    f'{unsub_link}</td>'
+                    f'</tr>'
+                )
+            p.append('</tbody></table>')
+
+        visible  = display[:sample]
+        overflow = display[sample:]
+
+        _rows(visible)
+        if overflow:
+            p.append(f'<details class="overflow"><summary class="overflow-summary">\u2026and {len(overflow)} more</summary>')
+            _rows(overflow)
+            p.append('</details>')
+
+        if held:
+            p.append(f'<details class="overflow"><summary class="overflow-summary">\u26a0\ufe0e {len(held)} held (awaiting response)</summary>')
+            _rows(held)
+            p.append('</details>')
+
+        p.append('</details>')
 
 
 def _build_proposal_html(batch_id, source_folder, results, counts, moves, now):
@@ -976,7 +1309,7 @@ def send_summary(config, source_folder, results, errors, account_id="jehan", spa
             )
         lines.append("")
 
-    # Spam fast-pass section
+    # Spam scan section
     if spam_log:
         spam_counts = Counter(e["label"] for e in spam_log)
         spam_suspicious_log = [e for e in spam_log if e.get("heuristic_verdict") == "suspicious"]
@@ -984,7 +1317,7 @@ def send_summary(config, source_folder, results, errors, account_id="jehan", spa
         lines += [
             "---",
             "",
-            f"## Fast-pass — {spam_total} caught overnight",
+            f"## Spam scan — {spam_total} caught",
             "",
             "| Destination | Count |",
             "|---|---:|",
@@ -1003,7 +1336,7 @@ def send_summary(config, source_folder, results, errors, account_id="jehan", spa
     sort_id = datetime.datetime.now().strftime("%Y%m%d-%H%M")
     body_html = _build_summary_html(sort_id, source_folder, results, counts, now, spam_log=spam_log)
     top3 = ", ".join(f"{lbl} {c}" for lbl, c in counts.most_common(3))
-    spam_note = f" · +{len(spam_log)} fast-pass" if spam_log else ""
+    spam_note = f" · +{len(spam_log)} spam scan" if spam_log else ""
     suspicious_results = [r for r in results if r.get("heuristic_verdict") == "suspicious"]
     suspicious_note = f" · {len(suspicious_results)}⚠" if suspicious_results else ""
     acct_prefix = f"{account_id}: " if account_id != "jehan" else ""
@@ -1029,13 +1362,20 @@ def cmd_run(args, config):
     now_ts = time.time()
 
     print(f"Fetching {args.batch} messages from {args.folder}...", file=sys.stderr)
-    # Spam-only pass fetches full RFC822 so scan_message() has body + link signals.
-    # Full sort fetches headers only for speed; spam pre-filter runs on headers alone.
-    messages = fetch_batch(acct, args.folder, args.batch, full_body=args.spam_only)
+    # Spam scan fetches full RFC822 so scan_message() has body + link signals.
+    # Sort scan fetches headers only for speed; spam pre-filter runs on headers alone.
+    messages = fetch_batch(acct, args.folder, args.batch, full_body=args.spam_scan)
 
     if not messages:
         print("No messages found.")
         return
+
+    # Load held UIDs (pruned by TTL in load_held). Skip during this run so we
+    # don't re-classify messages already escalated and awaiting user response.
+    held = load_held(args.account)
+    # Sorted-UID cache: skip INBOX stays we've already classified (avoids re-classifying
+    # every run). TTL is _SORTED_TTL_DAYS so old decisions eventually get re-evaluated.
+    sorted_uids = {} if args.spam_scan else load_sorted_uids(args.account)
 
     patterns = load_patterns(args.account)
     results = []
@@ -1043,14 +1383,33 @@ def cmd_run(args, config):
     skipped = 0
     spam_check_caught = 0
     spam_check_suspicious = 0
+    llm_calls = 0
+    llm_input_tokens = 0
+    llm_output_tokens = 0
 
     spam_moved = []
     scan_message = _get_spam_scanner()
 
     for msg in messages:
+        # ── Held check ───────────────────────────────────────────────────────
+        # Skip messages already escalated to user via hold_notify/notify.
+        # They stay in INBOX until user responds; re-processed after TTL expires.
+        uid_str = str(msg["uid"])
+        if uid_str in held:
+            print(f"  [held] UID {msg['uid']:>6}  {held[uid_str].get('routing', '?')}  {msg['from'][:40]}")
+            skipped += 1
+            continue
+
+        # ── Sorted-UID cache ──────────────────────────────────────────────────
+        # Skip messages already classified as INBOX stays to avoid re-classifying
+        # every run at API cost. TTL means old decisions are eventually re-evaluated.
+        if uid_str in sorted_uids:
+            skipped += 1
+            continue
+
         # ── Spam pre-filter ───────────────────────────────────────────────────
-        # Run heuristic scanner before LLM. In spam-only mode the full message
-        # was fetched above; in full sort only headers are available (partial
+        # Run heuristic scanner before LLM. In spam scan mode the full message
+        # was fetched above; in sort scan only headers are available (partial
         # coverage — header signals still catch obvious phishing/BEC).
         # Both likely_scam and suspicious route to Spam; tracked separately.
         heuristic_label = None
@@ -1078,19 +1437,21 @@ def cmd_run(args, config):
                     )
 
         # ── Classify ─────────────────────────────────────────────────────────
-        # Heuristic verdict takes priority; falls through to pattern match then LLM.
+        # Phase 1: deterministic — heuristic verdict + brand/pattern matches (no LLM cost).
         label = (
             heuristic_label
             or brand_label(msg["from"], protected_cfg, "INBOX")
             or brand_label(msg["from"], ws_cfg, "Window Shopping")
             or brand_label(msg["from"], rl_cfg, "Reading List")
-            or classify(msg["from"], msg["subject"], litellm_cfg)
         )
+        assessment = None
 
-        # Age filter — bypassed in spam-only mode and for immediate-destination labels
-        # (Spam, Trash, Archive, Shipping Info, Window Shopping, Reading List move at once)
-        if (not args.spam_only
-                and label not in IMMEDIATE_LABELS
+        # Age gate before LLM — skip recent messages that weren't caught by
+        # heuristic or brand match. Avoids LLM calls on messages that would
+        # be skipped anyway. Heuristic/brand-matched labels bypass (they're
+        # already decided and IMMEDIATE_LABELS should move immediately).
+        if (not label
+                and not args.spam_scan
                 and max_age_hours
                 and msg.get("timestamp", 0) > 0):
             age_h = (now_ts - msg["timestamp"]) / 3600
@@ -1099,22 +1460,76 @@ def cmd_run(args, config):
                 skipped += 1
                 continue
 
-        # Spam-only mode: skip anything that isn't Spam/Trash
-        if args.spam_only and label not in SPAM_FAST_LABELS:
+        # Phase 2: LLM for unmatched messages old enough to sort (sort scan only).
+        # Spam scan is heuristics-only — skip any message not caught above.
+        if not label:
+            if args.spam_scan:
+                continue
+            assessment = classify(msg["from"], msg["subject"], litellm_cfg)
+            label = assessment["label"]
+            llm_calls += 1
+            llm_input_tokens  += assessment.pop("input_tokens",  0)
+            llm_output_tokens += assessment.pop("output_tokens", 0)
+
+        # Spam scan mode: skip anything that isn't Spam/Trash
+        if args.spam_scan and label not in SPAM_FAST_LABELS:
             continue
+
+        # Determine routing action from assessment (heuristic decisions always sort)
+        if heuristic_label or not assessment:
+            routing = "sort"
+        else:
+            routing = _determine_action(assessment)
 
         imap_folder = FOLDER_MAP[label]
         staying = (imap_folder == args.folder)
-        result_entry = {**msg, "label": label}
+        if staying and not args.spam_scan:
+            sorted_uids[uid_str] = datetime.datetime.utcnow().isoformat()
+        result_entry = {**msg, "label": label, "routing": routing}
         if heuristic_verdict in ("likely_scam", "suspicious"):
             result_entry["heuristic_verdict"] = heuristic_verdict
+        if assessment:
+            result_entry["assessment"] = assessment
         results.append(result_entry)
 
+        reason_str = f"  [{assessment['reason'][:60]}]" if assessment and assessment.get("reason") else ""
+
         if args.dry_run:
-            action = "stay" if staying else f"→  {label}"
-            print(f"  [dry-run] UID {msg['uid']:>6}  {action}")
+            action_str = "stay" if staying else f"→  {label}"
+            print(f"  [dry-run] UID {msg['uid']:>6}  {action_str}  [{routing}]")
             print(f"            From: {msg['from'][:72]}")
             print(f"            Subj: {msg['subject'][:72]}")
+            if reason_str:
+                print(f"            Why: {reason_str.strip()}")
+        elif routing in ("hold_notify", "notify", "digest_flag", "flag_legitimacy"):
+            print(f"  UID {msg['uid']:>6}  hold [{routing}]  {label}  ({msg['from'][:40]}){reason_str}")
+            if not args.dry_run and routing in ("hold_notify", "notify"):
+                held[uid_str] = {
+                    "ts":      datetime.datetime.utcnow().isoformat(),
+                    "routing": routing,
+                    "label":   label,
+                    "from":    msg["from"],
+                    "subject": msg["subject"],
+                }
+                msg_age_h = (now_ts - msg.get("timestamp", 0)) / 3600
+                sms_ok = msg.get("timestamp", 0) > 0 and msg_age_h <= _NOTIFY_SMS_MAX_AGE_H
+                if sms_ok:
+                    action_word = "needs your response" if routing == "hold_notify" else "may need attention"
+                    reason_note = (
+                        f"\nWhy: {assessment['reason'][:100]}"
+                        if assessment and assessment.get("reason") else ""
+                    )
+                    notify_msg = (
+                        f"\U0001f4ec Mail {action_word}:\n"
+                        f"From: {msg['from'][:60]}\n"
+                        f"Subj: {msg['subject'][:80]}{reason_note}"
+                    )
+                    try:
+                        drop_notify(notify_msg)
+                    except Exception as exc:
+                        print(f"  [warn] notify drop failed: {exc}", file=sys.stderr)
+                else:
+                    print(f"  [no-sms] UID {msg['uid']:>6}  age {msg_age_h:.0f}h — held, digest only", file=sys.stderr)
         elif staying:
             print(f"  UID {msg['uid']:>6}  stay  {label}  ({msg['from'][:40]})")
         else:
@@ -1126,7 +1541,7 @@ def cmd_run(args, config):
                 move_message(acct, msg["uid"], args.folder, imap_folder)
                 record_pattern(msg["from"], label, patterns)
                 print(f"  UID {msg['uid']:>6}  →  {label}  ({msg['from'][:40]})")
-                if args.spam_only:
+                if args.spam_scan:
                     entry = {
                         "ts": now_ts, "uid": msg["uid"],
                         "from": msg["from"], "subject": msg["subject"], "label": label,
@@ -1153,13 +1568,13 @@ def cmd_run(args, config):
         print("Run `marvin-triage execute` after approval.")
     elif args.dry_run:
         pass  # already printed per-message above
-    elif args.spam_only:
+    elif args.spam_scan:
         save_patterns(patterns, args.account)
         if spam_moved:
             append_spam_log(spam_moved, args.account)
-            print(f"\nSpam fast-pass: {len(spam_moved)} moved → spam log.")
+            print(f"\nSpam scan: {len(spam_moved)} moved → spam log.")
         else:
-            print("\nSpam fast-pass: nothing to move.")
+            print("\nSpam scan: nothing to move.")
     else:
         save_patterns(patterns, args.account)
         if not args.no_notify and results:
@@ -1168,10 +1583,10 @@ def cmd_run(args, config):
                          account_id=args.account, spam_log=spam_log)
 
     # Structured run log (always, even dry-run — useful for audit)
-    if not args.spam_only:
-        run_type = "dry_run" if args.dry_run else ("propose" if args.propose else "full_sort")
+    if not args.spam_scan:
+        run_type = "dry_run" if args.dry_run else ("propose" if args.propose else "sort_scan")
     else:
-        run_type = "spam_only"
+        run_type = "spam_scan"
     append_run_log(args.account, {
         "ts":                datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
         "account":           args.account,
@@ -1185,7 +1600,15 @@ def cmd_run(args, config):
         "skipped":           skipped,
         "spam_check_caught":     spam_check_caught,
         "spam_check_suspicious": spam_check_suspicious,
+        "llm_calls":             llm_calls,
+        "llm_input_tokens":      llm_input_tokens,
+        "llm_output_tokens":     llm_output_tokens,
     })
+    if not args.dry_run and not args.propose:
+        append_moves_log(args.account, results, run_type)
+        if not args.spam_scan:
+            save_held(args.account, held)
+            save_sorted_uids(args.account, sorted_uids)
 
     print()
     print("── Summary ──────────────────────────────")
@@ -1535,9 +1958,136 @@ def cmd_execute(args, config):
         print(f"\n[dry-run: {len(moves)} would be moved]")
 
 
+def cmd_report(args, config):
+    """Aggregate triage logs and send a daily mail digest."""
+    account_id = args.account
+    since_dt  = datetime.datetime.utcnow() - datetime.timedelta(hours=args.hours)
+    since_str = since_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    log_path   = _logs_dir(account_id) / "triage.log"
+    moves_path = _logs_dir(account_id) / "triage-moves.log"
+
+    # ── Aggregate run stats from triage.log ──────────────────────────────────
+    sort_runs: list = []
+    spam_runs: list = []
+    if log_path.exists():
+        for line in log_path.read_text(errors="replace").splitlines():
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("ts", "") < since_str:
+                continue
+            rt = entry.get("run_type", "")
+            if rt == "sort_scan":
+                sort_runs.append(entry)
+            elif rt == "spam_scan":
+                spam_runs.append(entry)
+
+    # ── Aggregate per-message moves from triage-moves.log ────────────────────
+    moves_by_label: dict = {}
+    if moves_path.exists():
+        for line in moves_path.read_text(errors="replace").splitlines():
+            try:
+                entry = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if entry.get("ts", "") < since_str:
+                continue
+            label = entry.get("label", "Unknown")
+            moves_by_label.setdefault(label, []).append(entry)
+
+    # ── Stats ─────────────────────────────────────────────────────────────────
+    e  = _html.escape
+    total_sort   = sum(r.get("sorted", 0) for r in sort_runs)
+    total_spam   = sum(r.get("sorted", 0) for r in spam_runs)
+    total_errors = sum(r.get("errors", 0) for r in sort_runs + spam_runs)
+    sort_heuristic    = sum(r.get("spam_check_caught", 0) + r.get("spam_check_suspicious", 0) for r in sort_runs)
+    sort_by_label_spam = sum(r.get("by_label", {}).get("Spam", 0) for r in sort_runs)
+    sort_llm_spam      = max(0, sort_by_label_spam - sort_heuristic)
+    label_totals = {lbl: len(items) for lbl, items in moves_by_label.items()}
+    total_moved  = sum(label_totals.values())
+
+    now      = datetime.datetime.now()
+    now_str  = now.strftime("%Y-%m-%d %H:%M")
+    date_str = f"{now.strftime('%B')} {now.day}, {now.year}"
+    ref_id   = f"digest-{now.strftime('%Y-%m-%d')}"
+
+    # ── Build HTML ────────────────────────────────────────────────────────────
+    p = []
+    p.append(f'<h1>Mail Digest \u2014 {e(date_str)}</h1>')
+    p.append(f'<p><strong>{e(now_str)}</strong> \u00b7 Last {args.hours}h \u00b7 {e(account_id)}</p>')
+
+    # Run health
+    p.append('<h2>Run Health</h2>')
+    sort_errors = sum(r.get("errors", 0) for r in sort_runs)
+    spam_errors = sum(r.get("errors", 0) for r in spam_runs)
+    p.append('<table><thead><tr><th>Scan</th><th style="text-align:right">Runs</th>'
+             '<th style="text-align:right">Sorted</th><th style="text-align:right">Errors</th></tr></thead><tbody>')
+    p.append(f'<tr><td>Sort Scan</td><td style="text-align:right">{len(sort_runs)}</td>'
+             f'<td style="text-align:right">{total_sort}</td><td style="text-align:right">{sort_errors}</td></tr>')
+    p.append(f'<tr><td>Spam Scan</td><td style="text-align:right">{len(spam_runs)}</td>'
+             f'<td style="text-align:right">{total_spam}</td><td style="text-align:right">{spam_errors}</td></tr>')
+    p.append('</tbody></table>')
+    if total_errors:
+        p.append(f'<p>\u26a0\ufe0e <strong>{total_errors} error{"s" if total_errors != 1 else ""}</strong> across all runs.</p>')
+
+    # Volume summary
+    p.append('<h2>Volume</h2>')
+    p.append('<table><thead><tr><th>Destination</th><th style="text-align:right">Count</th></tr></thead><tbody>')
+    for label in LABELS:
+        count = label_totals.get(label, 0)
+        if count:
+            emoji = LABEL_EMOJI.get(label, "")
+            p.append(f'<tr><td>{e(emoji)} {e(label)}</td><td style="text-align:right">{count}</td></tr>')
+    p.append(f'<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>{total_moved}</strong></td></tr>')
+    p.append('</tbody></table>')
+
+    # Spam breakdown
+    spam_total = total_spam + sort_heuristic + sort_llm_spam
+    p.append('<h2>Spam</h2>')
+    p.append('<table><thead><tr><th>Source</th><th style="text-align:right">Caught</th></tr></thead><tbody>')
+    p.append(f'<tr><td>Spam scan (heuristic)</td><td style="text-align:right">{total_spam}</td></tr>')
+    p.append(f'<tr><td>Sort scan \u2014 heuristic</td><td style="text-align:right">{sort_heuristic}</td></tr>')
+    p.append(f'<tr><td>Sort scan \u2014 LLM</td><td style="text-align:right">{sort_llm_spam}</td></tr>')
+    p.append(f'<tr><td><strong>Total</strong></td><td style="text-align:right"><strong>{spam_total}</strong></td></tr>')
+    p.append('</tbody></table>')
+
+    # Per-label sections with message links, feedback, unsubscribe, expandable overflow
+    if moves_by_label:
+        p.append('<h2>Sorted</h2>')
+        _build_digest_sections(p, ref_id, moves_by_label)
+
+    p.append(f'<hr><p><small>Digest ID: <code>{e(ref_id)}</code> \u00b7 Use \u21a9 to send feedback</small></p>')
+
+    body_html = _wrap_html("\n".join(p))
+
+    # Plain-text fallback (minimal)
+    md_lines = [f"# Mail Digest — {date_str}", "",
+                f"{now_str} · Last {args.hours}h · {account_id}", "",
+                f"Sort Scan: {len(sort_runs)} runs, {total_sort} sorted",
+                f"Spam Scan: {len(spam_runs)} runs, {total_spam} sorted",
+                f"Total moved: {total_moved}"]
+    body_md = "\n".join(md_lines)
+
+    if args.dry_run:
+        print(body_md)
+        print("\n[HTML digest would be emailed — use --dry-run=false to send]")
+        return
+
+    marvin    = config["accounts"]["marvin"]
+    recipient = config["accounts"].get(account_id, config["accounts"]["jehan"])
+    subject   = f"[Marvin] Mail Digest — {date_str} · {total_moved} sorted"
+    try:
+        _smtp_send_html(marvin, recipient, subject, body_md, body_html=body_html)
+        print(f"Digest sent to {recipient['email']}")
+    except Exception as exc:
+        print(f"[warn] Failed to send digest: {exc}", file=sys.stderr)
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Marvin Stage 2 email triage — classify, move, build patterns",
+        description="Marvin email triage — spam scan (deterministic) + sort scan (semantic)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
@@ -1550,8 +2100,8 @@ def main():
     p_run.add_argument("--dry-run", action="store_true", help="Classify only, don't move")
     p_run.add_argument("--propose", action="store_true", help="Classify, email proposal, save pending — don't move")
     p_run.add_argument("--no-notify", action="store_true", help="Skip summary email after run")
-    p_run.add_argument("--spam-only", action="store_true",
-                       help="Fast-pass: move only Spam/Trash, no age filter, no summary email")
+    p_run.add_argument("--spam-scan", action="store_true",
+                       help="Spam scan: full body, heuristic only — move Spam/Trash, skip LLM")
 
     p_ws = sub.add_parser("window-shopping", help="Flush Window Shopping → Archive (Monday cron)")
     p_ws.add_argument("--account", default="jehan")
@@ -1574,12 +2124,19 @@ def main():
     p_resend = sub.add_parser("resend", help="Resend the pending proposal email without re-classifying")
     p_resend.add_argument("--account", default="jehan")
 
+    p_report = sub.add_parser("report", help="Send daily mail digest (aggregates triage-moves.log)")
+    p_report.add_argument("--account", default="jehan")
+    p_report.add_argument("--hours", type=int, default=24, help="Lookback window in hours (default: 24)")
+    p_report.add_argument("--dry-run", action="store_true", help="Print report to stdout, don't send")
+
     args = parser.parse_args()
     config = load_config()
     _apply_custom_folders(getattr(args, "account", "jehan"))
 
     if args.cmd == "run":
         cmd_run(args, config)
+    elif args.cmd == "report":
+        cmd_report(args, config)
     elif args.cmd == "execute":
         cmd_execute(args, config)
     elif args.cmd == "window-shopping":

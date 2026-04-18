@@ -20,6 +20,13 @@
       - "--exclude=.git"
       - "--exclude=*.db"
 
+- name: Set ownership of marvin source to openclaw
+  ansible.builtin.file:
+    path: /opt/marvin-src
+    owner: openclaw
+    group: users
+    recurse: true
+
 - name: Create marvin virtualenv
   ansible.builtin.pip:
     name: pip
@@ -43,13 +50,41 @@
     group: users
     mode: "0755"
 
-- name: Install mail triage crons (dry-run — remove flag per account to cut over)
+- name: Install mail triage crons
   ansible.builtin.cron:
     name: "marvin-mail-triage-{{ item.id }}"
     user: openclaw
     minute: "*/5"
     job: >-
       /home/openclaw/.venv/marvin/bin/marvin-mail triage
+      --account {{ item.id }}
+      --config /home/openclaw/.openclaw/marvin-mail.json
+      >> /home/openclaw/.openclaw/accounts/{{ item.id }}/logs/marvin-mail.log 2>&1
+  loop: "{{ mail_accounts }}"
+  when: item.email | default('') != ''
+
+- name: Install digest crons (dry-run — remove flag per account to cut over)
+  ansible.builtin.cron:
+    name: "marvin-mail-digest-{{ item.id }}"
+    user: openclaw
+    hour: "5"
+    minute: "30"
+    job: >-
+      /home/openclaw/.venv/marvin/bin/marvin-mail digest
+      --account {{ item.id }}
+      --config /home/openclaw/.openclaw/marvin-mail.json
+      --dry-run
+      >> /home/openclaw/.openclaw/accounts/{{ item.id }}/logs/marvin-mail.log 2>&1
+  loop: "{{ mail_accounts }}"
+  when: item.email | default('') != ''
+
+- name: Install feedback crons (dry-run — remove flag per account to cut over)
+  ansible.builtin.cron:
+    name: "marvin-mail-feedback-{{ item.id }}"
+    user: openclaw
+    minute: "*/15"
+    job: >-
+      /home/openclaw/.venv/marvin/bin/marvin-mail feedback
       --account {{ item.id }}
       --config /home/openclaw/.openclaw/marvin-mail.json
       --dry-run

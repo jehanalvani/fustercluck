@@ -9,7 +9,7 @@ Metrics emitted:
   marvin_mail_last_run_timestamp{account,run_type} Unix ts of last triage run
   marvin_mail_last_run_sorted{account,run_type}    Emails sorted in last run
   marvin_mail_last_run_errors{account,run_type}    Errors in last run
-  marvin_mail_last_run_by_label{account,label}     Label breakdown (full_sort only)
+  marvin_mail_last_run_by_label{account,label}     Label breakdown (sort_scan only)
   marvin_mail_scrape_errors{account}               1 if IMAP connect failed
 
 Privacy: accounts with role=minor in profile.json emit only INBOX count,
@@ -65,7 +65,7 @@ def last_run_stats(account_id: str) -> dict:
                 rt = entry.get("run_type", "unknown")
                 if rt not in by_run_type:
                     by_run_type[rt] = entry
-                if len(by_run_type) >= 3:  # full_sort, spam_only, window_shopping
+                if len(by_run_type) >= 3:  # sort_scan, spam_scan, window_shopping
                     break
             except json.JSONDecodeError:
                 continue
@@ -244,17 +244,44 @@ def main():
 
     out.append("")
     out.append(
-        "# HELP marvin_mail_last_run_by_label Emails in each label from last full_sort run"
+        "# HELP marvin_mail_last_run_by_label Emails in each label from last sort_scan run"
     )
     out.append("# TYPE marvin_mail_last_run_by_label gauge")
     for acct_id, stats in last_runs.items():
-        entry = stats.get("full_sort")
+        entry = stats.get("sort_scan")
         if not entry:
             continue
         for lbl, count in sorted(entry.get("by_label", {}).items()):
             safe_lbl = _escape_label(lbl)
             out.append(
                 f'marvin_mail_last_run_by_label{{account="{acct_id}",label="{safe_lbl}"}} {count}'
+            )
+
+    out.append("")
+    out.append("# HELP marvin_mail_last_run_llm_calls LLM API calls made in last triage run")
+    out.append("# TYPE marvin_mail_last_run_llm_calls gauge")
+    for acct_id, stats in last_runs.items():
+        for run_type, entry in stats.items():
+            out.append(
+                f'marvin_mail_last_run_llm_calls{{account="{acct_id}",run_type="{run_type}"}} {entry.get("llm_calls", 0)}'
+            )
+
+    out.append("")
+    out.append("# HELP marvin_mail_last_run_llm_input_tokens LLM input tokens consumed in last triage run")
+    out.append("# TYPE marvin_mail_last_run_llm_input_tokens gauge")
+    for acct_id, stats in last_runs.items():
+        for run_type, entry in stats.items():
+            out.append(
+                f'marvin_mail_last_run_llm_input_tokens{{account="{acct_id}",run_type="{run_type}"}} {entry.get("llm_input_tokens", 0)}'
+            )
+
+    out.append("")
+    out.append("# HELP marvin_mail_last_run_llm_output_tokens LLM output tokens consumed in last triage run")
+    out.append("# TYPE marvin_mail_last_run_llm_output_tokens gauge")
+    for acct_id, stats in last_runs.items():
+        for run_type, entry in stats.items():
+            out.append(
+                f'marvin_mail_last_run_llm_output_tokens{{account="{acct_id}",run_type="{run_type}"}} {entry.get("llm_output_tokens", 0)}'
             )
 
     # ── scrape health ─────────────────────────────────────────────────────────
