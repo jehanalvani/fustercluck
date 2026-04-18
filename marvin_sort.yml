@@ -1,0 +1,46 @@
+---
+# One-shot mail sort + immediate report.
+# Sorts the oldest N messages in INBOX, then emails a digest as soon as it's done.
+#
+# Usage:
+#   ansible-playbook marvin_sort.yml              # sort 100 oldest, email report
+#   ansible-playbook marvin_sort.yml -e batch=50  # sort 50 oldest
+#   ansible-playbook marvin_sort.yml -e dry_run=true  # preview — no moves, report to stdout
+
+- hosts: 20-size.local
+  remote_user: ansible
+  become: yes
+  gather_facts: false
+  vars:
+    account: jehan
+    batch: 100
+    dry_run: false
+
+  tasks:
+    - name: "Sort {{ batch }} oldest messages{{ ' (dry run)' if dry_run else '' }}"
+      ansible.builtin.command: >-
+        /usr/local/bin/marvin-triage run
+        --account {{ account }}
+        --batch {{ batch }}
+        --no-notify
+        {{ '--dry-run' if dry_run else '' }}
+      become_user: openclaw
+      register: sort_result
+      changed_when: not dry_run
+
+    - name: Show sort output
+      ansible.builtin.debug:
+        var: sort_result.stdout_lines
+
+    - name: "Send report{{ ' (dry run — stdout only)' if dry_run else '' }}"
+      ansible.builtin.command: >-
+        /usr/local/bin/marvin-triage report
+        --account {{ account }}
+        {{ '--dry-run' if dry_run else '' }}
+      become_user: openclaw
+      register: report_result
+      changed_when: false
+
+    - name: Show report output
+      ansible.builtin.debug:
+        var: report_result.stdout_lines
