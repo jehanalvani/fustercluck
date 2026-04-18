@@ -141,6 +141,17 @@ persistence:
     globalMounts:
       - path: /recordings
 
+  videos:
+    # Shinobi writes recordings to /home/Shinobi/videos/ (its internal default),
+    # NOT to /recordings. Without this mount those MP4s land in the container
+    # writable overlay layer (backed by root filesystem) and fill / at ~500MB/5min.
+    # Redirecting to whidbey keeps recordings off root entirely.
+    type: hostPath
+    hostPath: /whidbey/configs/security/shinobi-videos
+    hostPathType: DirectoryOrCreate
+    globalMounts:
+      - path: /home/Shinobi/videos
+
   db:
     # hostPath instead of NFS PVC: MariaDB startup chown runs as root, which NFS
     # root_squash maps to anonuid=1002 (not mysql UID 105), causing startup failure.

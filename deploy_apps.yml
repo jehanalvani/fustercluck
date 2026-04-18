@@ -11,6 +11,7 @@
 #   homeautomation:     home-assistant (hostNetwork, pinned to kube02)
 #   homeautomation:     home-assistant (hostNetwork, pinned to kube02)
 #   security:           shinobi (multi-container, pinned to media node)
+#   ai:                 faster-whisper (GPU transcription), openhinotes (transcription web app)
 #
 # Prerequisites:
 #   - cluster_bootstrap.yml completed (namespaces, storage, cert-manager, traefik)
@@ -230,3 +231,33 @@
         values_files:
           - /home/ansible/k8s/apps/security/shinobi/values.yml
       tags: [security, shinobi]
+
+    # -------------------------------------------------------------------------
+    # AI namespace
+    # faster-whisper-server: OpenAI-compatible transcription (replaces VoxHub)
+    # openhinotes: audio transcription web app with speaker diarization + LLM chat
+    # -------------------------------------------------------------------------
+
+    - name: Deploy faster-whisper (transcription backend)
+      kubernetes.core.helm:
+        name: whisper
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: ai
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/ai/whisper/values.yml
+      tags: [ai, whisper]
+
+    - name: Deploy openhinotes
+      kubernetes.core.helm:
+        name: openhinotes
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
+        chart_version: "3.6.1"
+        release_namespace: ai
+        create_namespace: false
+        state: present
+        values_files:
+          - /home/ansible/k8s/apps/ai/openhinotes/values.yml
+      tags: [ai, openhinotes]

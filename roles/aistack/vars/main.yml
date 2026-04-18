@@ -16,6 +16,13 @@ litellm_db_password: "{{ vault_litellm_db_password }}"
 fastmail_marvin_app_password: "{{ vault_fastmail_marvin_app_password | default('') }}"
 fastmail_jehan_app_password: "{{ vault_fastmail_jehan_app_password | default('') }}"
 
+# Netgear Orbi router — admin credentials for SOAP API (port 5000)
+# Password pulled from 1Password at deploy time (same item as HA role)
+netgear_router_ip: "10.0.1.1"
+netgear_soap_port: 443
+netgear_soap_ssl: true
+netgear_admin_password: "{{ lookup('pipe', 'op read \"op://HomeLab/Netgear Orbi Router/password\"') }}"
+
 # Grafana — dashboard management
 # 1Password: op://HomeLab/Grafana - MarvinMail Dashboarding Service Account Token/credential
 # Not vaulted yet — no Ansible task consumes it. Vault when Grafana deploy automation is built.
@@ -24,3 +31,15 @@ fastmail_jehan_app_password: "{{ vault_fastmail_jehan_app_password | default('')
 # Household accounts — add a var pair here for each entry in mail_accounts.yml
 fastmail_lindsay_email: "{{ vault_fastmail_lindsay_email | default('') }}"
 fastmail_lindsay_app_password: "{{ vault_fastmail_lindsay_app_password | default('') }}"
+
+# Pi-hole — API password for stats exporter (same as web UI password)
+pihole_api_password: "{{ lookup('pipe', 'op read \"op://HomeLab/Pihole/App Password\"') }}"
+
+# OpenHiNotes — audio transcription web app (k8s, ai namespace)
+openhinotes_postgres_password: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenHiNotes Postgres Password/credential\"') }}"
+openhinotes_secret_key: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenHiNotes Secret Key/credential\"') }}"
+openhinotes_admin_password: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenHiNotes /password\"') }}"
+openhinotes_voice_embedding_key: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenHiNotes Voice Embed Key/credential\"') }}"
+
+# HuggingFace token — for Pyannote speaker diarization in faster-whisper-server
+huggingface_token: "{{ lookup('pipe', 'op read \"op://HomeLab/OpenHiNotes HuggingFace Token/credential\"') }}"

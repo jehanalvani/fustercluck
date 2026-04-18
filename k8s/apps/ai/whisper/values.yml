@@ -1,0 +1,84 @@
+# Chart: bjw-s/app-template
+# VoxHub — OpenAI-compatible transcription API with speaker diarization
+# Image: ghcr.io/ghecko/voxhub:cpu (built from Dockerfile.cpu via docker-publish.yml)
+# Repo: https://github.com/ghecko/VoxHub
+# Exposes: POST /v1/audio/transcriptions, GET /health
+# Pinned to 20-size (media node) — CPU inference; switch model to whisper:large-v3 when M4 Pro arrives
+#
+# Diarization: pyannote.audio (HF_TOKEN required — already accepted gated model licenses)
+# Models cached to hostPath so they survive pod restarts.
+# First request downloads openai/whisper-medium + pyannote models (~2-3 GB total).
+
+controllers:
+  main:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/media: "true"
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: media
+          effect: NoSchedule
+    containers:
+      main:
+        image:
+          repository: ghcr.io/jehanalvani/voxhub
+          tag: cpu
+          pullPolicy: Always
+        # Override Dockerfile.cpu ENTRYPOINT (main.py CLI) to run the API server
+        command: ["python3", "server.py"]
+        env:
+          HF_HOME: /models
+          VOXHUB_MODEL: "whisper:small"
+          VOXHUB_DEVICE: "cpu"
+          VOXHUB_DIARIZE: "true"
+          VOXHUB_VAD: "pyannote"
+          HF_TOKEN:
+            valueFrom:
+              secretKeyRef:
+                name: whisper-secret
+                key: HF_TOKEN
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8000
+              initialDelaySeconds: 60
+              periodSeconds: 30
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health
+                port: 8000
+              # Long window: models download on first request
+              initialDelaySeconds: 30
+              periodSeconds: 10
+              failureThreshold: 18
+        resources:
+          requests:
+            cpu: 500m
+            memory: 2Gi
+          limits:
+            cpu: 4000m
+            memory: 6Gi
+
+service:
+  main:
+    controller: main
+    ports:
+      http:
+        port: 8000
+
+persistence:
+  models:
+    type: hostPath
+    # Model cache persists across pod restarts — avoids re-downloading on each restart
+    hostPath: /whidbey/configs/ai/whisper-models
+    globalMounts:
+      - path: /models

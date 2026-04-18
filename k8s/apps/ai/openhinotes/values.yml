@@ -1,0 +1,254 @@
+# Chart: bjw-s/app-template
+# OpenHiNotes — self-hosted audio transcription with speaker diarization + LLM chat
+# Repo: https://github.com/ghecko/OpenHiNotes (fork → build images → push to GHCR)
+#
+# Two controllers:
+#   app      — FastAPI backend + PostgreSQL 16 (same pod; backend connects via localhost)
+#   frontend — nginx serving the React SPA (static files only; no backend proxy)
+#
+# Traefik routes on same hostname:
+#   /api/* → backend service (port 8000) — FastAPI mounts all routes under /api
+#   /*     → frontend service (port 80)  — nginx serves index.html for SPA routing
+#
+# Both pinned to 20-size for hostPath storage (NFS root_squash breaks postgres chown,
+# same issue as Shinobi — hostPath gives real root access on the local node).
+#
+# First-start behaviour: backend may restart 1-2× while postgres initialises.
+# The startupProbe gives a 150s window for alembic migrations + postgres readiness.
+#
+# Image names: replace jehanalvani with your GitHub username.
+# Make GHCR packages public after the first workflow run:
+#   GitHub → Your profile → Packages → openhinotes-backend/frontend → Package settings → Make public
+
+controllers:
+  app:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/media: "true"
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: media
+          effect: NoSchedule
+    containers:
+      db:
+        image:
+          repository: postgres
+          tag: "16-alpine"
+        env:
+          POSTGRES_DB: openhinotes
+          POSTGRES_USER: hinotes
+          POSTGRES_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: POSTGRES_PASSWORD
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command: ["pg_isready", "-U", "hinotes", "-d", "openhinotes"]
+              initialDelaySeconds: 15
+              periodSeconds: 10
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              exec:
+                command: ["pg_isready", "-U", "hinotes", "-d", "openhinotes"]
+              initialDelaySeconds: 5
+              periodSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+      main:
+        image:
+          repository: ghcr.io/jehanalvani/openhinotes-backend
+          tag: latest
+          pullPolicy: Always
+        env:
+          # Full DATABASE_URL from secret — postgres runs at localhost (same pod)
+          DATABASE_URL:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: DATABASE_URL
+          SECRET_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: SECRET_KEY
+          ADMIN_EMAIL:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: ADMIN_EMAIL
+          ADMIN_PASSWORD:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: ADMIN_PASSWORD
+          VOICE_EMBEDDING_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: openhinotes-secret
+                key: VOICE_EMBEDDING_KEY
+          # Transcription: VoxHub in same namespace
+          VOXHUB_API_URL: "http://whisper.ai.svc.cluster.local:8000"
+          VOXHUB_MODEL: "whisper:small"
+          VOXHUB_JOB_MODE: "true"
+          VOXHUB_VAD_MODE: "pyannote"
+          VOXHUB_VERIFY_SSL: "false"
+          # LLM: Ollama on 20-size (already running as Docker container)
+          LLM_API_URL: "http://10.0.1.203:11434/v1"
+          LLM_MODEL: "llama3.1:8b"
+          LLM_VERIFY_SSL: "false"
+          CORS_ORIGINS: '["*"]'
+        probes:
+          startup:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/health
+                port: 8000
+              initialDelaySeconds: 10
+              periodSeconds: 5
+              # 30 × 5s = 150s window for postgres init + alembic migrations
+              failureThreshold: 30
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/health
+                port: 8000
+              initialDelaySeconds: 0
+              periodSeconds: 20
+              failureThreshold: 5
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /api/health
+                port: 8000
+              initialDelaySeconds: 0
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 200m
+            memory: 512Mi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+
+  frontend:
+    pod:
+      nodeSelector:
+        node-role.kubernetes.io/media: "true"
+      tolerations:
+        - key: dedicated
+          operator: Equal
+          value: media
+          effect: NoSchedule
+    containers:
+      main:
+        image:
+          repository: ghcr.io/jehanalvani/openhinotes-frontend
+          tag: latest
+          pullPolicy: Always
+        probes:
+          liveness:
+            enabled: true
+          readiness:
+            enabled: true
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 256Mi
+
+service:
+  backend:
+    controller: app
+    ports:
+      http:
+        port: 8000
+  frontend:
+    controller: frontend
+    ports:
+      http:
+        port: 80
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: hinotes.alvani.me
+        paths:
+          - path: /api
+            pathType: Prefix
+            service:
+              identifier: backend
+              port: http
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: frontend
+              port: http
+    tls:
+      - secretName: hinotes-tls
+        hosts:
+          - hinotes.alvani.me
+
+  internal:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: homelab-ca-issuer
+    hosts:
+      - host: hinotes.lan
+        paths:
+          - path: /api
+            pathType: Prefix
+            service:
+              identifier: backend
+              port: http
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: frontend
+              port: http
+    tls:
+      - secretName: hinotes-lan-tls
+        hosts:
+          - hinotes.lan
+
+persistence:
+  db-data:
+    type: hostPath
+    # hostPath required: postgres chown runs as root; NFS root_squash breaks it
+    hostPath: /whidbey/configs/ai/openhinotes-db
+    advancedMounts:
+      app:
+        db:
+          - path: /var/lib/postgresql/data
+
+  uploads:
+    type: hostPath
+    hostPath: /whidbey/configs/ai/openhinotes-uploads
+    advancedMounts:
+      app:
+        main:
+          - path: /app/uploads
