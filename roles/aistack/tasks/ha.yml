@@ -1,0 +1,19 @@
+---
+# Home Assistant integration for Marvin
+# Requires vault var: vault_ha_token (already in vars/main.yml)
+
+- name: Deploy marvin_ha.py
+  ansible.builtin.copy:
+    src: marvin_ha.py
+    dest: /home/openclaw/marvin_ha.py
+    owner: openclaw
+    group: openclaw
+    mode: "0755"
+
+- name: Deploy marvin-ha.json (HA URL + token)
+  ansible.builtin.template:
+    src: marvin_ha_config.json.j2
+    dest: /home/openclaw/marvin-ha.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
