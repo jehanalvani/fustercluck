@@ -4,3 +4,31 @@
     name: "{{ aistack_network }}"
     driver: bridge
     state: present
+
+# systemd-resolved falls back to 8.8.8.8 when Pi-hole (10.0.1.250) blips,
+# then stays on 8.8.8.8 for ~30 min — breaking all .lan resolution.
+# This cron detects the fallback and auto-recovers by restarting resolved.
+- name: Deploy DNS watchdog script
+  ansible.builtin.copy:
+    dest: /usr/local/bin/dns-watchdog
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      # Restart systemd-resolved if it has fallen back away from Pi-hole.
+      # Runs every 2 minutes via cron. Safe to run repeatedly — no-ops when healthy.
+      PIHOLE="10.0.1.250"
+      CURRENT=$(resolvectl status | awk '/Current DNS Server/{print $NF}')
+      if [ "$CURRENT" != "$PIHOLE" ]; then
+        # Confirm Pi-hole is actually answering before restarting
+        if dig @"$PIHOLE" +short +time=2 pihole.lan >/dev/null 2>&1; then
+          logger -t dns-watchdog "Resolved fell back to $CURRENT — Pi-hole is up, restarting resolved"
+          systemctl restart systemd-resolved
+        fi
+      fi
+
+- name: Set up DNS watchdog cron (every 2 minutes)
+  ansible.builtin.cron:
+    name: dns watchdog
+    minute: "*/2"
+    job: /usr/local/bin/dns-watchdog
+    user: root
