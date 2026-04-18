@@ -137,6 +137,15 @@ alloy:
       discovery.relabel "node_exporter" {
         targets = discovery.kubernetes.node_exporter_pods.targets
 
+        // Each Alloy DaemonSet pod only scrapes the node-exporter on its own node.
+        // Without this, all 4 Alloy pods scrape all 4 node-exporters → 4x metric
+        // amplification → Mimir rate limit (429).
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          regex         = env("NODE_NAME")
+          action        = "keep"
+        }
+
         // Label each metric with the node it came from
         rule {
           source_labels = ["__meta_kubernetes_pod_node_name"]
@@ -153,9 +162,22 @@ alloy:
       }
 
       prometheus.scrape "node_exporter" {
-        targets    = discovery.relabel.node_exporter.output
+        targets         = discovery.relabel.node_exporter.output
+        forward_to      = [prometheus.relabel.node_exporter_filter.receiver]
+        job_name        = "node-exporter"
+        scrape_interval = "60s"
+      }
+
+      // Drop unused node-exporter collectors. NFS/NFSD unused (confirmed cardinality tool).
+      // XFS dropped — cluster uses Btrfs. ZFS not present. hwmon kept for temp monitoring.
+      prometheus.relabel "node_exporter_filter" {
         forward_to = [prometheus.remote_write.grafana_cloud.receiver]
-        job_name   = "node-exporter"
+
+        rule {
+          source_labels = ["__name__"]
+          regex         = "node_nfs_.*|node_nfsd_.*|node_xfs_.*|node_zfs_.*"
+          action        = "drop"
+        }
       }
 
       // --- kube-state-metrics: cluster state ---
@@ -171,9 +193,29 @@ alloy:
       }
 
       prometheus.scrape "kube_state_metrics" {
-        targets    = discovery.kubernetes.kube_state_metrics_pods.targets
+        targets         = discovery.kubernetes.kube_state_metrics_pods.targets
+        forward_to      = [prometheus.relabel.kube_state_metrics_filter.receiver]
+        job_name        = "kube-state-metrics"
+        scrape_interval = "60s"
+      }
+
+      // Allowlist only the KSM metrics the K3s Cluster dashboard actually uses.
+      // Everything else (secrets, endpoints, ingress, PVs, webhooks, etc.) is unused.
+      prometheus.relabel "kube_state_metrics_filter" {
         forward_to = [prometheus.remote_write.grafana_cloud.receiver]
-        job_name   = "kube-state-metrics"
+
+        rule {
+          source_labels = ["__name__"]
+          regex         = "kube_(pod|node|deployment|daemonset|statefulset|namespace|replicaset)_.*"
+          action        = "keep"
+        }
+
+        // Drop high-cardinality pod metadata expansions — one series per pod per toleration/label.
+        rule {
+          source_labels = ["__name__"]
+          regex         = "kube_pod_tolerations|kube_pod_labels|kube_pod_annotations"
+          action        = "drop"
+        }
       }
 
       // --- kubelet: node-level k8s metrics ---
@@ -183,6 +225,13 @@ alloy:
 
       discovery.relabel "kubelet" {
         targets = discovery.kubernetes.nodes.targets
+
+        // Only scrape the kubelet on this Alloy pod's own node
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = env("NODE_NAME")
+          action        = "keep"
+        }
 
         rule {
           source_labels = ["__meta_kubernetes_node_name"]
@@ -198,19 +247,39 @@ alloy:
       }
 
       prometheus.scrape "kubelet" {
-        targets    = discovery.relabel.kubelet.output
-        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
-        job_name   = "kubelet"
-        scheme     = "https"
+        targets         = discovery.relabel.kubelet.output
+        forward_to      = [prometheus.relabel.kubelet_filter.receiver]
+        job_name        = "kubelet"
+        scrape_interval = "60s"
+        scheme          = "https"
         bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         tls_config {
           insecure_skip_verify = true
         }
       }
 
+      // Drop k3s embedded API server, etcd, workqueue, and other unused high-cardinality
+      // kubelet metrics. A homelab only needs kubelet_* and storage_operation_* basics.
+      prometheus.relabel "kubelet_filter" {
+        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+        rule {
+          source_labels = ["__name__"]
+          regex         = "apiserver_.*|etcd_.*|workqueue_.*|rest_client_.*|kubelet_runtime_operations_duration_.*|kubernetes_feature_enabled|storage_operation_duration_seconds_.*|scheduler_plugin_execution_duration_.*|kubeproxy_network_programming_.*|volume_operation_total_seconds_.*|kubelet_http_requests_duration_.*"
+          action        = "drop"
+        }
+      }
+
       // --- cAdvisor: container resource usage ---
       discovery.relabel "cadvisor" {
         targets = discovery.kubernetes.nodes.targets
+
+        // Only scrape cAdvisor on this Alloy pod's own node
+        rule {
+          source_labels = ["__meta_kubernetes_node_name"]
+          regex         = env("NODE_NAME")
+          action        = "keep"
+        }
 
         rule {
           source_labels = ["__meta_kubernetes_node_name"]
@@ -226,14 +295,27 @@ alloy:
       }
 
       prometheus.scrape "cadvisor" {
-        targets      = discovery.relabel.cadvisor.output
-        forward_to   = [prometheus.remote_write.grafana_cloud.receiver]
-        job_name     = "cadvisor"
-        scheme       = "https"
-        metrics_path = "/metrics/cadvisor"
+        targets         = discovery.relabel.cadvisor.output
+        forward_to      = [prometheus.relabel.cadvisor_filter.receiver]
+        job_name        = "cadvisor"
+        scrape_interval = "60s"
+        scheme          = "https"
+        metrics_path    = "/metrics/cadvisor"
         bearer_token_file = "/var/run/secrets/kubernetes.io/serviceaccount/token"
         tls_config {
           insecure_skip_verify = true
+        }
+      }
+
+      // Keep only the cAdvisor metrics useful for homelab container monitoring.
+      // Drops high-cardinality per-device and per-TCP-state series.
+      prometheus.relabel "cadvisor_filter" {
+        forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+        rule {
+          source_labels = ["__name__"]
+          regex         = "container_cpu_usage_seconds_total|container_memory_usage_bytes|container_memory_working_set_bytes|container_network_receive_bytes_total|container_network_transmit_bytes_total|container_spec_cpu_quota|container_spec_cpu_period|container_spec_memory_limit_bytes|container_start_time_seconds|container_last_seen"
+          action        = "keep"
         }
       }
 
@@ -453,7 +535,7 @@ alloy:
       // MARVIN MAIL LOGS
       // =========================================================
 
-      // Tail per-account triage logs — one JSON line per run.
+      // Tail per-account triage logs — one JSON line per run (old marvin-triage).
       // Path (on 20-size): /home/openclaw/.openclaw/accounts/{id}/logs/triage.log
       // Mounted at the same path via the openclaw-accounts hostPath volume.
       local.file_match "mail_logs" {
@@ -492,6 +574,40 @@ alloy:
             account    = "",
             run_type   = "",
             model_tier = "",
+          }
+        }
+      }
+
+      // Tail marvin-mail v2 plain-text logs (new pipeline).
+      // Path: /home/openclaw/.openclaw/accounts/{id}/logs/marvin-mail.log
+      // Format: "[marvin-mail v2] 2026-04-17T22:05:01Z triage account=jehan ..."
+      //         "[sort] sender | subject → folder"
+      local.file_match "marvin_mail_logs" {
+        path_targets = [{
+          __path__ = "/home/openclaw/.openclaw/accounts/*/logs/marvin-mail.log",
+          job      = "marvin/mail-v2",
+          node     = env("NODE_NAME"),
+        }]
+        sync_period = "30s"
+      }
+
+      loki.source.file "marvin_mail_logs" {
+        targets    = local.file_match.marvin_mail_logs.targets
+        forward_to = [loki.process.marvin_mail_logs.receiver]
+      }
+
+      loki.process "marvin_mail_logs" {
+        forward_to = [loki.write.grafana_cloud.receiver]
+
+        // Extract account id from file path
+        stage.regex {
+          expression = "/home/openclaw/\\.openclaw/accounts/(?P<account>[^/]+)/logs/marvin-mail\\.log"
+          source     = "filename"
+        }
+
+        stage.labels {
+          values = {
+            account = "",
           }
         }
       }
