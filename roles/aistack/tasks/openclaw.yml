@@ -82,7 +82,7 @@
 
 - name: Sync OpenClaw workspace files
   ansible.builtin.synchronize:
-    src: "{{ playbook_dir }}/../OpenClaw/workspace/"
+    src: "{{ playbook_dir }}/../marvin/workspace/"
     dest: "{{ openclaw_config_dir }}/workspace/"
     delete: yes
     rsync_opts:
@@ -128,10 +128,16 @@
       # Allow jehan to run openclaw CLI and manage state files as the openclaw service user
       jehan ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
       jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/agents/main/sessions/sessions.json
+      jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/homelab-notify-state.json
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-triage
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-mail
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-feedback
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-spam-check
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-notify
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-notify-drain
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-health-exporter
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-health
+      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-mail-exporter
 
 # Deploy config first (without plugin-specific keys) so openclaw CLI is usable
 - name: Deploy OpenClaw config
