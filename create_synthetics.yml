@@ -25,11 +25,12 @@
   connection: local
   gather_facts: false
 
-  vars_files:
-    - roles/common/vars/vault.yml
-
   vars:
     checks_file: "k8s/apps/monitoring/synthetic-monitoring/checks.yml"
+    sm_api_token: "{{ lookup('pipe', 'op read \"op://HomeLab/Grafana Cloud SM API Token/credential\"') }}"
+    sm_api_url: "https://synthetic-monitoring-api-us-west-0.grafana.net"
+    sm_private_probe_id: 377
+    sm_external_probe_ids: [15, 18]
     probe_map:
       external: "{{ sm_external_probe_ids }}"
       internal: ["{{ sm_private_probe_id }}"]
@@ -54,11 +55,24 @@
         status_code: 200
       register: existing_checks_resp
 
-    - name: Build existing check map (job → id)
+    - name: Build existing check id list
       ansible.builtin.set_fact:
-        existing_check_map: >-
-          {{ existing_checks_resp.json
-             | items2dict(key_name='job', value_name='id') }}
+        existing_check_ids: >-
+          {{ existing_checks_resp.json | map(attribute='id') | list }}
+
+    # ------------------------------------------------------------------
+    # Delete all existing checks — re-add only the desired set below.
+    # Avoids tenantId conflicts when the SM token has changed.
+    # ------------------------------------------------------------------
+
+    - name: Delete all existing checks
+      ansible.builtin.uri:
+        url: "{{ sm_api_url }}/api/v1/check/{{ item }}"
+        method: DELETE
+        headers:
+          Authorization: "Bearer {{ sm_api_token }}"
+        status_code: [200, 204]
+      loop: "{{ existing_check_ids }}"
 
     # ------------------------------------------------------------------
     # HTTP / HTTPS checks
@@ -66,24 +80,16 @@
 
     - name: Register HTTP checks
       ansible.builtin.uri:
-        url: >-
-          {{ sm_api_url }}/api/v1/check/{{
-             'update' if (item.service + '-' + probe) in existing_check_map
-             else 'add'
-          }}
+        url: "{{ sm_api_url }}/api/v1/check/add"
         method: POST
         headers:
           Authorization: "Bearer {{ sm_api_token }}"
           Content-Type: "application/json"
         body_format: json
         body:
-          id: >-
-            {{ existing_check_map[item.service + '-' + probe]
-               if (item.service + '-' + probe) in existing_check_map
-               else omit }}
           job: "{{ item.service }}-{{ probe }}"
           target: "{{ item.target }}"
-          frequency: "{{ 30000 if probe == 'internal' else 60000 }}"
+          frequency: 900000
           timeout: 5000
           enabled: true
           probes: "{{ probe_map[probe] }}"
@@ -118,24 +124,16 @@
 
     - name: Register DNS checks
       ansible.builtin.uri:
-        url: >-
-          {{ sm_api_url }}/api/v1/check/{{
-             'update' if (item.service + '-dns-' + probe) in existing_check_map
-             else 'add'
-          }}
+        url: "{{ sm_api_url }}/api/v1/check/add"
         method: POST
         headers:
           Authorization: "Bearer {{ sm_api_token }}"
           Content-Type: "application/json"
         body_format: json
         body:
-          id: >-
-            {{ existing_check_map[item.service + '-dns-' + probe]
-               if (item.service + '-dns-' + probe) in existing_check_map
-               else omit }}
           job: "{{ item.service }}-dns-{{ probe }}"
           target: "{{ item.query }}"
-          frequency: 30000
+          frequency: 900000
           timeout: 3000
           enabled: true
           probes: "{{ probe_map[probe] }}"
@@ -169,24 +167,16 @@
 
     - name: Register ping checks
       ansible.builtin.uri:
-        url: >-
-          {{ sm_api_url }}/api/v1/check/{{
-             'update' if (item.service + '-ping-' + probe) in existing_check_map
-             else 'add'
-          }}
+        url: "{{ sm_api_url }}/api/v1/check/add"
         method: POST
         headers:
           Authorization: "Bearer {{ sm_api_token }}"
           Content-Type: "application/json"
         body_format: json
         body:
-          id: >-
-            {{ existing_check_map[item.service + '-ping-' + probe]
-               if (item.service + '-ping-' + probe) in existing_check_map
-               else omit }}
           job: "{{ item.service }}-ping-{{ probe }}"
           target: "{{ item.target }}"
-          frequency: 30000
+          frequency: 900000
           timeout: 3000
           enabled: true
           probes: "{{ probe_map[probe] }}"

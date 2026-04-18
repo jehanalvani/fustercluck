@@ -22,74 +22,17 @@
 
 http_checks:
 
-  # -- monitoring tier --
+  # External only — proves ingress stack + TLS works from outside the network.
+  # Internal HTTP checks removed: Marvin's health check covers LAN reachability.
   - service: traefik
     tier: monitoring
     target: https://traefik.alvani.me
-    probes: [external, internal]
+    probes: [external]
 
-  - service: prometheus
-    tier: monitoring
-    target: https://prometheus.alvani.me
-    probes: [external, internal]
-
-  # -- infra tier --
-  - service: homebridge
-    tier: infra
-    target: https://homebridge.alvani.me
-    probes: [external, internal]
-
-  # -- security tier --
-  - service: shinobi
-    tier: security
-    target: https://shinobi.alvani.me
-    probes: [external, internal]
-
-  # -- media tier --
   - service: plex
     tier: media
     target: https://plex.alvani.me
-    probes: [external, internal]
-
-  - service: radarr
-    tier: media
-    target: https://radarr.alvani.me
-    probes: [external, internal]
-
-  - service: sonarr
-    tier: media
-    target: https://sonarr.alvani.me
-    probes: [external, internal]
-
-  - service: lidarr
-    tier: media
-    target: https://lidarr.alvani.me
-    probes: [external, internal]
-
-  - service: readarr
-    tier: media
-    target: https://readarr.alvani.me
-    probes: [external, internal]
-
-  - service: prowlarr
-    tier: media
-    target: https://prowlarr.alvani.me
-    probes: [external, internal]
-
-  - service: ombi
-    tier: media
-    target: https://ombi.alvani.me
-    probes: [external, internal]
-
-  - service: nzbget
-    tier: media
-    target: https://nzbget.alvani.me
-    probes: [external, internal]
-
-  - service: transmission
-    tier: media
-    target: https://transmission.alvani.me
-    probes: [external, internal]
+    probes: [external]
 
 # ============================================================
 # DNS checks — internal probe only (Pi-hole on LAN)
