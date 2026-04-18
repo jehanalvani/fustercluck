@@ -1,0 +1,241 @@
+{
+  "annotations": { "list": [] },
+  "description": "Marvin Homelab Health — HTTP reachability, systemd service status, and SSL certificate expiry",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "refresh": "5m",
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "America/Los_Angeles",
+  "title": "Marvin — Homelab Health",
+  "uid": "marvin-health",
+  "panels": [
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 1, "title": "HTTP — AI Stack", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] },
+          "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ],
+          "noValue": "No data", "unit": "short"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 3, "w": 8, "x": 0, "y": 1 }, "id": 2,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Ollama\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Ollama", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 8, "y": 1 }, "id": 3,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"LiteLLM\"}", "instant": true, "legendFormat": "" } ],
+      "title": "LiteLLM", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 16, "y": 1 }, "id": 5,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"SearXNG\"}", "instant": true, "legendFormat": "" } ],
+      "title": "SearXNG", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 }, "id": 10, "title": "HTTP — Media", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 0, "y": 5 }, "id": 11,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Plex\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Plex", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 4, "y": 5 }, "id": 12,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Sonarr\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Sonarr", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 8, "y": 5 }, "id": 13,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Radarr\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Radarr", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 12, "y": 5 }, "id": 14,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Lidarr\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Lidarr", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 16, "y": 5 }, "id": 15,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Readarr\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Readarr", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 4, "x": 20, "y": 5 }, "id": 16,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Prowlarr\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Prowlarr", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 0, "y": 8 }, "id": 17,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"nzbget\"}", "instant": true, "legendFormat": "" } ],
+      "title": "nzbget", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 8, "y": 8 }, "id": 18,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Transmission\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Transmission", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 16, "y": 8 }, "id": 19,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Ombi\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Ombi", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 }, "id": 20, "title": "HTTP — Infrastructure", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 0, "y": 12 }, "id": 21,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Home Assistant\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Home Assistant", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 8, "y": 12 }, "id": 22,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"Pi-hole\"}", "instant": true, "legendFormat": "" } ],
+      "title": "Pi-hole", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Down", "index": 0 }, "1": { "color": "green", "text": "Up", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 8, "x": 16, "y": 12 }, "id": 23,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_http_up{service=\"OpenClaw\"}", "instant": true, "legendFormat": "" } ],
+      "title": "OpenClaw", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 }, "id": 30, "title": "System Services (systemd)", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Inactive", "index": 0 }, "1": { "color": "green", "text": "Active", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 6, "x": 0, "y": 16 }, "id": 31,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_systemd_active{service=\"openclaw-gateway\"}", "instant": true, "legendFormat": "" } ],
+      "title": "openclaw-gateway", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Inactive", "index": 0 }, "1": { "color": "green", "text": "Active", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 6, "x": 6, "y": 16 }, "id": 32,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_systemd_active{service=\"nginx\"}", "instant": true, "legendFormat": "" } ],
+      "title": "nginx", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Inactive", "index": 0 }, "1": { "color": "green", "text": "Active", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 6, "x": 12, "y": 16 }, "id": 33,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_systemd_active{service=\"docker\"}", "instant": true, "legendFormat": "" } ],
+      "title": "docker", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }, "mappings": [ { "type": "value", "options": { "0": { "color": "red", "text": "Inactive", "index": 0 }, "1": { "color": "green", "text": "Active", "index": 1 } } } ], "noValue": "No data", "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 3, "w": 6, "x": 18, "y": 16 }, "id": 34,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "auto" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_systemd_active{service=\"k3s-agent\"}", "instant": true, "legendFormat": "" } ],
+      "title": "k3s-agent", "type": "stat"
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }, "id": 40, "title": "SSL Certificates", "type": "row" },
+
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "dark-red", "value": null },
+            { "color": "red",      "value": 0 },
+            { "color": "orange",   "value": 7 },
+            { "color": "yellow",   "value": 14 },
+            { "color": "green",    "value": 21 }
+          ]},
+          "mappings": [ { "type": "value", "options": { "-999": { "color": "purple", "text": "Check error", "index": 0 } } } ],
+          "unit": "d",
+          "min": 0,
+          "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 0, "y": 20 }, "id": 41,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_ssl_days_remaining{name=\"SearXNG (external)\"}", "instant": true, "legendFormat": "Days remaining" } ],
+      "title": "SearXNG (external) — searxng.alvani.me", "type": "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "dark-red", "value": null },
+            { "color": "red",      "value": 0 },
+            { "color": "orange",   "value": 7 },
+            { "color": "yellow",   "value": 14 },
+            { "color": "green",    "value": 21 }
+          ]},
+          "mappings": [ { "type": "value", "options": { "-999": { "color": "purple", "text": "Check error", "index": 0 } } } ],
+          "unit": "d",
+          "min": 0,
+          "noValue": "No data"
+        }, "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 12, "x": 12, "y": 20 }, "id": 42,
+      "options": { "colorMode": "background", "graphMode": "none", "justifyMode": "center", "orientation": "auto", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }, "textMode": "value_and_name" },
+      "targets": [ { "datasource": { "type": "prometheus", "uid": "grafanacloud-prom" }, "expr": "marvin_ssl_days_remaining{name=\"OpenClaw (LAN)\"}", "instant": true, "legendFormat": "Days remaining" } ],
+      "title": "OpenClaw (LAN) — openclaw.lan", "type": "stat"
+    }
+
+  ],
+  "schemaVersion": 38,
+  "tags": ["marvin", "homelab", "health"],
+  "version": 1
+}

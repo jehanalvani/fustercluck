@@ -1,0 +1,71 @@
+---
+# Homelab health check scripts for Marvin's heartbeat and Prometheus/Grafana
+#
+# marvin_health.py       — run by Marvin on demand or during heartbeat; outputs JSON
+# marvin_health_exporter — cron every 5 min; writes textfile metrics for node_exporter
+#
+# No secrets required — all endpoints are internal or public
+
+- name: Deploy marvin_health.py
+  ansible.builtin.copy:
+    src: marvin_health.py
+    dest: /home/openclaw/marvin_health.py
+    owner: openclaw
+    group: openclaw
+    mode: "0755"
+
+- name: Deploy marvin-health script
+  ansible.builtin.copy:
+    src: marvin_health.py
+    dest: /usr/local/bin/marvin-health
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-health-sim script
+  ansible.builtin.copy:
+    src: marvin_health_sim.py
+    dest: /usr/local/bin/marvin-health-sim
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-health-exporter script
+  ansible.builtin.copy:
+    src: marvin_health_exporter.py
+    dest: /usr/local/bin/marvin-health-exporter
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create node_exporter textfile collector directory
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile_collector
+    state: directory
+    owner: root
+    group: openclaw
+    mode: "0775"
+  # openclaw writes .prom files; node_exporter pod reads them via hostPath (runs as root)
+
+- name: Set up marvin-health-exporter cron (every 5 minutes)
+  ansible.builtin.cron:
+    name: marvin health exporter
+    minute: "*/5"
+    job: >-
+      /usr/local/bin/marvin-health-exporter
+      >>/home/openclaw/.openclaw/health-exporter.log 2>&1
+    user: openclaw
+
+- name: Deploy grafana-cloud.json stub (if not already present)
+  ansible.builtin.copy:
+    dest: /home/openclaw/.openclaw/grafana-cloud.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+    force: false  # never overwrite — preserves manually-set api_key
+    content: |
+      {
+        "prometheus_url": "https://prometheus-prod-67-prod-us-west-0.grafana.net/api/prom/push",
+        "prometheus_user": "3065256",
+        "api_key": "REPLACE_WITH_GRAFANA_CLOUD_API_KEY"
+      }
