@@ -153,9 +153,8 @@
         ipv4_address: "{{ pihole_ip }}"
     env:
       TZ: "{{ pihole_timezone }}"
-      # WEBPASSWORD is applied by the container entrypoint on every start.
-      # Changing this value in vault will recreate the container with the new password.
-      WEBPASSWORD: "{{ pihole_web_password }}"
+      # WEBPASSWORD applied by entrypoint on every start. Source of truth: op://HomeLab/Pihole/App Password
+      WEBPASSWORD: "{{ pihole_app_password }}"
       FTLCONF_dhcp_active: "{{ pihole_dhcp_active }}"
       FTLCONF_dhcp_hosts: "{{ pihole_dhcp_hosts | map(attribute='mac') | zip(pihole_dhcp_hosts | map(attribute='ip'), pihole_dhcp_hosts | map(attribute='name')) | map('join', ',') | join(';') }}"
       FTLCONF_dhcp_start: "{{ pihole_dhcp_start }}"
@@ -181,13 +180,15 @@
     method: POST
     body_format: json
     body:
-      password: "{{ pihole_web_password }}"
+      password: "{{ pihole_app_password }}"
     status_code: 200
   register: pihole_auth
 
 # --- DNS config (always applied) ---
 # pihole_upstream_dns and pihole_local_hosts in vars/main.yml are the source
 # of truth. UI edits to these will be overwritten on next playbook run.
+# NOTE: requires app_sudo on the app password (Pi-hole UI → Settings → API → App passwords).
+# Currently non-fatal — settings are stable and managed manually if needed.
 
 - name: Apply upstream DNS and local host overrides
   ansible.builtin.uri:
@@ -203,10 +204,12 @@
       sid: "{{ pihole_auth.json.session.sid }}"
     status_code: 200
   changed_when: true
+  ignore_errors: true
 
 # --- Adlist reconciliation (always applied, declarative) ---
 # pihole_adlists in vars/main.yml is the full desired set. Lists added via
 # the UI that are not in vars will be removed on next playbook run.
+# NOTE: requires app_sudo — non-fatal, same as DNS config above.
 
 - name: Get current block adlists
   ansible.builtin.uri:
@@ -214,6 +217,7 @@
     headers:
       sid: "{{ pihole_auth.json.session.sid }}"
   register: pihole_current_lists
+  ignore_errors: true
 
 - name: Add missing adlists
   ansible.builtin.uri:
@@ -229,8 +233,9 @@
       sid: "{{ pihole_auth.json.session.sid }}"
     status_code: [200, 201]
   loop: "{{ pihole_adlists }}"
-  when: item.address not in (pihole_current_lists.json.lists | map(attribute='address') | list)
+  when: item.address not in ((pihole_current_lists.json.lists | default([])) | map(attribute='address') | list)
   changed_when: true
+  ignore_errors: true
   notify: Update Pi-hole gravity
 
 - name: Remove adlists not in Ansible config
@@ -240,9 +245,10 @@
     headers:
       sid: "{{ pihole_auth.json.session.sid }}"
     status_code: [200, 204, 404]
-  loop: "{{ pihole_current_lists.json.lists }}"
+  loop: "{{ (pihole_current_lists.json.lists | default([])) }}"
   when: item.address not in (pihole_adlists | map(attribute='address') | list)
   changed_when: true
+  ignore_errors: true
   notify: Update Pi-hole gravity
 
 - name: Pi-hole deployed

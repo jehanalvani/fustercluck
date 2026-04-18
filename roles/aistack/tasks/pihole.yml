@@ -1,0 +1,35 @@
+---
+# Pi-hole v6 stats exporter — polls Pi-hole REST API from 20-size.
+# Pi-hole lives on kube01 (10.0.1.250) but is reachable on the same LAN.
+# Writes /var/lib/node_exporter/textfile_collector/pihole.prom
+# node_exporter ships it to Grafana Cloud via Alloy.
+#
+# For per-person Grafana grouping, name personal devices in Pi-hole as
+# 'person-device' (e.g. jehan-iphone, lindsay-ipad) using:
+#   - pihole_dhcp_hosts entries in roles/pihole/vars/main.yml (for static IPs)
+#   - OR Pi-hole web UI → Clients → Add client → Name (for dynamic IPs)
+
+- name: Deploy marvin-pihole-exporter script
+  ansible.builtin.copy:
+    src: pihole_exporter.py
+    dest: /usr/local/bin/marvin-pihole-exporter
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Write marvin-pihole.json config
+  ansible.builtin.template:
+    src: marvin_pihole_config.json.j2
+    dest: /home/openclaw/.openclaw/marvin-pihole.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+
+- name: Set up marvin-pihole-exporter cron (every 5 minutes)
+  ansible.builtin.cron:
+    name: marvin pihole exporter
+    minute: "*/5"
+    job: >-
+      /usr/local/bin/marvin-pihole-exporter
+      >>/home/openclaw/.openclaw/pihole-exporter.log 2>&1
+    user: openclaw

@@ -16,3 +16,13 @@
       tags: docker
     - role: pihole
       tags: pihole
+
+- hosts: 20-size.local
+  remote_user: ansible
+  become: yes
+  vars_files:
+    - vars/vars.yml
+    - roles/aistack/vars/vault.yml
+  roles:
+    - role: aistack
+      tags: pihole
