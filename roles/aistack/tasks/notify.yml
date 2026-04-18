@@ -1,0 +1,57 @@
+---
+# Standalone homelab outage notifier — no LLM in the loop
+# Runs marvin_health.py every 15 min, diffs state, sends iMessage via BlueBubbles
+# Requires: vault_bluebubbles_password, bluebubbles_server_url (default in defaults/main.yml)
+
+- name: Deploy marvin-notify script
+  ansible.builtin.copy:
+    src: marvin_notify.py
+    dest: /usr/local/bin/marvin-notify
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy marvin-notify config (BB credentials + handle)
+  ansible.builtin.template:
+    src: marvin_notify_config.json.j2
+    dest: /home/openclaw/.openclaw/marvin-notify.json
+    owner: openclaw
+    group: openclaw
+    mode: "0600"
+
+- name: Set up marvin-notify cron (every 15 minutes)
+  ansible.builtin.cron:
+    name: marvin homelab notify
+    minute: "*/15"
+    job: >-
+      /usr/local/bin/marvin-notify
+      >>/home/openclaw/.openclaw/homelab-notify.log 2>&1
+    user: openclaw
+
+- name: Deploy marvin-notify-drain script
+  ansible.builtin.copy:
+    src: marvin_notify_drain.py
+    dest: /usr/local/bin/marvin-notify-drain
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Create notify-queue directory
+  ansible.builtin.file:
+    path: /var/spool/marvin-notify
+    state: directory
+    owner: openclaw
+    group: users
+    mode: "1775"
+  # Outside openclaw's home (which is mode 700) so jehan and other callers can write.
+  # Sticky bit: any user in 'users' group can drop files; only the owner can delete.
+  # Drain script runs as openclaw and deletes each file after sending.
+
+- name: Set up marvin-notify-drain cron (every 5 minutes)
+  ansible.builtin.cron:
+    name: marvin notify drain
+    minute: "*/5"
+    job: >-
+      /usr/local/bin/marvin-notify-drain
+      >>/home/openclaw/.openclaw/notify-drain.log 2>&1
+    user: openclaw
