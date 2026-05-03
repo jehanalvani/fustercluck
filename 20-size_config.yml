@@ -4,21 +4,20 @@
   remote_user: ansible
   become: yes
 
-
   pre_tasks:
 
     - ansible.posix.sysctl:
-          name: kernel.softlockup_panic
-          value: 1
-          state: present
-          reload: true
-    
+        name: kernel.softlockup_panic
+        value: 1
+        state: present
+        reload: true
+
     - ansible.posix.sysctl:
-          name: kernel.panic
-          value: 60
-          state: present
-          reload: true
-      
+        name: kernel.panic
+        value: 60
+        state: present
+        reload: true
+
   tasks:
 
     - name: "Create config dirs in {{ server_config_path }}"
@@ -103,7 +102,7 @@
       tags: swap
 
     - name: "Install pipx, setuptools, virtualenv if not already"
-      apt: 
+      apt:
         name:
           - pipx
           - smartmontools
@@ -111,32 +110,28 @@
           - samba
         state: present
         update_cache: yes
-    
+
     - name: "Install pyOpenSSL, crypto, docker if not already"
       vars:
         pipx_packages:
-            - cryptography 
-            - docker
-            - pyOpenSSL  # required for OpenSSL cert creation
+          - cryptography
+          - docker
+          - pyOpenSSL  # required for OpenSSL cert creation
       community.general.pipx:
         name: "{{ item }}"
         state: present
-      with_items: "{{ pipx_packages }}"  
+      with_items: "{{ pipx_packages }}"
 
   roles:
     - role: common
       tags: common
     - role: geerlingguy.nfs
-    # `insecure` option required for NFS to be mountable via MacOS' finder
-      nfs_exports: 
-       [
-        "/snoqualmie/media 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)", 
-        "/seatac/plex 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-        "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-        "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)",
-        ]
-      tags: nfs          
+      # `insecure` option required for NFS to be mountable via MacOS' finder
+      nfs_exports:
+        - "/snoqualmie/media 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)"
+        - "/seatac/plex 10.0.1.0/24(rw,sync,all_squash,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)"
+        - "/whidbey/configs 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)"
+        - "/whidbey/backups 10.0.1.0/24(rw,sync,no_root_squash,insecure,crossmnt,insecure_locks,anonuid=1001,anongid=100)"
+      tags: nfs
     - role: docker
       tags: docker
-    
-    

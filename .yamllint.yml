@@ -18,3 +18,4 @@ ignore: |
   roles/*/templates/
   k8s/secrets/pub-cert.pem
   passfile.txt
+  snippets/

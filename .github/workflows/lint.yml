@@ -26,7 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint@v24
+      - uses: actions/setup-python@v5
         with:
-          args: "--config-file .ansible-lint"
+          python-version: "3.11"
+
+      - name: Install ansible-lint
+        run: pip install "ansible-lint==24.9.0" "ansible-core==2.17.7"
+
+      - name: Run ansible-lint
+        run: ansible-lint --config-file .ansible-lint
