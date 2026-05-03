@@ -156,6 +156,13 @@
         state: present
         values_files:
           - /home/ansible/k8s/apps/plex/values.yml
+        values:
+          controllers:
+            plex:
+              containers:
+                app:
+                  env:
+                    ADVERTISE_IP: "{{ plex_advertise_ip }}"
       tags: [plex]
 
     # -------------------------------------------------------------------------
