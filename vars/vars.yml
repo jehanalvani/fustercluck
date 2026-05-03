@@ -30,6 +30,9 @@ common_users:
 # Claude AI agent SSH public key (private key: ~/.ssh/claude_homelab)
 claude_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+aPw5R/OwsXml7FNuRm56ndZC9sY5gXieyJ8t5fIEp claude@homelab"
 
+# Plex — advertised address for plex.tv relay; uses dynamic DNS so IP churn doesn't require a redeploy
+plex_advertise_ip: "http://dynamic.alvani.me:32400"
+
 # DNS servers for static netplan config
 static_dns_servers:
   - 10.0.1.250  # Pi-hole

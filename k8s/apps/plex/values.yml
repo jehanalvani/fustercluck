@@ -31,9 +31,8 @@ controllers:
           NVIDIA_VISIBLE_DEVICES: all
           NVIDIA_DRIVER_CAPABILITIES: compute,video,utility
           VERSION: docker
-          # Advertise the correct external address so Plex registers properly with plex.tv.
-          # Must match the public IP:port forwarded by the router to any k3s node.
-          ADVERTISE_IP: "http://50.35.124.100:32400"
+          # ADVERTISE_IP is set via plex_advertise_ip in vars/vars.yml and injected
+          # by deploy_apps.yml at deploy time — not managed here.
           # PLEX_CLAIM is only needed for initial registration with plex.tv
           # Once configured, this can be removed from the values file
           PLEX_CLAIM:
