@@ -1,3 +1,4 @@
+---
 galaxy_info:
   author: jehan
   description: Pi-hole v6 DNS/ad-blocker on macvlan network

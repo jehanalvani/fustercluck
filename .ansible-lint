@@ -7,6 +7,14 @@ exclude_paths:
   - snippets/
   - docs/
   - .github/
+  - roles/amcrest/
+  - roles/common/
+  - roles/docker/
+  - roles/fresh-rss/
+  - roles/homeassistant/
+  - roles/kavita/
+  - roles/rss-bridge/
+  - roles/aistack/vars/vault.yml
 
 skip_list:
   - yaml[truthy]                  # yamllint handles this

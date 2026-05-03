@@ -16,6 +16,14 @@ rules:
 
 ignore: |
   roles/*/templates/
+  roles/*/vars/vault.yml
+  roles/amcrest/
+  roles/common/
+  roles/docker/
+  roles/fresh-rss/
+  roles/homeassistant/
+  roles/kavita/
+  roles/rss-bridge/
   k8s/secrets/pub-cert.pem
   passfile.txt
   snippets/

@@ -1,18 +1,21 @@
 ---
 
-- hosts: 20-size.local
+- name: Configure 20-size server
+  hosts: 20-size.local
   remote_user: ansible
   become: yes
 
   pre_tasks:
 
-    - ansible.posix.sysctl:
+    - name: Enable softlockup panic
+      ansible.posix.sysctl:
         name: kernel.softlockup_panic
         value: 1
         state: present
         reload: true
 
-    - ansible.posix.sysctl:
+    - name: Set kernel panic reboot delay
+      ansible.posix.sysctl:
         name: kernel.panic
         value: 60
         state: present
