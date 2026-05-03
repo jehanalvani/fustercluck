@@ -17,13 +17,19 @@
     group: root
     mode: '0644'
 
-- name: Install k3s server
+- name: Download and verify k3s binary
+  ansible.builtin.include_tasks: install.yml
+
+- name: Set up k3s server service
   ansible.builtin.shell: |
-    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="{{ k3s_version }}" sh -s - server
-  args:
-    creates: /usr/local/bin/k3s
+    curl -sfL https://get.k3s.io | \
+      INSTALL_K3S_VERSION="{{ k3s_version }}" \
+      INSTALL_K3S_SKIP_DOWNLOAD=true \
+      sh -s - server
   environment:
     INSTALL_K3S_EXEC: "server"
+  args:
+    creates: /etc/systemd/system/k3s.service
 
 - name: Wait for k3s server to be ready
   ansible.builtin.wait_for:
