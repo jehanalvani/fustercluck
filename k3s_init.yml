@@ -66,5 +66,6 @@
   vars_files:
     - vars/vars.yml
   tasks:
-    - ansible.builtin.include_tasks: roles/k3s/tasks/node_config.yml
+    - name: Apply node labels and taints
+      ansible.builtin.include_tasks: roles/k3s/tasks/node_config.yml
       tags: k3s

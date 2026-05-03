@@ -82,7 +82,7 @@
           X-Api-Key: "{{ item.item.api_key }}"
         method: PUT
         body_format: json
-        body: "{{ item.json | combine({ item.item.unmonitor_field: true }) }}"
+        body: "{{ item.json | combine({item.item.unmonitor_field: true}) }}"
         validate_certs: true
         status_code: [200, 202]
       loop: "{{ mediamanagement_configs.results }}"

@@ -34,6 +34,7 @@
     state: latest
     virtualenv: /home/openclaw/.venv/marvin
     virtualenv_command: python3 -m venv
+  become: true
   become_user: openclaw
 
 - name: Install marvin package into venv
@@ -41,6 +42,7 @@
     name: /opt/marvin-src
     state: latest
     virtualenv: /home/openclaw/.venv/marvin
+  become: true
   become_user: openclaw
 
 - name: Create world model directory

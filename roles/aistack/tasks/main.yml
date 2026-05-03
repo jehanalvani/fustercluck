@@ -12,34 +12,49 @@
     - "{{ litellm_config_path }}"
     - "{{ searxng_config_path }}"
 
-- import_tasks: nvidia_runtime.yml
+- name: Import NVIDIA runtime tasks
+  import_tasks: nvidia_runtime.yml
   tags: nvidia
 
-- import_tasks: network.yml
+- name: Import Docker network tasks
+  import_tasks: network.yml
   tags: network
-- import_tasks: ollama.yml
+- name: Import Ollama tasks
+  import_tasks: ollama.yml
   tags: ollama
-- import_tasks: litellm.yml
+- name: Import LiteLLM tasks
+  import_tasks: litellm.yml
   tags: litellm
-- import_tasks: searxng.yml
+- name: Import SearXNG tasks
+  import_tasks: searxng.yml
   tags: searxng
-- import_tasks: browser.yml
+- name: Import browser tasks
+  import_tasks: browser.yml
   tags: browser
-- import_tasks: openclaw.yml
+- name: Import OpenClaw tasks
+  import_tasks: openclaw.yml
   tags: openclaw
-- import_tasks: mail_calendar.yml
+- name: Import mail/calendar tasks
+  import_tasks: mail_calendar.yml
   tags: mail_calendar
-- import_tasks: ha.yml
+- name: Import Home Assistant tasks
+  import_tasks: ha.yml
   tags: ha
-- import_tasks: health.yml
+- name: Import health check tasks
+  import_tasks: health.yml
   tags: health
-- import_tasks: notify.yml
+- name: Import notify tasks
+  import_tasks: notify.yml
   tags: notify
-- import_tasks: marvin.yml
+- name: Import Marvin tasks
+  import_tasks: marvin.yml
   tags: marvin
-- import_tasks: backup.yml
+- name: Import backup tasks
+  import_tasks: backup.yml
   tags: backup
-- import_tasks: netgear.yml
+- name: Import Netgear tasks
+  import_tasks: netgear.yml
   tags: netgear
-- import_tasks: pihole.yml
+- name: Import Pi-hole tasks
+  import_tasks: pihole.yml
   tags: pihole

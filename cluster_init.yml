@@ -12,7 +12,8 @@
 
 ---
 # - hosts: displaypi.local,20-size.local,artpi.local
-- hosts: 10.0.1.203
+- name: Initialize cluster baseline
+  hosts: 10.0.1.203
   remote_user: dummy
   become: yes
   gather_facts: true
