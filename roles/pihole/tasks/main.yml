@@ -186,6 +186,7 @@
       password: "{{ pihole_app_password }}"
     status_code: 200
   register: pihole_auth
+  no_log: true
 
 # --- DNS config (always applied) ---
 # pihole_upstream_dns and pihole_local_hosts in vars/main.yml are the source
