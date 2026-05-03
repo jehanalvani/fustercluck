@@ -143,7 +143,7 @@
   community.docker.docker_container:
     name: pihole
     hostname: pihole
-    image: pihole/pihole:latest
+    image: pihole/pihole@sha256:712b39f1fdb55121cef509813dfbe02d2bdef9c28e07404fa1d422f5157323b2
     restart_policy: unless-stopped
     state: started
     capabilities:
