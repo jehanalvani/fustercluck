@@ -1,0 +1,57 @@
+---
+# Download k3s binary from GitHub releases, verify SHA256 checksum, and install.
+# Called by server.yml and agent.yml before running the install script.
+#
+# Uses INSTALL_K3S_SKIP_DOWNLOAD=true so the install script only sets up the
+# systemd service and symlinks — it never executes an unverified binary.
+# Note: the install script itself (get.k3s.io) is still fetched over HTTPS
+# but not checksum-verified; the blast radius is limited to service-file setup.
+
+- name: Check if k3s is already installed at required version
+  ansible.builtin.shell: |
+    /usr/local/bin/k3s --version 2>/dev/null | grep -qF "{{ k3s_version }}"
+  register: _k3s_version_check
+  changed_when: false
+  failed_when: false
+
+- name: Download and verify k3s binary
+  when: _k3s_version_check.rc != 0
+  block:
+    - name: Download k3s binary from GitHub releases
+      ansible.builtin.get_url:
+        url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/k3s"
+        dest: "/tmp/k3s-{{ k3s_version }}"
+        mode: "0755"
+        force: true
+
+    - name: Download k3s SHA256 checksum file
+      ansible.builtin.get_url:
+        url: "https://github.com/k3s-io/k3s/releases/download/{{ k3s_version }}/sha256sum-amd64.txt"
+        dest: "/tmp/k3s-sha256sum-{{ k3s_version }}.txt"
+        mode: "0644"
+        force: true
+
+    - name: Verify k3s binary checksum
+      ansible.builtin.shell: |
+        expected=$(grep ' k3s$' /tmp/k3s-sha256sum-{{ k3s_version }}.txt | awk '{print $1}')
+        actual=$(sha256sum /tmp/k3s-{{ k3s_version }} | awk '{print $1}')
+        if [ "$expected" != "$actual" ]; then
+          echo "k3s checksum mismatch: expected=$expected actual=$actual" >&2
+          exit 1
+        fi
+      changed_when: false
+
+    - name: Install verified k3s binary
+      ansible.builtin.copy:
+        src: "/tmp/k3s-{{ k3s_version }}"
+        dest: /usr/local/bin/k3s
+        mode: "0755"
+        remote_src: true
+
+    - name: Remove k3s install temp files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/tmp/k3s-{{ k3s_version }}"
+        - "/tmp/k3s-sha256sum-{{ k3s_version }}.txt"
