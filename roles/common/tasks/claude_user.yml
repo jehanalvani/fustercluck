@@ -1,0 +1,52 @@
+---
+# Set up the claude AI agent user on k3s cluster nodes.
+# Provides SSH access and a working kubeconfig (admin creds fetched from kube01,
+# server URL rewritten to kube01.local:6443 so it works from any cluster node).
+
+- name: Create claude user
+  ansible.builtin.user:
+    name: claude
+    shell: /bin/bash
+    create_home: yes
+    comment: Claude AI agent
+
+- name: Create claude .ssh directory
+  ansible.builtin.file:
+    path: /home/claude/.ssh
+    state: directory
+    owner: claude
+    group: claude
+    mode: "0700"
+
+- name: Deploy claude SSH authorized key
+  ansible.builtin.authorized_key:
+    user: claude
+    key: "{{ claude_ssh_pubkey }}"
+    state: present
+
+- name: Create claude .kube directory
+  ansible.builtin.file:
+    path: /home/claude/.kube
+    state: directory
+    owner: claude
+    group: claude
+    mode: "0700"
+
+# Read admin kubeconfig once from the control plane; rewrite server URL to
+# the LAN hostname so it resolves from any cluster node (not just kube01).
+- name: Fetch k3s admin kubeconfig from control plane
+  ansible.builtin.slurp:
+    src: /etc/rancher/k3s/k3s.yaml
+  register: _k3s_kubeconfig
+  delegate_to: kube01.local
+  run_once: yes
+
+- name: Deploy kubeconfig for claude (server URL → kube01.local)
+  ansible.builtin.copy:
+    content: >-
+      {{ _k3s_kubeconfig.content | b64decode
+         | replace('https://127.0.0.1:6443', 'https://kube01.local:6443') }}
+    dest: /home/claude/.kube/config
+    owner: claude
+    group: claude
+    mode: "0600"
