@@ -27,6 +27,9 @@ common_users:
   - pi
   - ansible
 
+# Claude AI agent SSH public key (private key: ~/.ssh/claude_homelab)
+claude_ssh_pubkey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID+aPw5R/OwsXml7FNuRm56ndZC9sY5gXieyJ8t5fIEp claude@homelab"
+
 # DNS servers for static netplan config
 static_dns_servers:
   - 10.0.1.250  # Pi-hole

@@ -131,9 +131,6 @@
       jehan ALL=(openclaw) NOPASSWD: /bin/rm /home/openclaw/.openclaw/homelab-notify-state.json
       jehan ALL=(openclaw) NOPASSWD: /home/openclaw/.venv/marvin/bin/marvin-mail
       jehan ALL=(openclaw) NOPASSWD: /home/openclaw/.venv/marvin/bin/marvin-core
-      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-triage
-      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-feedback
-      jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-spam-check
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-notify
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-notify-drain
       jehan ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-health-exporter
@@ -173,6 +170,24 @@
     content: |
       #!/bin/bash
       exec sudo -u openclaw /usr/bin/openclaw "$@"
+
+- name: Deploy claude sudoers for marvin tools
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/claude-marvin
+    mode: "0440"
+    validate: "visudo -cf %s"
+    content: |
+      # Allow claude AI agent to run marvin tools as the openclaw service user
+      claude ALL=(openclaw) NOPASSWD: /usr/bin/openclaw
+      claude ALL=(openclaw) NOPASSWD: /home/openclaw/.venv/marvin/bin/marvin-mail
+      claude ALL=(openclaw) NOPASSWD: /home/openclaw/.venv/marvin/bin/marvin-core
+      claude ALL=(openclaw) NOPASSWD: /home/openclaw/.venv/marvin/bin/pip
+      claude ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-notify-drain
+      claude ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-health
+      claude ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-health-exporter
+      claude ALL=(openclaw) NOPASSWD: /usr/local/bin/marvin-mail-exporter
+      # Allow reading openclaw file paths for troubleshooting
+      claude ALL=(openclaw) NOPASSWD: /usr/bin/find /home/openclaw/
 
 # nginx reverse proxy so Traefik can reach the openclaw canvas from the LAN
 # (OpenClaw local mode binds to 127.0.0.1 only)

@@ -43,6 +43,31 @@ ansible-playbook <playbook> -l kube01.local --vault-id fustercluck@passfile.txt
 ansible-playbook <playbook> --check --vault-id fustercluck@passfile.txt
 ```
 
+## Claude Agent User
+
+A dedicated `claude` OS user exists on all k3s cluster nodes (kube01–03, 20-size) for use by Claude Code sessions. It has no password and is not in the sudoers for general escalation.
+
+**SSH key:** `~/.ssh/claude_homelab` (ed25519, not in 1Password). Public key stored in `vars/vars.yml` as `claude_ssh_pubkey`. The local `~/.ssh/config` has a `Match host ... user claude` block before `Host *` that routes `claude@` connections on homelab nodes to this key file, bypassing the 1Password agent. Connections as `jehan@` are unaffected.
+
+**kubectl:** All four nodes have `/home/claude/.kube/config` — the k3s admin kubeconfig fetched from kube01, with the server URL rewritten to `https://kube01.local:6443` so it works from any node.
+
+**Marvin tool access (20-size only):** `/etc/sudoers.d/claude-marvin` grants passwordless `sudo -u openclaw` for: `marvin-mail`, `marvin-core`, `marvin-notify-drain`, `marvin-health`, `marvin-health-exporter`, `marvin-mail-exporter`, `openclaw`.
+
+**Deploy / re-provision:**
+```bash
+ansible-playbook setup_claude_user.yml
+```
+The marvin sudoers block is also wired into `roles/aistack/tasks/openclaw.yml`, so it redeploys automatically on `--tags openclaw`.
+
+**Key files:**
+```
+setup_claude_user.yml                     Provisioning playbook (all nodes)
+roles/common/tasks/claude_user.yml        User, SSH key, kubeconfig tasks
+vars/vars.yml                             claude_ssh_pubkey
+~/.ssh/claude_homelab{,.pub}              Local keypair (not committed)
+~/.ssh/config                             Match block for claude@ connections
+```
+
 ## Cluster Topology
 
 | Host | IP | Role | Special |

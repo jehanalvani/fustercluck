@@ -19,6 +19,7 @@
       - "--exclude=*.pyc"
       - "--exclude=.git"
       - "--exclude=*.db"
+      - "--exclude=.venv"
 
 - name: Set ownership of marvin source to openclaw
   ansible.builtin.file:

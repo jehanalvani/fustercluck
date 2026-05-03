@@ -100,40 +100,6 @@
     mode: "0640"
   loop: "{{ mail_accounts }}"
 
-# Migrate jehan's flat files to per-account directory (idempotent — force: no)
-- name: Migrate jehan triage-patterns.json to per-account directory
-  ansible.builtin.copy:
-    src: /home/openclaw/.openclaw/triage-patterns.json
-    dest: /home/openclaw/.openclaw/accounts/jehan/triage-patterns.json
-    remote_src: yes
-    force: no
-    owner: openclaw
-    group: openclaw
-    mode: "0640"
-  ignore_errors: yes
-
-- name: Migrate jehan triage-folders.json to per-account directory
-  ansible.builtin.copy:
-    src: /home/openclaw/.openclaw/triage-folders.json
-    dest: /home/openclaw/.openclaw/accounts/jehan/triage-folders.json
-    remote_src: yes
-    force: no
-    owner: openclaw
-    group: openclaw
-    mode: "0640"
-  ignore_errors: yes
-
-- name: Migrate jehan sieve-state.json to per-account directory
-  ansible.builtin.copy:
-    src: /home/openclaw/.openclaw/sieve-state.json
-    dest: /home/openclaw/.openclaw/accounts/jehan/sieve-state.json
-    remote_src: yes
-    force: no
-    owner: openclaw
-    group: openclaw
-    mode: "0640"
-  ignore_errors: yes
-
 # ── Config and scripts ────────────────────────────────────────────────────────
 
 - name: Deploy vdirsyncer config
@@ -161,37 +127,15 @@
     mode: "0600"
 
 
-- name: Deploy marvin-triage script
-  ansible.builtin.copy:
-    src: marvin_triage.py
-    dest: /usr/local/bin/marvin-triage
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Deploy triage folder definitions (jehan default — per-account migration handled above)
-  ansible.builtin.copy:
-    src: triage_folders.json
-    dest: /home/openclaw/.openclaw/triage-folders.json
-    owner: openclaw
-    group: openclaw
-    mode: "0644"
-
-- name: Deploy marvin-feedback script
-  ansible.builtin.copy:
-    src: marvin_feedback.py
-    dest: /usr/local/bin/marvin-feedback
-    owner: root
-    group: root
-    mode: "0755"
-
-- name: Deploy marvin-spam-check script
-  ansible.builtin.copy:
-    src: marvin_spam_check.py
-    dest: /usr/local/bin/marvin-spam-check
-    owner: root
-    group: root
-    mode: "0755"
+# Remove v1 binaries from /usr/local/bin (no longer deployed, no longer in sudoers or crons)
+- name: Remove v1 mail binaries
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /usr/local/bin/marvin-triage
+    - /usr/local/bin/marvin-feedback
+    - /usr/local/bin/marvin-spam-check
 
 - name: Deploy marvin-mail-exporter script
   ansible.builtin.copy:
@@ -211,125 +155,62 @@
   # openclaw user writes .prom files; node_exporter pod reads them via hostPath (runs as root)
 
 # ── Cron jobs ─────────────────────────────────────────────────────────────────
-# Scoped per account. marvin-feedback stays global (reads marvin INBOX, applies to jehan).
+# All v2 (marvin-mail). V1 crons removed below before setting up new ones.
 
-# Remove marvin-triage crons for accounts cut over to marvin-mail
-- name: Remove old marvin-triage spam scan cron (accounts cut over to marvin-mail)
+# Remove v1 crons
+- name: Remove v1 spam scan crons
   ansible.builtin.cron:
-    name: "marvin spam scan {{ item }}"
+    name: "{{ item }}"
     state: absent
     user: openclaw
   loop:
-    - jehan
+    - marvin spam fast-pass
+    - marvin full sort
+    - marvin window-shopping flush
+    - marvin feedback processing
+    - marvin pattern report
 
-- name: Remove old marvin-triage sort scan cron (accounts cut over to marvin-mail)
+- name: Remove v1 per-account crons
   ansible.builtin.cron:
-    name: "marvin sort scan {{ item }}"
+    name: "{{ item[0] }} {{ item[1].id }}"
     state: absent
     user: openclaw
-  loop:
-    - jehan
+  loop: "{{ ['marvin spam fast-pass', 'marvin full sort', 'marvin spam scan', 'marvin sort scan', 'marvin window-shopping flush', 'marvin mail digest'] | product(mail_accounts) | list }}"
 
-# Remove old hardcoded single-account crons (replaced by per-account loops below)
-- name: Remove old hardcoded spam fast-pass cron
+# V2 crons — full path to venv binary so cron environment doesn't need PATH
+- name: Set up v2 triage cron per account (every 5 minutes)
   ansible.builtin.cron:
-    name: marvin spam fast-pass
-    state: absent
-    user: openclaw
-
-- name: Remove old hardcoded full sort cron
-  ansible.builtin.cron:
-    name: marvin full sort
-    state: absent
-    user: openclaw
-
-- name: Remove old hardcoded window-shopping flush cron
-  ansible.builtin.cron:
-    name: marvin window-shopping flush
-    state: absent
-    user: openclaw
-
-# Remove old per-account crons with previous naming (replaced by spam/sort scan names below)
-- name: Remove old spam fast-pass per-account crons
-  ansible.builtin.cron:
-    name: "marvin spam fast-pass {{ item.id }}"
-    state: absent
-    user: openclaw
-  loop: "{{ mail_accounts }}"
-
-- name: Remove old full sort per-account crons
-  ansible.builtin.cron:
-    name: "marvin full sort {{ item.id }}"
-    state: absent
-    user: openclaw
-  loop: "{{ mail_accounts }}"
-
-- name: Set up marvin-feedback cron (every 30 minutes — global, processes marvin INBOX)
-  ansible.builtin.cron:
-    name: marvin feedback processing
-    minute: "*/30"
-    job: >-
-      /usr/local/bin/marvin-feedback
-      >>/home/openclaw/.openclaw/feedback.log 2>&1
-    user: openclaw
-
-- name: Set up spam scan cron per account (every 5 minutes)
-  ansible.builtin.cron:
-    name: "marvin spam scan {{ item.id }}"
+    name: "marvin triage {{ item.id }}"
     minute: "*/5"
     job: >-
-      /usr/local/bin/marvin-triage run --account {{ item.id }} --spam-scan --batch 200 --no-notify
+      /home/openclaw/.venv/marvin/bin/marvin-mail triage --account {{ item.id }}
       >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
   loop: "{{ mail_accounts }}"
   when: item.email != ''
 
-- name: Set up sort scan cron per account (every hour)
+- name: Set up v2 daily digest cron per account (5:30 AM)
   ansible.builtin.cron:
-    name: "marvin sort scan {{ item.id }}"
-    minute: "0"
-    job: >-
-      /usr/local/bin/marvin-triage run --account {{ item.id }} --batch 50 --no-notify
-      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
-    user: openclaw
-  loop: "{{ mail_accounts }}"
-  when: item.email != ''
-
-- name: Set up Window Shopping Monday flush cron per account
-  ansible.builtin.cron:
-    name: "marvin window-shopping flush {{ item.id }}"
-    weekday: "1"
-    hour: "6"
-    minute: "0"
-    job: >-
-      /usr/local/bin/marvin-triage window-shopping --account {{ item.id }}
-      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
-    user: openclaw
-  loop: "{{ mail_accounts }}"
-  when: item.email != ''
-
-- name: Set up daily mail digest cron per account (5:30 AM)
-  ansible.builtin.cron:
-    name: "marvin mail digest {{ item.id }}"
+    name: "marvin digest {{ item.id }}"
     hour: "5"
     minute: "30"
     job: >-
-      /usr/local/bin/marvin-triage report --account {{ item.id }}
+      /home/openclaw/.venv/marvin/bin/marvin-mail digest --account {{ item.id }}
       >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
   loop: "{{ mail_accounts }}"
   when: item.email != ''
 
-- name: Set up monthly pattern report cron (1st of month, 7 AM — jehan only for now)
+- name: Set up v2 feedback cron per account (every 30 minutes)
   ansible.builtin.cron:
-    name: marvin pattern report
-    day: "1"
-    hour: "7"
-    minute: "0"
+    name: "marvin feedback {{ item.id }}"
+    minute: "*/30"
     job: >-
-      /usr/local/bin/marvin-feedback report
-      >>/home/openclaw/.openclaw/feedback.log 2>&1
+      /home/openclaw/.venv/marvin/bin/marvin-mail feedback --account {{ item.id }}
+      >>/home/openclaw/.openclaw/accounts/{{ item.id }}/logs/triage.log 2>&1
     user: openclaw
+  loop: "{{ mail_accounts }}"
+  when: item.email != ''
 
 - name: Set up marvin-mail-exporter cron (every 15 minutes)
   ansible.builtin.cron:

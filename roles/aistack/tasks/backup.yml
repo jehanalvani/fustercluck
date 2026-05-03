@@ -1,0 +1,24 @@
+---
+# Nightly backup of world.db to NFS with 7-day retention.
+# Uses sqlite3.backup() via Python for a consistent online backup (safe during writes).
+
+- name: Create marvin backup directory on NFS
+  ansible.builtin.file:
+    path: /whidbey/backups/marvin
+    state: directory
+    owner: openclaw
+    group: openclaw
+    mode: "0750"
+
+- name: Install nightly world.db backup cron
+  ansible.builtin.cron:
+    name: marvin world.db nightly backup
+    user: openclaw
+    hour: "3"
+    minute: "0"
+    job: >-
+      /home/openclaw/.venv/marvin/bin/python3 -c
+      "import sqlite3; src=sqlite3.connect('/var/lib/marvin/world.db');
+      dst=sqlite3.connect('/whidbey/backups/marvin/world.db.$(date +\%Y\%m\%d)');
+      src.backup(dst); dst.close(); src.close()"
+      && find /whidbey/backups/marvin/ -name 'world.db.*' -mtime +7 -delete

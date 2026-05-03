@@ -37,6 +37,8 @@
   tags: notify
 - import_tasks: marvin.yml
   tags: marvin
+- import_tasks: backup.yml
+  tags: backup
 - import_tasks: netgear.yml
   tags: netgear
 - import_tasks: pihole.yml
