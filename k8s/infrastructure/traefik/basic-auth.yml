@@ -1,17 +1,13 @@
 # Traefik BasicAuth middleware — applied to all external (*.alvani.me) ingresses
 # except Plex (would break the Plex app).
 #
-# To update credentials: htpasswd -nb username password
-# then update the Secret below and re-apply.
-apiVersion: v1
-kind: Secret
-metadata:
-  name: traefik-basic-auth
-  namespace: kube-system
-type: Opaque
-stringData:
-  users: "jehan:$apr1$YcVwcIGc$KP.5FUTe7VldzDsODXp2S."
----
+# To update credentials:
+#   htpasswd -nb username newpassword
+#   kubectl create secret generic traefik-basic-auth --namespace=kube-system \
+#     --from-literal=users='username:hash' --dry-run=client -o yaml \
+#     | kubeseal --cert k8s/secrets/pub-cert.pem -o yaml \
+#     > k8s/secrets/traefik-basic-auth-sealed.yml
+#   kubectl apply -f k8s/secrets/traefik-basic-auth-sealed.yml
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
