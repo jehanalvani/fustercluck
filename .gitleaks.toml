@@ -1,0 +1,16 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Ansible Vault encrypted content — intentionally high-entropy"
+regexTarget = "line"
+regexes = ['''ANSIBLE_VAULT''', '''\$ANSIBLE_VAULT''']
+
+[[allowlists]]
+description = "1Password op:// references are URIs, not secrets"
+regexTarget = "line"
+regexes = ['''op://''']
+
+[[allowlists]]
+description = "Sealed secrets are ciphertext encrypted to the cluster public key"
+paths = ['''k8s/secrets/.*-sealed\.yml''']

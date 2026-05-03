@@ -1,0 +1,21 @@
+---
+profile: moderate
+
+exclude_paths:
+  - k8s/
+  - scripts/
+  - snippets/
+  - docs/
+  - .github/
+
+skip_list:
+  - yaml[truthy]         # yamllint handles this
+  - name[casing]         # task names are fine mixed-case
+  - no-changed-when      # many shell tasks are genuinely fire-and-forget
+
+warn_list:
+  - package-latest       # Pi-hole uses 'latest' intentionally
+  - command-instead-of-shell
+
+mock_roles: []
+mock_modules: []

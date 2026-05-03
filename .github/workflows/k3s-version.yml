@@ -1,0 +1,51 @@
+---
+name: k3s version check
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Monday 9am UTC
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: Check k3s version and checksum URL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read pinned k3s version
+        id: pinned
+        run: |
+          version=$(grep 'k3s_version:' roles/k3s/vars/main.yml | grep -oP '"[^"]+"' | tr -d '"')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Pinned: $version"
+
+      - name: Fetch latest k3s release
+        id: latest
+        run: |
+          latest=$(curl -sf https://api.github.com/repos/k3s-io/k3s/releases/latest \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            | jq -r '.tag_name')
+          echo "version=$latest" >> "$GITHUB_OUTPUT"
+          echo "Latest: $latest"
+
+      - name: Verify checksum URL for pinned version
+        run: |
+          url="https://github.com/k3s-io/k3s/releases/download/${{ steps.pinned.outputs.version }}/sha256sum-amd64.txt"
+          status=$(curl -sIo /dev/null -w "%{http_code}" "$url")
+          if [ "$status" != "200" ]; then
+            echo "::error::Checksum URL returned HTTP $status for pinned version ${{ steps.pinned.outputs.version }}"
+            echo "URL: $url"
+            exit 1
+          fi
+          echo "Checksum URL OK ($status)"
+
+      - name: Warn if behind latest
+        run: |
+          pinned="${{ steps.pinned.outputs.version }}"
+          latest="${{ steps.latest.outputs.version }}"
+          if [ "$pinned" != "$latest" ]; then
+            echo "::warning::k3s is behind: pinned=$pinned latest=$latest — update roles/k3s/vars/main.yml when ready to upgrade"
+          else
+            echo "k3s is current: $pinned"
+          fi
