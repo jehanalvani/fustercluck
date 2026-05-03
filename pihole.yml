@@ -7,7 +7,8 @@
 #   docker stop pihole && docker rm pihole
 # Then run this playbook.
 
-- hosts: pihole
+- name: Deploy Pi-hole
+  hosts: pihole
   remote_user: ansible
   become: yes
 
@@ -17,7 +18,8 @@
     - role: pihole
       tags: pihole
 
-- hosts: 20-size.local
+- name: Apply aistack Pi-hole configuration
+  hosts: 20-size.local
   remote_user: ansible
   become: yes
   vars_files:

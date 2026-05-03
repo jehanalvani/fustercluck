@@ -1,5 +1,7 @@
+---
 galaxy_info:
   author: jehan
   description: Pi-hole v6 DNS/ad-blocker on macvlan network
+  license: MIT
   min_ansible_version: "2.10"
 dependencies: []

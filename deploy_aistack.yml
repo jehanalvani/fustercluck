@@ -9,7 +9,8 @@
 #
 # Tags: ollama, litellm, qdrant, searxng
 
-- hosts: 20-size.local
+- name: Deploy AI stack services
+  hosts: 20-size.local
   remote_user: ansible
   become: yes
   gather_facts: true

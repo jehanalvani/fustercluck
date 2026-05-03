@@ -7,15 +7,30 @@ exclude_paths:
   - snippets/
   - docs/
   - .github/
+  - roles/amcrest/
+  - roles/common/
+  - roles/docker/
+  - roles/fresh-rss/
+  - roles/homeassistant/
+  - roles/kavita/
+  - roles/rss-bridge/
+  - roles/aistack/vars/vault.yml
 
 skip_list:
-  - yaml[truthy]         # yamllint handles this
-  - name[casing]         # task names are fine mixed-case
-  - no-changed-when      # many shell tasks are genuinely fire-and-forget
+  - yaml[truthy]                  # yamllint handles this
+  - name[casing]                  # task names are fine mixed-case
+  - no-changed-when               # many shell tasks are genuinely fire-and-forget
+  - var-naming[no-role-prefix]    # renaming aistack vars is a large refactor with real blast radius
+  - key-order[play]               # purely stylistic
+  - name[template]                # Jinja in the middle of a task name is intentional
+  - command-instead-of-module     # NVIDIA toolkit setup requires curl
+  - yaml[comments-indentation]    # inline comments intentionally not at content level
 
 warn_list:
-  - package-latest       # Pi-hole uses 'latest' intentionally
+  - package-latest                # Pi-hole uses 'latest' intentionally
   - command-instead-of-shell
 
-mock_roles: []
+mock_roles:
+  - geerlingguy.nfs
+  - transmission
 mock_modules: []

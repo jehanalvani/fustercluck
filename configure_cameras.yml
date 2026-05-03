@@ -10,7 +10,8 @@
 # Motion only (cameras already have passwords set):
 #   ansible-playbook configure_cameras.yml --tags motion
 
-- hosts: cameras
+- name: Configure Amcrest cameras
+  hosts: cameras
   gather_facts: false
   vars_files:
     - roles/common/vars/vault.yml

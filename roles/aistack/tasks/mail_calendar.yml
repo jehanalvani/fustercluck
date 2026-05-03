@@ -171,11 +171,19 @@
     - marvin pattern report
 
 - name: Remove v1 per-account crons
+  vars:
+    v1_cron_prefixes:
+      - marvin spam fast-pass
+      - marvin full sort
+      - marvin spam scan
+      - marvin sort scan
+      - marvin window-shopping flush
+      - marvin mail digest
   ansible.builtin.cron:
     name: "{{ item[0] }} {{ item[1].id }}"
     state: absent
     user: openclaw
-  loop: "{{ ['marvin spam fast-pass', 'marvin full sort', 'marvin spam scan', 'marvin sort scan', 'marvin window-shopping flush', 'marvin mail digest'] | product(mail_accounts) | list }}"
+  loop: "{{ v1_cron_prefixes | product(mail_accounts) | list }}"
 
 # V2 crons — full path to venv binary so cron environment doesn't need PATH
 - name: Set up v2 triage cron per account (every 5 minutes)

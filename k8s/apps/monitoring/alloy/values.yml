@@ -1,3 +1,4 @@
+---
 # Chart: grafana/alloy
 # Repo: https://grafana.github.io/helm-charts
 # Grafana Alloy — ships metrics and logs to Grafana Cloud
@@ -611,4 +612,3 @@ alloy:
           }
         }
       }
-

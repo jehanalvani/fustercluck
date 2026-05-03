@@ -26,7 +26,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run ansible-lint
-        uses: ansible/ansible-lint@v24
+      - uses: actions/setup-python@v5
         with:
-          args: "--config-file .ansible-lint"
+          python-version: "3.11"
+
+      - name: Install ansible-lint
+        run: pip install "ansible-lint==24.9.0" "ansible-core==2.17.7"
+
+      - name: Install required Ansible collections
+        run: ansible-galaxy collection install -r requirements.yml
+
+      - name: Create dummy vault passfile for CI
+        run: echo "dummy-ci-password" > /tmp/ci-passfile.txt
+
+      - name: Run ansible-lint
+        env:
+          ANSIBLE_VAULT_IDENTITY_LIST: "fustercluck@/tmp/ci-passfile.txt"
+        run: ansible-lint --config-file .ansible-lint

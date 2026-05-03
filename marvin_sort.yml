@@ -7,7 +7,8 @@
 #   ansible-playbook marvin_sort.yml -e batch=50  # sort 50 oldest
 #   ansible-playbook marvin_sort.yml -e dry_run=true  # preview — no moves, report to stdout
 
-- hosts: 20-size.local
+- name: Run Marvin mail sort
+  hosts: 20-size.local
   remote_user: ansible
   become: yes
   gather_facts: false
@@ -24,6 +25,7 @@
         --batch {{ batch }}
         --no-notify
         {{ '--dry-run' if dry_run else '' }}
+      become: true
       become_user: openclaw
       register: sort_result
       changed_when: not dry_run
@@ -37,6 +39,7 @@
         /usr/local/bin/marvin-triage report
         --account {{ account }}
         {{ '--dry-run' if dry_run else '' }}
+      become: true
       become_user: openclaw
       register: report_result
       changed_when: false

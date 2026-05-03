@@ -29,8 +29,7 @@ pihole_dhcp_leasetime: 24h
 # Single source of truth for Pi-hole password (UI + API — same credential in v6).
 # 1Password: op://HomeLab/Pihole/App Password
 pihole_app_password: "{{ lookup('pipe', 'op read \"op://HomeLab/Pihole/App Password\"') }}"
-          
-          
+
 pihole_local_hosts:
   - { ip: "10.0.1.30", hostname: "traefik.alvani.me" }
   - { ip: "10.0.1.30", hostname: "grafana.alvani.me" }
@@ -67,29 +66,29 @@ pihole_local_hosts:
   - { ip: "10.0.1.30", hostname: "transmission.lan" }
 
 pihole_dhcp_hosts:
-  - { mac: "C8:9E:43:CF:59:30", ip: "10.0.1.6",   name: "living-room-rbs850" }
-  - { mac: "C8:9E:43:CF:63:40", ip: "10.0.1.5",   name: "office-rbs850" }
+  - { mac: "C8:9E:43:CF:59:30", ip: "10.0.1.6", name: "living-room-rbs850" }
+  - { mac: "C8:9E:43:CF:63:40", ip: "10.0.1.5", name: "office-rbs850" }
   - { mac: "2C:F0:5D:77:5D:34", ip: "10.0.1.203", name: "20-size" }
-  - { mac: "E4:5F:01:AC:80:DD", ip: "10.0.1.29",  name: "cluster1" }
+  - { mac: "E4:5F:01:AC:80:DD", ip: "10.0.1.29", name: "cluster1" }
   - { mac: "9C:8E:CD:0C:FC:F5", ip: "10.0.1.157", name: "backyard-camera" }
   - { mac: "9C:8E:CD:0C:FD:1F", ip: "10.0.1.164", name: "garage-door-camera" }
   - { mac: "9C:8E:CD:11:E9:DF", ip: "10.0.1.163", name: "front-porch-camera" }
-  - { mac: "68:9E:19:94:63:31", ip: "10.0.1.11",  name: "lutron" }
-  - { mac: "00:17:88:24:CF:1F", ip: "10.0.1.66",  name: "garage-hue-bridge" }
-  - { mac: "5C:CF:7F:59:F1:29", ip: "10.0.1.9",   name: "opengarage" }
-  - { mac: "DC:A6:32:A3:84:FF", ip: "10.0.1.30",  name: "kube01" }
-  - { mac: "D8:3A:DD:18:DE:AA", ip: "10.0.1.50",  name: "kube02" }
-  - { mac: "DC:A6:32:11:6A:A7", ip: "10.0.1.49",  name: "kube03" }
-  - { mac: "B4:2E:99:A6:31:F2", ip: "10.0.1.44",  name: "jehan-gms" }
-  - { mac: "80:6d:97:65:06:ba", ip: "10.0.1.65",  name: "jehan-mbp" }
+  - { mac: "68:9E:19:94:63:31", ip: "10.0.1.11", name: "lutron" }
+  - { mac: "00:17:88:24:CF:1F", ip: "10.0.1.66", name: "garage-hue-bridge" }
+  - { mac: "5C:CF:7F:59:F1:29", ip: "10.0.1.9", name: "opengarage" }
+  - { mac: "DC:A6:32:A3:84:FF", ip: "10.0.1.30", name: "kube01" }
+  - { mac: "D8:3A:DD:18:DE:AA", ip: "10.0.1.50", name: "kube02" }
+  - { mac: "DC:A6:32:11:6A:A7", ip: "10.0.1.49", name: "kube03" }
+  - { mac: "B4:2E:99:A6:31:F2", ip: "10.0.1.44", name: "jehan-gms" }
+  - { mac: "80:6d:97:65:06:ba", ip: "10.0.1.65", name: "jehan-mbp" }
   - { mac: "34:66:91:e9:d5:19", ip: "10.0.1.184", name: "jehan-work-mac" }
-  - { mac: "F6:37:6B:81:17:F4", ip: "10.0.1.94",  name: "jehan-iphone" }
-  - { mac: "12:50:B9:8A:71:D4", ip: "10.0.1.52",  name: "jehan-watch" }
+  - { mac: "F6:37:6B:81:17:F4", ip: "10.0.1.94", name: "jehan-iphone" }
+  - { mac: "12:50:B9:8A:71:D4", ip: "10.0.1.52", name: "jehan-watch" }
   - { mac: "28:AF:42:18:3E:2C", ip: "10.0.1.183", name: "samsung-living-room-tv" }
-  - { mac: "3E:44:CB:42:12:F3", ip: "10.0.1.17",  name: "MarvinsMacMini" }
+  - { mac: "3E:44:CB:42:12:F3", ip: "10.0.1.17", name: "MarvinsMacMini" }
   - { mac: "46:94:01:EF:D9:1B", ip: "10.0.1.103", name: "lindsay-iphone" }
   - { mac: "9C:E6:5E:A6:67:75", ip: "10.0.1.102", name: "iain-ipad" }
-  - { mac: "48:9E:BD:61:30:8F", ip: "10.0.1.42",  name: "iain-chromebook" }
-  - { mac: "12:15:b6:1e:0f:5c", ip: "10.0.1.43",  name: "lindsay-ipad" }
+  - { mac: "48:9E:BD:61:30:8F", ip: "10.0.1.42", name: "iain-chromebook" }
+  - { mac: "12:15:b6:1e:0f:5c", ip: "10.0.1.43", name: "lindsay-ipad" }
   - { mac: "5a:d0:87:d2:0d:6b", ip: "10.0.1.153", name: "aubrey-ipad" }
   - { mac: "1e:69:eb:cb:72:55", ip: "10.0.1.224", name: "charlene-iphone" }

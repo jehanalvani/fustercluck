@@ -9,7 +9,8 @@
   vars_files:
     - vars/vars.yml
   tasks:
-    - import_tasks: roles/common/tasks/claude_user.yml
+    - name: Import claude user provisioning tasks
+      import_tasks: roles/common/tasks/claude_user.yml
 
 - name: Grant claude access to marvin tools on 20-size
   hosts: 20-size.local
