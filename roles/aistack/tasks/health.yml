@@ -4,7 +4,7 @@
 # marvin_health.py       — run by Marvin on demand or during heartbeat; outputs JSON
 # marvin_health_exporter — cron every 5 min; writes textfile metrics for node_exporter
 #
-# No secrets required — all endpoints are internal or public
+# Requires vault_grafana_cloud_api_key (used in grafana_cloud_config.json.j2)
 
 - name: Deploy marvin_health.py
   ansible.builtin.copy:
@@ -56,16 +56,10 @@
       >>/home/openclaw/.openclaw/health-exporter.log 2>&1
     user: openclaw
 
-- name: Deploy grafana-cloud.json stub (if not already present)
-  ansible.builtin.copy:
+- name: Deploy grafana-cloud.json from vault
+  ansible.builtin.template:
+    src: grafana_cloud_config.json.j2
     dest: /home/openclaw/.openclaw/grafana-cloud.json
     owner: openclaw
     group: openclaw
     mode: "0600"
-    force: false  # never overwrite — preserves manually-set api_key
-    content: |
-      {
-        "prometheus_url": "https://prometheus-prod-67-prod-us-west-0.grafana.net/api/prom/push",
-        "prometheus_user": "3065256",
-        "api_key": "REPLACE_WITH_GRAFANA_CLOUD_API_KEY"
-      }

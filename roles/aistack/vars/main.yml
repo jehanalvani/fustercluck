@@ -28,6 +28,13 @@ netgear_admin_password: "{{ lookup('pipe', 'op read \"op://HomeLab/Netgear Orbi 
 # Not vaulted yet — no Ansible task consumes it. Vault when Grafana deploy automation is built.
 # grafana_marvinmail_dashboard_token: "{{ vault_grafana_marvinmail_dashboard_token }}"
 
+# Grafana Cloud write credentials — used by marvin-health-exporter
+# prometheus_url and prometheus_user are stable/non-secret; api_key is vaulted.
+# 1Password: op://HomeLab/Grafana Cloud - Prometheus Write/credential
+grafana_cloud_prometheus_url: "https://prometheus-prod-67-prod-us-west-0.grafana.net/api/prom/push"
+grafana_cloud_prometheus_user: "3065256"
+grafana_cloud_api_key: "{{ vault_grafana_cloud_api_key }}"
+
 # Household accounts — add a var pair here for each entry in mail_accounts.yml
 fastmail_lindsay_email: "{{ vault_fastmail_lindsay_email | default('') }}"
 fastmail_lindsay_app_password: "{{ vault_fastmail_lindsay_app_password | default('') }}"
