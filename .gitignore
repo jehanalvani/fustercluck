@@ -7,3 +7,4 @@ facts
 *.cfg
 passfile.txt
 roles/aistack/files/__pycache__/
+.codevis_cache.json
