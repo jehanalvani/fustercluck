@@ -1,0 +1,117 @@
+# HA Package: Shade Remotes
+# Managed by Ansible — create_ha_config.yml
+# Do not edit on the server — changes will be overwritten on next run.
+#
+# Shade Pico remote automations. Controls shades via HA on top of Caseta-native control.
+# Button entities must be enabled in HA (disabled_by: integration by default).
+#
+# To add a new remote:
+#   1. Enable its button entities: HA → Settings → Devices → [device] → enable each button
+#   2. Add automation block below
+#   3. Run: ansible-playbook create_ha_config.yml --vault-id fustercluck@passfile.txt
+#   4. Reload HA config: Developer Tools → YAML → Reload Automations
+
+automation:
+
+  # ── Main Bedroom — Jehan's Shade Remote ──────────────────────────────────
+  # Bridge: /device/55 (PJ2-3BRL-GXX-X01) | HA device: 18898d8dd6199f3b29510a82c9e286de
+  # Shades: main_bedroom_left, main_bedroom_center, main_bedroom_right
+  #
+  # (a) On    → all three fully open (100%)
+  # (b) Off   → all three fully closed (0%)
+  # (c) Raise → all three up 5% from current position
+  # (d) Lower → all three down 5% from current position
+  # (e) Stop  → privacy preset: outer two to 20%, center fully closed
+
+  - alias: "Main Bedroom Shades — Open (Jehan's Remote)"
+    trigger:
+      - platform: state
+        entity_id: button.main_bedroom_jehans_shade_remote_on
+    action:
+      - action: cover.set_cover_position
+        target:
+          entity_id:
+            - cover.main_bedroom_left
+            - cover.main_bedroom_center
+            - cover.main_bedroom_right
+        data:
+          position: 100
+    mode: single
+
+  - alias: "Main Bedroom Shades — Close (Jehan's Remote)"
+    trigger:
+      - platform: state
+        entity_id: button.main_bedroom_jehans_shade_remote_off
+    action:
+      - action: cover.set_cover_position
+        target:
+          entity_id:
+            - cover.main_bedroom_left
+            - cover.main_bedroom_center
+            - cover.main_bedroom_right
+        data:
+          position: 0
+    mode: single
+
+  - alias: "Main Bedroom Shades — Raise 5% (Jehan's Remote)"
+    trigger:
+      - platform: state
+        entity_id: button.main_bedroom_jehans_shade_remote_raise
+    action:
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_left
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_left', 'current_position') + 5, 100] | min }}"
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_center
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_center', 'current_position') + 5, 100] | min }}"
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_right
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_right', 'current_position') + 5, 100] | min }}"
+    mode: single
+
+  - alias: "Main Bedroom Shades — Lower 5% (Jehan's Remote)"
+    trigger:
+      - platform: state
+        entity_id: button.main_bedroom_jehans_shade_remote_lower
+    action:
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_left
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_left', 'current_position') - 5, 0] | max }}"
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_center
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_center', 'current_position') - 5, 0] | max }}"
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_right
+        data:
+          position: "{{ [state_attr('cover.main_bedroom_right', 'current_position') - 5, 0] | max }}"
+    mode: single
+
+  - alias: "Main Bedroom Shades — Privacy Preset (Jehan's Remote)"
+    trigger:
+      - platform: state
+        entity_id: button.main_bedroom_jehans_shade_remote_stop
+    action:
+      - action: cover.set_cover_position
+        target:
+          entity_id:
+            - cover.main_bedroom_left
+            - cover.main_bedroom_right
+        data:
+          position: 20
+      - action: cover.set_cover_position
+        target:
+          entity_id: cover.main_bedroom_center
+        data:
+          position: 0
+    mode: single
