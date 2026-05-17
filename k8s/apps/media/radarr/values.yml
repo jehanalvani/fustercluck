@@ -14,6 +14,11 @@ controllers:
           PUID: "1002"
           PGID: "100"
         probes:
+          startup:
+            enabled: true
+            spec:
+              failureThreshold: 30
+              periodSeconds: 5
           liveness:
             enabled: true
           readiness:
@@ -38,7 +43,6 @@ ingress:
     className: traefik
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-issuer
-      traefik.ingress.kubernetes.io/router.middlewares: kube-system-basic-auth@kubernetescrd
     hosts:
       - host: radarr.alvani.me
         paths:
