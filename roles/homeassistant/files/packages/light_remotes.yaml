@@ -116,6 +116,12 @@ automation:
 
   # Iain's Room Iain's Bedroom Remote — shade remote, not a light remote. Excluded.
 
+  # Main Bedroom Jehan's Shade Remote — shade remote, not a light remote. Excluded.
+  #   Bridge device: /device/55 (PJ2-3BRL-GXX-X01, serial 11049997)
+  #   HA device ID: 18898d8dd6199f3b29510a82c9e286de
+  #   Button entities disabled by integration (disabled_by: integration). Enable + add
+  #   shade_remotes.yaml package if HA automations on top of Caseta-native control are wanted.
+
   # Living Room Back Door Pico — controls living_room_overhead via Lutron directly. Excluded for now.
 
   # Master Bathroom Master Bath Remote — shade remote, not a light remote. Excluded.
