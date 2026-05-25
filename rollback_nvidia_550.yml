@@ -1,0 +1,80 @@
+---
+# One-shot playbook: roll back Nvidia driver from 580 to 550 and hold.
+# Run: ansible-playbook rollback_nvidia_550.yml --limit 20-size.local
+# This reboots the host at the end - uses IP to avoid mDNS resolution issues.
+
+- name: Roll back Nvidia driver to 550 and hold GPU packages
+  hosts: 20-size.local
+  remote_user: ansible
+  become: yes
+
+  tasks:
+    - name: Unhold all Nvidia packages so apt can modify them
+      ansible.builtin.shell: |
+        dpkg --get-selections | grep -i nvidia | awk '{print $1}' | xargs -r apt-mark unhold
+      register: unhold_result
+      changed_when: unhold_result.stdout != ""
+
+    - name: Purge all 580-series Nvidia packages
+      ansible.builtin.apt:
+        name:
+          - nvidia-driver-580
+          - nvidia-dkms-580
+          - nvidia-firmware-580-580.159.03
+          - nvidia-kernel-common-580
+          - nvidia-kernel-source-580
+          - nvidia-compute-utils-580
+          - nvidia-utils-580
+          - libnvidia-cfg1-580
+          - libnvidia-common-580
+          - libnvidia-compute-580
+          - libnvidia-decode-580
+          - libnvidia-encode-580
+          - libnvidia-extra-580
+          - libnvidia-fbc1-580
+          - libnvidia-gl-580
+          - xserver-xorg-video-nvidia-580
+        state: absent
+        purge: yes
+      ignore_errors: yes
+
+    - name: Install nvidia-driver-550
+      ansible.builtin.apt:
+        name:
+          - nvidia-driver-550
+          - nvidia-dkms-550
+          - xserver-xorg-video-nvidia-550
+        state: present
+        update_cache: yes
+
+    - name: Rebuild initramfs with 550 modules
+      ansible.builtin.command: update-initramfs -u
+      changed_when: true
+
+    - name: Hold all currently installed Nvidia packages
+      ansible.builtin.shell: |
+        dpkg --get-selections | grep -i nvidia | awk '{print $1}' | xargs -r apt-mark hold
+      register: hold_result
+      changed_when: hold_result.stdout != ""
+
+    - name: Show held packages
+      ansible.builtin.debug:
+        msg: "{{ hold_result.stdout_lines }}"
+
+    - name: Reboot to activate 550 driver
+      ansible.builtin.reboot:
+        reboot_timeout: 300
+        post_reboot_delay: 20
+        connect_timeout: 10
+        msg: "Rebooting to activate nvidia-driver-550"
+      vars:
+        ansible_ssh_host: "10.0.1.203"
+
+    - name: Verify driver version after reboot
+      ansible.builtin.command: nvidia-smi --query-gpu=driver_version --format=csv,noheader
+      register: driver_ver
+      changed_when: false
+
+    - name: Confirm driver version
+      ansible.builtin.debug:
+        msg: "Driver active: {{ driver_ver.stdout }}"
