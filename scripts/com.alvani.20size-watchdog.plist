@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.alvani.20size-watchdog</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/bin/python3</string>
+        <string>/Users/marvin/Library/Scripts/20size-watchdog.py</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Fill in from 1Password: op://HomeLab/BlueBubbles/... -->
+        <key>BB_URL</key>
+        <string>http://10.0.1.17:1234</string>
+        <key>BB_PASSWORD</key>
+        <string>FILL_FROM_1PASSWORD</string>
+        <key>NOTIFY_NUMBER</key>
+        <string>+1XXXXXXXXXX</string>
+    </dict>
+    <key>StartInterval</key>
+    <integer>300</integer>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/20size-watchdog.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/20size-watchdog.log</string>
+</dict>
+</plist>

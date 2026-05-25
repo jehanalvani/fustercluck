@@ -67,10 +67,10 @@
         - videos
       tags: nfs
 
-    # 4GB swapfile on the root NVMe filesystem — buffer against OOM kills.
+    # 16GB swapfile on the root NVMe filesystem - buffer against OOM kills.
     # ZFS pools (seatac/snoqualmie/whidbey) are NFS exports and must never be used for swap.
     - name: Create swapfile
-      ansible.builtin.command: fallocate -l 4G /swapfile
+      ansible.builtin.command: fallocate -l 16G /swapfile
       args:
         creates: /swapfile
       tags: swap
@@ -104,6 +104,34 @@
         state: present
       tags: swap
 
+    # Prevent unattended-upgrades from touching GPU drivers or the kernel.
+    # These must be deliberate, tested upgrades - not silent overnight installs.
+    # Root cause of the May 2026 crash series: nvidia-driver-580 auto-upgraded,
+    # broke the k8s device plugin health check, caused nightly kernel panics.
+    - name: Block GPU drivers and kernel from unattended-upgrades
+      ansible.builtin.blockinfile:
+        path: /etc/apt/apt.conf.d/50unattended-upgrades
+        marker: "// {mark} ANSIBLE MANAGED - GPU/kernel upgrade blacklist"
+        insertafter: "Unattended-Upgrade::Package-Blacklist {"
+        block: |
+          "nvidia-driver-.*";
+          "nvidia-dkms-.*";
+          "libnvidia-.*";
+          "xserver-xorg-video-nvidia-.*";
+          "linux-image-.*";
+          "linux-headers-.*";
+          "linux-generic.*";
+      tags: apt_blacklist
+
+    - name: Enable persistent journald logging
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: "^#?Storage="
+        line: "Storage=persistent"
+        state: present
+      notify: restart journald
+      tags: journald
+
     - name: "Install pipx, setuptools, virtualenv if not already"
       apt:
         name:
@@ -124,6 +152,12 @@
         name: "{{ item }}"
         state: present
       with_items: "{{ pipx_packages }}"
+
+  handlers:
+    - name: restart journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted
 
   roles:
     - role: common
