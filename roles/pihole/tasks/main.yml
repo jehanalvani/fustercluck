@@ -7,6 +7,85 @@
 # applied on every run. UI edits to these settings will be overwritten.
 # Client names, groups, and allow/deny entries are UI-managed and untouched.
 
+# --- Unbound: validating caching forwarder ---
+# Unbound runs as a systemd service on the kube01 host. Pi-hole (macvlan container
+# at 10.0.1.250) reaches it via the macvlan-shim interface (10.0.1.251:5335) —
+# macvlan bridge mode allows cross-macvlan communication on the same parent.
+#
+# Role: validates DNSSEC, caches, and forwards upstream to Unlocator (geo-unblocking)
+# with Cloudflare as fallback. Upstream addresses stay in vars/main.yml.
+#
+# DNSSEC note: harden-dnssec-stripped rejects responses for DNSSEC-signed domains
+# where signatures are absent. Unlocator manipulates DNS for streaming domains; if
+# any of those happen to be DNSSEC-signed, queries will SERVFAIL. In practice most
+# streaming CDNs (Netflix, MLB, etc.) don't publish DNSSEC records, so this is
+# generally compatible. If a streaming domain goes dark after this change, that's
+# the first place to look.
+
+- name: Install unbound
+  ansible.builtin.apt:
+    name: unbound
+    state: present
+    update_cache: true
+
+- name: Disable unbound-resolvconf
+  ansible.builtin.systemd:
+    name: unbound-resolvconf
+    enabled: false
+    state: stopped
+  ignore_errors: true
+
+- name: Prevent resolvconf from overwriting unbound upstreams
+  ansible.builtin.lineinfile:
+    path: /etc/resolvconf.conf
+    regexp: '^unbound_conf='
+    line: '#unbound_conf='
+    create: false
+  ignore_errors: true
+
+- name: Deploy unbound config
+  ansible.builtin.copy:
+    dest: /etc/unbound/unbound.conf.d/pi-hole.conf
+    mode: "0644"
+    content: |
+      server:
+          verbosity: 0
+          interface: 0.0.0.0
+          port: 5335
+          do-ip4: yes
+          do-udp: yes
+          do-tcp: yes
+          do-ip6: no
+          prefer-ip6: no
+          harden-glue: yes
+          harden-dnssec-stripped: yes
+          use-caps-for-id: no
+          edns-buffer-size: 1232
+          prefetch: yes
+          num-threads: 1
+          so-rcvbuf: 1m
+          access-control: 127.0.0.0/8 allow
+          access-control: 10.0.1.0/24 allow
+          private-address: 192.168.0.0/16
+          private-address: 169.254.0.0/16
+          private-address: 172.16.0.0/12
+          private-address: 10.0.0.0/8
+          private-address: fd00::/8
+          private-address: fe80::/10
+
+      forward-zone:
+          name: "."
+          forward-addr: {{ pihole_unbound_forward_primary }}
+          forward-addr: {{ pihole_unbound_forward_fallback }}
+  notify: Restart unbound
+
+- name: Enable and start unbound
+  ansible.builtin.systemd:
+    name: unbound
+    enabled: true
+    state: started
+    daemon_reload: true
+
 # --- Host networking fixes for macvlan isolation ---
 # kube01 cannot reach its own macvlan container (Pi-hole) via eth0 due to macvlan
 # isolation. A shim interface on the same parent (eth0) bridges this gap.
@@ -143,7 +222,7 @@
   community.docker.docker_container:
     name: pihole
     hostname: pihole
-    image: pihole/pihole@sha256:712b39f1fdb55121cef509813dfbe02d2bdef9c28e07404fa1d422f5157323b2
+    image: pihole/pihole@sha256:ee348529cea9601df86ad94d62a39cad26117e1eac9e82d8876aa0ec7fe1ba27
     restart_policy: unless-stopped
     state: started
     capabilities:
@@ -225,13 +304,12 @@
 
 - name: Add missing adlists
   ansible.builtin.uri:
-    url: "http://{{ pihole_ip }}/api/lists"
+    url: "http://{{ pihole_ip }}/api/lists?type=block"
     method: POST
     body_format: json
     body:
       address: "{{ item.address }}"
       comment: "{{ item.comment | default('') }}"
-      type: block
       enabled: true
     headers:
       sid: "{{ pihole_auth.json.session.sid }}"

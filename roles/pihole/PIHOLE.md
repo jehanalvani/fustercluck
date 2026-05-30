@@ -77,4 +77,10 @@ Alternatively, add the DNS record directly in the Pi-hole UI (Local DNS > DNS Re
 
 ## Upstream DNS
 
-`185.37.37.37` (Unlocator SmartDNS for geo-unblocking) with `1.1.1.1` (Cloudflare) as fallback. Editable in the Pi-hole UI under **Settings > DNS**. Seeded from `pihole_upstream_dns` in `vars/main.yml` on fresh deploys only.
+Pi-hole forwards to **unbound** running on the kube01 host at `10.0.1.251:5335` (the macvlan-shim IP). Unbound validates DNSSEC, caches, and forwards upstream to Unlocator SmartDNS (`185.37.37.37`) for geo-unblocking, with Cloudflare (`1.1.1.1`) as fallback.
+
+To change upstream providers, edit `pihole_unbound_forward_primary` / `pihole_unbound_forward_fallback` in `vars/main.yml` and re-run `pihole.yml`. Do not change upstream DNS in the Pi-hole UI — Ansible overwrites it on every run.
+
+**DNSSEC + Unlocator compatibility:** `harden-dnssec-stripped` is enabled. If Unlocator manipulates a domain that happens to be DNSSEC-signed, those queries return SERVFAIL. Most streaming CDNs (Netflix, MLB, etc.) don't publish DNSSEC records, so in practice this is compatible. If a specific streaming domain stops resolving after deployment, check whether it's DNSSEC-signed (`dig +dnssec <domain>`) and disable `harden-dnssec-stripped` or add a domain-specific forward-zone exception if needed.
+
+**Reachability path:** Pi-hole (macvlan at `10.0.1.250`) reaches unbound via `10.0.1.251:5335`. The macvlan-shim service on kube01 creates the `macvlan-shim` interface at `10.0.1.251`, and macvlan bridge mode allows cross-macvlan communication on the same parent interface (`eth0`). If DNS stops working after an unbound change, verify unbound is listening (`ss -tlnup | grep 5335`) and the shim is up (`ip addr show macvlan-shim`).

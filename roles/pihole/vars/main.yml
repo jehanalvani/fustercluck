@@ -5,7 +5,9 @@ pihole_network_name: lan
 pihole_lan_interface: eth0  # RPi4 wired NIC — verify with `ip link show` on kube01
 pihole_ip: 10.0.1.250
 pihole_timezone: America/Los_Angeles
-pihole_upstream_dns: "185.37.37.37;1.1.1.1"
+pihole_unbound_forward_primary: "185.37.37.37"
+pihole_unbound_forward_fallback: "1.1.1.1"
+pihole_upstream_dns: "10.0.1.251#5335"
 pihole_dhcp_fallback_dns: "10.0.1.1"  # Router — clients fall back here if Pi-hole is unresponsive
 # Macvlan shim: kube01 host cannot communicate with its own macvlan containers
 # via eth0 (macvlan isolation). A shim interface on the same parent allows
@@ -20,6 +22,20 @@ pihole_adlists:
     comment: "StevenBlack unified hosts"
   - address: "https://lists.zachlagden.uk/lists/all_domains.txt"
     comment: "Zach's List"
+  - address: "https://lists.zachlagden.uk/u/jehanalvani/advertising.txt"
+    comment: "Advertising"
+  - address: "https://lists.zachlagden.uk/u/jehanalvani/suspicious.txt"
+    comment: "Suspicious"
+  - address: "https://lists.zachlagden.uk/u/jehanalvani/malicious.txt"
+    comment: "Malicious"
+  - address: "https://lists.zachlagden.uk/u/jehanalvani/tracking.txt"
+    comment: "Tracking"
+  - address: "https://lists.zachlagden.uk/u/jehanalvani/nsfw.txt"
+    comment: "NSFW"
+  - address: "https://raw.githubusercontent.com/imkarthikk/pihole-facebook/refs/heads/master/pihole-facebook.txt"
+    comment: "Facebook & Meta URLs"
+  - address: "https://raw.githubusercontent.com/mike-trewartha/Pi-hole-Talos-Threat-Blocklist/refs/heads/main/talos-threats.list"
+    comment: "Talos IOC"
 pihole_dhcp_active: "true"
 pihole_dhcp_start: 10.0.1.2
 pihole_dhcp_end: 10.0.1.249

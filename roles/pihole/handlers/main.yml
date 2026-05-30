@@ -1,4 +1,9 @@
 ---
+- name: Restart unbound
+  ansible.builtin.systemd:
+    name: unbound
+    state: restarted
+
 - name: Restart Pi-hole container
   community.docker.docker_container:
     name: pihole
