@@ -16,19 +16,28 @@ variable "server_name" {
 }
 
 variable "location" {
-  description = "Hetzner location. hil = Hillsboro, OR (US-West, closest to home)."
+  description = <<-EOT
+    Hetzner location. hel1 = Helsinki, Finland (EU). Chosen for EU/German
+    jurisdiction — data stored here falls under GDPR and is shielded from the US
+    CLOUD Act (Hetzner Online GmbH has no US parent). Tradeoff vs the US options
+    (hil = Hillsboro / ash = Ashburn): ~150 ms latency to a PNW home, which is
+    imperceptible for trigger-based automation. EU locations also unlock the
+    cheaper ARM (CAX) server types — see server_type.
+  EOT
   type        = string
-  default     = "hil"
+  default     = "hel1"
 }
 
 variable "server_type" {
   description = <<-EOT
-    Hetzner server type. CPX31 = 4 vCPU / 8 GB, the smallest comfortable size for
-    the full Eddie brain (n8n + LiteLLM + Qdrant + SearXNG). Note: the cheap CAX
-    (ARM) and CX lines are EU-only — US locations only get CPX/CCX.
+    Hetzner server type. Default CAX21 = 4 vCPU / 8 GB (arm64) — the EU (hel1)
+    ARM line, ~half the price of x86 with 20 TB bandwidth, comfortably runs the
+    full Eddie brain (n8n + LiteLLM + Qdrant + SearXNG). All images are multi-arch
+    (n8n, Qdrant, SearXNG, and the GHCR LiteLLM image all publish arm64).
+    Prefer x86? Set this to "cpx31" (4 vCPU / 8 GB).
   EOT
   type        = string
-  default     = "cpx31"
+  default     = "cax21"
 }
 
 variable "image" {

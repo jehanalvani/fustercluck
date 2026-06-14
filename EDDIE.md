@@ -1,8 +1,23 @@
-# Eddie — cloud automation brain (Hetzner / Hillsboro)
+# Eddie — cloud automation brain (Hetzner / Helsinki)
 
 Eddie is an always-on automation/agent stack running on its own single-node k3s
-cluster at Hetzner (Hillsboro, OR — US-West, closest to home). It is deliberately
-separate from the home cluster so it stays up independent of home power/internet.
+cluster at Hetzner (Helsinki, Finland — EU). It is deliberately separate from the
+home cluster so it stays up independent of home power/internet.
+
+**Why Helsinki (EU) over Hillsboro (US-West):** EU/German jurisdiction. Data on an
+EU Hetzner node falls under GDPR and is shielded from the US CLOUD Act (Hetzner
+Online GmbH has no US parent). The cost is ~150 ms latency to a PNW home — which is
+imperceptible for trigger-based automation. To flip back to US-West, set
+`location = "hil"` in `terraform.tfvars` before applying; nothing else cares.
+
+**If a latency-sensitive workload shows up later** (chatty, multi-round-trip, or
+near-real-time interaction with home devices), we address it *then* rather than
+compromising the whole cluster's jurisdiction now. Options, in order of preference:
+1. Run just that piece on the **home cluster** (kube02/03) — it's the same Helm
+   release; place it where the latency demands. Eddie stays the always-on cloud spine.
+2. Stand up a **second node in `hil`** (Hillsboro) for that workload only.
+3. Push the latency-bound logic to an **edge/webhook relay** at home that Eddie calls.
+Most automation is trigger-based and won't need any of this.
 
 **Stack:** n8n (orchestration) + LiteLLM (model router) + Qdrant (vector memory)
 + SearXNG (private search). No GPU — inference goes to Claude and serverless
@@ -10,7 +25,8 @@ open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
 
 > ⚠️ **Status: reviewed scaffolding, not yet applied.** Nothing here has been run
 > against live infrastructure. Treat the first `tofu apply` / `deploy_eddie.yml`
-> as a validation run. Costs ~$18–25/mo (CPX31 + volume) ≈ a few hundred $/year.
+> as a validation run. Costs ~$8–12/mo (CAX21 arm64 + volume) ≈ ~$100–150/year
+> (x86 cpx31 would be ~$18–25/mo).
 
 ## Architecture
 
@@ -18,7 +34,7 @@ open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
                          Internet
                             │  :443 (Traefik + Let's Encrypt)
                             ▼
-   eddie.alvani.me ──► [ k3s @ Hetzner Hillsboro, CPX31 ]
+   eddie.alvani.me ──► [ k3s @ Hetzner Helsinki, CAX21 (arm64) ]
                             │
         ┌───────────────────┼────────────────────────┐
         ▼                   ▼                         ▼

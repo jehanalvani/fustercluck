@@ -11,8 +11,8 @@ admin_cidrs = ["YOUR.HOME.IP.HERE/32"]
 
 # Optional overrides (defaults shown):
 # server_name         = "eddie-01"
-# location            = "hil"            # Hillsboro, OR
-# server_type         = "cpx31"          # 4 vCPU / 8 GB
+# location            = "hel1"           # Helsinki, EU (GDPR/jurisdiction). hil = Hillsboro US-West.
+# server_type         = "cax21"          # 4 vCPU / 8 GB ARM (default, ~half price). x86: "cpx31".
 # image               = "ubuntu-24.04"
 # ssh_public_key_path = "~/.ssh/claude_homelab.pub"
 # data_volume_size    = 20               # GB; 0 to disable the durable data disk
