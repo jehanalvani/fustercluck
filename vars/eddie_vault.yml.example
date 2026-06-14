@@ -1,0 +1,31 @@
+---
+# TEMPLATE — copy to vars/eddie_vault.yml and encrypt:
+#   cp vars/eddie_vault.yml.example vars/eddie_vault.yml
+#   # fill in real values, then:
+#   ansible-vault encrypt vars/eddie_vault.yml --vault-id fustercluck@passfile.txt
+#
+# Or encrypt individual values inline with:
+#   ansible-vault encrypt_string --vault-id fustercluck@passfile.txt 'value' --name 'var_name'
+#
+# vars/eddie_vault.yml is gitignored. This .example file is safe to commit.
+
+# n8n: encrypts ALL stored credentials. Generate ONCE, never change.
+#   openssl rand -hex 32
+vault_n8n_encryption_key: "GENERATE_WITH_openssl_rand_hex_32"
+
+# LiteLLM proxy auth (clients present this as the API key). openssl rand -hex 24
+vault_litellm_master_key: "sk-GENERATE_A_RANDOM_STRING"
+
+# Anthropic API key for the `claude` route (console.anthropic.com)
+vault_anthropic_api_key: "sk-ant-..."
+
+# Optional: serverless open-model providers (leave as empty string if unused)
+vault_together_api_key: ""
+vault_groq_api_key: ""
+
+# Qdrant API key (protects the vector DB even though it's ClusterIP-only).
+#   openssl rand -hex 24
+vault_qdrant_api_key: "GENERATE_A_RANDOM_STRING"
+
+# SearXNG instance secret. openssl rand -hex 32
+vault_searxng_secret: "GENERATE_WITH_openssl_rand_hex_32"

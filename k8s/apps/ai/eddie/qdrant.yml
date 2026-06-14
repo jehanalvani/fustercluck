@@ -1,0 +1,66 @@
+# Chart: bjw-s/app-template
+# Qdrant — vector memory for Eddie (RAG / long-term memory).
+# Internal only (ClusterIP). Reachable at:
+#   http://qdrant.ai.svc.cluster.local:6333   (REST)
+#   qdrant.ai.svc.cluster.local:6334          (gRPC)
+# API key required even internally (defense in depth) — present it as the
+# `api-key` header from n8n's Qdrant credential.
+
+controllers:
+  qdrant:
+    containers:
+      main:
+        image:
+          repository: qdrant/qdrant
+          tag: latest # pin to a release tag (e.g. v1.x.y) for reproducible rebuilds
+        env:
+          QDRANT__SERVICE__API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: qdrant-secret
+                key: QDRANT_API_KEY
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 6333
+              initialDelaySeconds: 15
+              periodSeconds: 20
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /readyz
+                port: 6333
+              initialDelaySeconds: 10
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+
+service:
+  main:
+    controller: qdrant
+    ports:
+      http:
+        port: 6333
+      grpc:
+        port: 6334
+
+persistence:
+  data:
+    enabled: true
+    # local-path PVC backed by the durable Hetzner volume (see deploy_eddie.yml)
+    storageClass: local-path
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    globalMounts:
+      - path: /qdrant/storage
