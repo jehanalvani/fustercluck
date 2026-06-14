@@ -53,6 +53,7 @@ pihole_local_hosts:
   - { ip: "10.0.1.30", hostname: "homeassistant.lan" }
   - { ip: "10.0.1.30", hostname: "openclaw.lan" }
   - { ip: "10.0.1.30", hostname: "searxng.alvani.me" }
+  - { ip: "65.108.152.20", hostname: "eddie.alvani.me" }
   - { ip: "10.0.1.30", hostname: "lidarr.lan" }
   - { ip: "10.0.1.30", hostname: "nzbget.lan" }
   - { ip: "10.0.1.30", hostname: "ombi.lan" }
