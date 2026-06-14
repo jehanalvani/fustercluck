@@ -114,7 +114,7 @@
     - name: Deploy Eddie components
       kubernetes.core.helm:
         name: "{{ item }}"
-        chart_ref: oci://ghcr.io/bjw-s-labs/helm/app-template
+        chart_ref: oci://ghcr.io/bjw-s/helm/app-template
         chart_version: "{{ eddie_app_template_version }}"
         release_namespace: "{{ eddie_namespace }}"
         values: "{{ lookup('file', 'k8s/apps/ai/eddie/' + item + '.yml') | from_yaml }}"
