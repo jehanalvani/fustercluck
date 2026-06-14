@@ -1,0 +1,127 @@
+# Chart: bjw-s/app-template
+# LiteLLM — model router / OpenAI-compatible proxy for Eddie.
+# Internal only (ClusterIP). Eddie (n8n) calls it at:
+#   http://litellm.ai.svc.cluster.local:4000
+#
+# DB-less by design (store_model_in_db: False) — no Postgres needed for routing.
+#
+# Model routes exposed to Eddie:
+#   claude      → Anthropic (the hard 5%)
+#   open-fast   → Groq Llama 3.3 70B (cheap/fast serverless open model)
+#   open-large  → Together Llama 3.3 70B (serverless open model)
+#   local       → (commented) FUTURE on-prem inference. When you bring Eddie home
+#                 on a Mac Mini, uncomment and point api_base at its Ollama. Eddie
+#                 keeps asking for model "local" — only the target changes. No
+#                 workflow edits required.
+
+controllers:
+  litellm:
+    containers:
+      main:
+        image:
+          repository: ghcr.io/berriai/litellm
+          tag: main-latest
+        args:
+          - "--config"
+          - "/etc/litellm/config.yaml"
+          - "--port"
+          - "4000"
+        env:
+          LITELLM_MASTER_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: litellm-secret
+                key: LITELLM_MASTER_KEY
+          ANTHROPIC_API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: litellm-secret
+                key: ANTHROPIC_API_KEY
+          TOGETHER_API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: litellm-secret
+                key: TOGETHER_API_KEY
+          GROQ_API_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: litellm-secret
+                key: GROQ_API_KEY
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health/liveliness
+                port: 4000
+              initialDelaySeconds: 20
+              periodSeconds: 20
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /health/readiness
+                port: 4000
+              initialDelaySeconds: 10
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 512Mi
+
+configMaps:
+  config:
+    enabled: true
+    data:
+      config.yaml: |-
+        model_list:
+          - model_name: claude
+            litellm_params:
+              model: anthropic/claude-sonnet-4-6
+              api_key: os.environ/ANTHROPIC_API_KEY
+
+          - model_name: open-fast
+            litellm_params:
+              model: groq/llama-3.3-70b-versatile
+              api_key: os.environ/GROQ_API_KEY
+
+          - model_name: open-large
+            litellm_params:
+              model: together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo
+              api_key: os.environ/TOGETHER_API_KEY
+
+          # FUTURE — on-prem inference (Mac Mini / GPU box brought home).
+          # Uncomment and set api_base to the box's Ollama endpoint.
+          # - model_name: local
+          #   litellm_params:
+          #     model: ollama_chat/llama3.1:8b
+          #     api_base: http://10.0.1.XX:11434
+          #     num_ctx: 8192
+
+        litellm_settings:
+          drop_params: True
+
+        general_settings:
+          master_key: os.environ/LITELLM_MASTER_KEY
+          store_model_in_db: False
+
+service:
+  main:
+    controller: litellm
+    ports:
+      http:
+        port: 4000
+
+persistence:
+  config:
+    enabled: true
+    type: configMap
+    identifier: config
+    globalMounts:
+      - path: /etc/litellm/config.yaml
+        subPath: config.yaml

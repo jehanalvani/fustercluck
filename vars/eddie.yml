@@ -1,0 +1,24 @@
+---
+# Non-secret config for the Eddie cloud cluster. Secrets live in
+# vars/eddie_vault.yml (vault-encrypted) and are turned into k8s Secrets by
+# create_eddie_secrets.yml. See vars/eddie_vault.yml.example.
+
+# Kubernetes
+eddie_namespace: ai
+eddie_kubeconfig_local: "{{ playbook_dir }}/.kube/eddie.yaml" # gitignored
+eddie_local_storage_path: /mnt/eddie-data/local-path          # the durable Hetzner volume
+
+# Chart / component versions (pin everything for reproducible rebuilds)
+eddie_app_template_version: "3.6.1"     # bjw-s/app-template (matches k8s/apps house standard)
+eddie_cert_manager_version: "v1.16.2"
+
+# TLS / DNS
+# Public hostname for the n8n UI + webhooks. A public DNS A record for this name
+# MUST point at the node's eddie_ipv4. Use a subdomain that is NOT shadowed by
+# Pi-hole's split-horizon *.alvani.me → 10.0.1.30 rule at home (otherwise it
+# resolves to the home cluster on the LAN). See EDDIE.md.
+eddie_n8n_host: eddie.alvani.me
+eddie_acme_email: jehan@jehanalvani.com
+
+# Timezone for n8n cron triggers
+eddie_timezone: America/Los_Angeles

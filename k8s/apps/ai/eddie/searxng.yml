@@ -1,0 +1,80 @@
+# Chart: bjw-s/app-template
+# SearXNG — private metasearch for Eddie's web-search steps.
+# Internal only (ClusterIP). Reachable at:
+#   http://searxng.ai.svc.cluster.local:8080
+# JSON output format is enabled so n8n's HTTP node can parse results
+# (the stock image ships HTML-only).
+
+controllers:
+  searxng:
+    containers:
+      main:
+        image:
+          repository: searxng/searxng
+          tag: latest # pin to a dated tag for reproducible rebuilds
+        env:
+          SEARXNG_BASE_URL: "http://searxng.ai.svc.cluster.local:8080/"
+          SEARXNG_SECRET:
+            valueFrom:
+              secretKeyRef:
+                name: searxng-secret
+                key: SEARXNG_SECRET
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 8080
+              initialDelaySeconds: 15
+              periodSeconds: 20
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 8080
+              initialDelaySeconds: 10
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 50m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+configMaps:
+  settings:
+    enabled: true
+    data:
+      settings.yml: |-
+        use_default_settings: true
+        server:
+          # secret_key is overridden at runtime by the SEARXNG_SECRET env var
+          secret_key: "overridden-by-env"
+          limiter: false
+          image_proxy: true
+        search:
+          # JSON required for programmatic use from n8n
+          formats:
+            - html
+            - json
+
+service:
+  main:
+    controller: searxng
+    ports:
+      http:
+        port: 8080
+
+persistence:
+  settings:
+    enabled: true
+    type: configMap
+    identifier: settings
+    globalMounts:
+      - path: /etc/searxng/settings.yml
+        subPath: settings.yml

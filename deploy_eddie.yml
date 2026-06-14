@@ -1,0 +1,126 @@
+---
+# Eddie cloud cluster — config + app deploy (the "Ansible" half of the hybrid).
+#
+# Assumes the node already exists (provisioned by infra/hetzner-eddie via OpenTofu)
+# and that inventory_eddie.yml points at its public IP.
+#
+# What it does:
+#   Play 1 (on the node): install single-node k3s, point local-path storage at the
+#           durable data volume, fetch an admin kubeconfig back to the controller.
+#   Play 2 (local):       install cert-manager + a Let's Encrypt issuer, then deploy
+#           the Eddie brain (n8n + LiteLLM + Qdrant + SearXNG) via the bjw-s chart.
+#
+# Run:
+#   ansible-playbook -i inventory_eddie.yml deploy_eddie.yml
+#   # then, once per cluster, load secrets:
+#   ansible-playbook -i inventory_eddie.yml create_eddie_secrets.yml --vault-id fustercluck@passfile.txt
+#
+# Prereqs on the controller: helm, kubectl, and
+#   ansible-galaxy collection install kubernetes.core
+
+- name: Bootstrap k3s on the Eddie node
+  hosts: eddie
+  become: true
+  gather_facts: true
+  vars_files:
+    - vars/eddie.yml
+  tasks:
+    - name: Install single-node k3s
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server \
+          --write-kubeconfig-mode 644 \
+          --default-local-storage-path {{ eddie_local_storage_path }} \
+          --tls-san {{ ansible_host }}" sh -
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for kubeconfig to be written
+      ansible.builtin.wait_for:
+        path: /etc/rancher/k3s/k3s.yaml
+        timeout: 120
+
+    - name: Slurp k3s kubeconfig
+      ansible.builtin.slurp:
+        src: /etc/rancher/k3s/k3s.yaml
+      register: eddie_kubeconfig_raw
+
+    - name: Ensure local .kube directory exists
+      ansible.builtin.file:
+        path: "{{ eddie_kubeconfig_local | dirname }}"
+        state: directory
+        mode: '0700'
+      delegate_to: localhost
+      become: false
+
+    - name: Write kubeconfig to controller (server URL rewritten to public IP)
+      ansible.builtin.copy:
+        # 127.0.0.1 in the in-cluster kubeconfig → the node's public IP so helm/kubectl
+        # work from the controller. Mirrors roles/k3s/tasks/kubeconfig.yml.
+        content: "{{ eddie_kubeconfig_raw.content | b64decode | replace('127.0.0.1', ansible_host) }}"
+        dest: "{{ eddie_kubeconfig_local }}"
+        mode: '0600'
+      delegate_to: localhost
+      become: false
+
+- name: Deploy Eddie brain
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - vars/eddie.yml
+  environment:
+    KUBECONFIG: "{{ eddie_kubeconfig_local }}"
+  tasks:
+    - name: Create the ai namespace
+      kubernetes.core.k8s:
+        kind: Namespace
+        name: "{{ eddie_namespace }}"
+        state: present
+
+    - name: Install cert-manager (CRDs + controller)
+      kubernetes.core.helm:
+        name: cert-manager
+        chart_ref: cert-manager
+        chart_repo_url: https://charts.jetstack.io
+        release_namespace: cert-manager
+        create_namespace: true
+        chart_version: "{{ eddie_cert_manager_version }}"
+        values:
+          crds:
+            enabled: true
+        wait: true
+
+    - name: Create Let's Encrypt ClusterIssuer (HTTP-01 via Traefik)
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-issuer
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: "{{ eddie_acme_email }}"
+              privateKeySecretRef:
+                name: letsencrypt-issuer-account-key
+              solvers:
+                - http01:
+                    ingress:
+                      class: traefik
+
+    # Each Eddie component is one bjw-s app-template release. Adding a second
+    # Eddie later = copy a values file and add an item to this loop.
+    - name: Deploy Eddie components
+      kubernetes.core.helm:
+        name: "{{ item }}"
+        chart_ref: oci://ghcr.io/bjw-s-labs/helm/app-template
+        chart_version: "{{ eddie_app_template_version }}"
+        release_namespace: "{{ eddie_namespace }}"
+        values: "{{ lookup('file', 'k8s/apps/ai/eddie/' + item + '.yml') | from_yaml }}"
+        wait: false
+      loop:
+        - litellm
+        - qdrant
+        - searxng
+        - n8n

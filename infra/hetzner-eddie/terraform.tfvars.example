@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+#
+# Get a token: Hetzner Cloud Console → your project → Security → API Tokens →
+# Generate API Token (Read & Write).
+
+hcloud_token = "PASTE_YOUR_HETZNER_API_TOKEN"
+
+# Lock SSH (22) and the k3s API (6443) to your admin IP(s). Find yours: `curl ifconfig.me`.
+# 80/443 are always world-open for Traefik + Let's Encrypt regardless of this.
+admin_cidrs = ["YOUR.HOME.IP.HERE/32"]
+
+# Optional overrides (defaults shown):
+# server_name         = "eddie-01"
+# location            = "hil"            # Hillsboro, OR
+# server_type         = "cpx31"          # 4 vCPU / 8 GB
+# image               = "ubuntu-24.04"
+# ssh_public_key_path = "~/.ssh/claude_homelab.pub"
+# data_volume_size    = 20               # GB; 0 to disable the durable data disk

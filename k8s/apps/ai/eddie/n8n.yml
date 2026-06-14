@@ -1,0 +1,103 @@
+# Chart: bjw-s/app-template
+# n8n — Eddie itself: the always-on visual workflow/automation engine.
+# Public via Traefik + Let's Encrypt at https://eddie.alvani.me
+#
+# Storage: SQLite on a local-path PVC backed by the durable Hetzner volume.
+# Fine for a single instance. Switch DB_TYPE to postgresdb later if Eddie grows.
+#
+# Brain wiring (in-cluster, no public exposure of these):
+#   LiteLLM  → http://litellm.ai.svc.cluster.local:4000   (OpenAI-compatible)
+#   Qdrant   → http://qdrant.ai.svc.cluster.local:6333
+#   SearXNG  → http://searxng.ai.svc.cluster.local:8080
+#
+# A second Eddie = copy this file (e.g. n8n-work.yml), change the release name in
+# deploy_eddie.yml's loop, the hostname, and the PVC — shared LiteLLM/Qdrant/SearXNG.
+#
+# NOTE: keep the hostname here in sync with eddie_n8n_host in vars/eddie.yml.
+
+controllers:
+  n8n:
+    containers:
+      main:
+        image:
+          repository: docker.n8n.io/n8nio/n8n
+          tag: latest # PIN to a release: https://github.com/n8n-io/n8n/releases
+        env:
+          N8N_ENCRYPTION_KEY:
+            valueFrom:
+              secretKeyRef:
+                name: n8n-secret
+                key: N8N_ENCRYPTION_KEY
+          N8N_HOST: eddie.alvani.me
+          N8N_PORT: "5678"
+          N8N_PROTOCOL: https
+          WEBHOOK_URL: https://eddie.alvani.me/
+          N8N_EDITOR_BASE_URL: https://eddie.alvani.me/
+          GENERIC_TIMEZONE: America/Los_Angeles
+          # Behind Traefik: trust one proxy hop, keep secure cookies on.
+          N8N_PROXY_HOPS: "1"
+          N8N_SECURE_COOKIE: "true"
+          # Convenience: brain endpoints available to workflows as env vars
+          LITELLM_BASE_URL: http://litellm.ai.svc.cluster.local:4000
+          QDRANT_URL: http://qdrant.ai.svc.cluster.local:6333
+          SEARXNG_URL: http://searxng.ai.svc.cluster.local:8080
+        probes:
+          liveness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 5678
+              initialDelaySeconds: 30
+              periodSeconds: 20
+          readiness:
+            enabled: true
+            custom: true
+            spec:
+              httpGet:
+                path: /healthz
+                port: 5678
+              initialDelaySeconds: 15
+              periodSeconds: 10
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 1500m
+            memory: 1Gi
+
+service:
+  main:
+    controller: n8n
+    ports:
+      http:
+        port: 5678
+
+ingress:
+  main:
+    className: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-issuer
+    hosts:
+      - host: eddie.alvani.me
+        paths:
+          - path: /
+            pathType: Prefix
+            service:
+              identifier: main
+              port: http
+    tls:
+      - secretName: eddie-tls
+        hosts:
+          - eddie.alvani.me
+
+persistence:
+  data:
+    enabled: true
+    storageClass: local-path
+    accessMode: ReadWriteOnce
+    size: 5Gi
+    globalMounts:
+      - path: /home/node/.n8n
