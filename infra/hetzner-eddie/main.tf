@@ -55,22 +55,22 @@ resource "hcloud_firewall" "eddie" {
 }
 
 resource "hcloud_volume" "eddie_data" {
-  count     = var.data_volume_size > 0 ? 1 : 0
-  name      = "${var.server_name}-data"
-  size      = var.data_volume_size
-  location  = var.location
-  format    = "ext4"
-  labels    = var.labels
+  count    = var.data_volume_size > 0 ? 1 : 0
+  name     = "${var.server_name}-data"
+  size     = var.data_volume_size
+  location = var.location
+  format   = "ext4"
+  labels   = var.labels
 }
 
 resource "hcloud_server" "eddie" {
-  name        = var.server_name
-  server_type = var.server_type
-  image       = var.image
-  location    = var.location
-  ssh_keys    = [hcloud_ssh_key.eddie.id]
+  name         = var.server_name
+  server_type  = var.server_type
+  image        = var.image
+  location     = var.location
+  ssh_keys     = [hcloud_ssh_key.eddie.id]
   firewall_ids = [hcloud_firewall.eddie.id]
-  labels      = var.labels
+  labels       = var.labels
 
   public_net {
     ipv4_enabled = true
