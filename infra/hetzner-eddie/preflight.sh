@@ -7,10 +7,10 @@
 #
 # Verifies three things before you run deploy_eddie.yml:
 #   1. SERVER   — SSH in as ansible, data volume mounted, OS is Ubuntu
-#   2. DNS      — eddie.alvani.me resolves, and where (warns if it points home)
+#   2. DNS      — n8n.alvani.me resolves, and where (warns if it points home)
 #   3. TOOLCHAIN— ansible + kubernetes.core + python kubernetes + helm present
 
-HOST_FQDN="${EDDIE_HOST:-eddie.alvani.me}"
+HOST_FQDN="${EDDIE_HOST:-n8n.alvani.me}"
 SSH_KEY="${EDDIE_SSH_KEY:-$HOME/.ssh/eddie}"
 SSH_USER="${EDDIE_SSH_USER:-ansible}"
 

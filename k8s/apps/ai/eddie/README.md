@@ -5,7 +5,7 @@ onto the Hetzner k3s cluster (namespace `ai`).
 
 | File | Component | Exposure |
 |------|-----------|----------|
-| `n8n.yml` | n8n — the automation engine (Eddie itself) | Public via Traefik (`eddie.alvani.me`) |
+| `n8n.yml` | n8n — the automation engine (Eddie itself) | Public via Traefik (`n8n.alvani.me`) |
 | `litellm.yml` | LiteLLM — model router (claude + open models) | ClusterIP |
 | `qdrant.yml` | Qdrant — vector memory | ClusterIP |
 | `searxng.yml` | SearXNG — private search | ClusterIP |

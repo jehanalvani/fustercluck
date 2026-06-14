@@ -25,7 +25,7 @@ open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
 
 > **Status (2026-06-14): LIVE.** `cx33` (Intel 4 vCPU/8 GB) in `hel1` (Helsinki),
 > IP `65.108.152.20`. All four pods Running, Let's Encrypt cert issued, n8n
-> reachable at https://eddie.alvani.me. Cost ~$7–8/mo (cx33 + volume) ≈ ~$100/year.
+> reachable at https://n8n.alvani.me. Cost ~$7–8/mo (cx33 + volume) ≈ ~$100/year.
 >
 > Provisioning notes for next time:
 > - ARM (cax21, ~half price) was **sold out across all Hetzner locations**, and
@@ -45,7 +45,7 @@ open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
                          Internet
                             │  :443 (Traefik + Let's Encrypt)
                             ▼
-   eddie.alvani.me ──► [ k3s @ Hetzner Helsinki, CX33 (x86) ]
+   n8n.alvani.me ──► [ k3s @ Hetzner Helsinki, CX33 (x86) ]
                             │
         ┌───────────────────┼────────────────────────┐
         ▼                   ▼                         ▼
@@ -98,12 +98,12 @@ cp terraform.tfstate /whidbey/backups/eddie-tfstate-$(date +%F).backup   # back 
 ```
 
 ### 2. DNS
-Create a **public** A record: `eddie.alvani.me → <eddie_ipv4>`.
+Create a **public** A record: `n8n.alvani.me → <eddie_ipv4>`.
 
 > **Split-horizon gotcha:** Pi-hole resolves `*.alvani.me → 10.0.1.30` (home Traefik)
-> on the LAN. So on your home network `eddie.alvani.me` would point at the *home*
+> on the LAN. So on your home network `n8n.alvani.me` would point at the *home*
 > cluster, not Hetzner. Options: (a) use a subdomain carved out of the split-horizon
-> rule, or (b) add a Pi-hole local DNS override for `eddie.alvani.me → <eddie_ipv4>`.
+> rule, or (b) add a Pi-hole local DNS override for `n8n.alvani.me → <eddie_ipv4>`.
 > Public/mobile resolution is unaffected.
 
 ### 3. Point inventory at the node
@@ -128,7 +128,7 @@ KUBECONFIG=.kube/eddie.yaml kubectl -n ai rollout restart deploy
 ```
 
 ### 6. Open Eddie
-Visit `https://eddie.alvani.me`, create the owner account, and wire workflows.
+Visit `https://n8n.alvani.me`, create the owner account, and wire workflows.
 Point n8n's AI/HTTP nodes at the in-cluster brain endpoints (already injected as
 `LITELLM_BASE_URL`, `QDRANT_URL`, `SEARXNG_URL` env vars).
 

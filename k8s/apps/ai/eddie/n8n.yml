@@ -1,6 +1,6 @@
 # Chart: bjw-s/app-template
 # n8n — Eddie itself: the always-on visual workflow/automation engine.
-# Public via Traefik + Let's Encrypt at https://eddie.alvani.me
+# Public via Traefik + Let's Encrypt at https://n8n.alvani.me
 #
 # Storage: SQLite on a local-path PVC backed by the durable Hetzner volume.
 # Fine for a single instance. Switch DB_TYPE to postgresdb later if Eddie grows.
@@ -28,11 +28,11 @@ controllers:
               secretKeyRef:
                 name: n8n-secret
                 key: N8N_ENCRYPTION_KEY
-          N8N_HOST: eddie.alvani.me
+          N8N_HOST: n8n.alvani.me
           N8N_PORT: "5678"
           N8N_PROTOCOL: https
-          WEBHOOK_URL: https://eddie.alvani.me/
-          N8N_EDITOR_BASE_URL: https://eddie.alvani.me/
+          WEBHOOK_URL: https://n8n.alvani.me/
+          N8N_EDITOR_BASE_URL: https://n8n.alvani.me/
           GENERIC_TIMEZONE: America/Los_Angeles
           # Behind Traefik: trust one proxy hop, keep secure cookies on.
           N8N_PROXY_HOPS: "1"
@@ -81,7 +81,7 @@ ingress:
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-issuer
     hosts:
-      - host: eddie.alvani.me
+      - host: n8n.alvani.me
         paths:
           - path: /
             pathType: Prefix
@@ -89,9 +89,9 @@ ingress:
               identifier: main
               port: http
     tls:
-      - secretName: eddie-tls
+      - secretName: n8n-tls
         hosts:
-          - eddie.alvani.me
+          - n8n.alvani.me
 
 persistence:
   data:
