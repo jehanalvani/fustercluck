@@ -8,3 +8,7 @@ facts
 passfile.txt
 roles/aistack/files/__pycache__/
 .codevis_cache.json
+
+# Eddie cloud cluster
+.kube/
+vars/eddie_vault.yml

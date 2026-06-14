@@ -1,0 +1,30 @@
+#cloud-config
+# First-boot setup for the Eddie node. Intentionally minimal — everything beyond
+# "a reachable box with an ansible user and a mounted data disk" is Ansible's job.
+
+users:
+  - name: ansible
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+package_update: true
+packages:
+  - curl
+
+%{ if has_volume ~}
+# The attached Hetzner volume appears as /dev/disk/by-id/scsi-0HC_Volume_<id>.
+# It is pre-formatted ext4 by OpenTofu. Mount it at /mnt/eddie-data and point
+# k3s's local-path provisioner there (configured by Ansible) so Eddie's data
+# survives a node rebuild.
+runcmd:
+  - mkdir -p /mnt/eddie-data
+  - |
+    VOL=$(ls /dev/disk/by-id/scsi-0HC_Volume_* 2>/dev/null | head -n1)
+    if [ -n "$VOL" ]; then
+      grep -q "/mnt/eddie-data" /etc/fstab || echo "$VOL /mnt/eddie-data ext4 discard,nofail,defaults 0 0" >> /etc/fstab
+      mount -a
+    fi
+%{ endif ~}
