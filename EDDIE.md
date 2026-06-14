@@ -23,14 +23,21 @@ Most automation is trigger-based and won't need any of this.
 + SearXNG (private search). No GPU — inference goes to Claude and serverless
 open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
 
-> **Status (2026-06-14):** node provisioned — `cx33` (Intel 4 vCPU/8 GB) in `hel1`
-> (Helsinki), IP `65.108.152.20`, data volume attached. The k3s/app **deploy step
-> has not been run yet**. Cost ~$7–8/mo (cx33 + volume) ≈ ~$100/year.
+> **Status (2026-06-14): LIVE.** `cx33` (Intel 4 vCPU/8 GB) in `hel1` (Helsinki),
+> IP `65.108.152.20`. All four pods Running, Let's Encrypt cert issued, n8n
+> reachable at https://eddie.alvani.me. Cost ~$7–8/mo (cx33 + volume) ≈ ~$100/year.
 >
-> Server-type note: ARM (cax21, ~half price) was **sold out across all Hetzner
-> locations** at provision time, and `fsn1` had no 4c/8g x86 free either — hence
-> `cx33`/`hel1`. Run `infra/hetzner-eddie/check-availability.sh` to re-check; swap
-> to `cax21` whenever ARM capacity returns (data volume persists through it).
+> Provisioning notes for next time:
+> - ARM (cax21, ~half price) was **sold out across all Hetzner locations**, and
+>   `fsn1` had no 4c/8g x86 free either — hence `cx33`/`hel1`. Run
+>   `infra/hetzner-eddie/check-availability.sh` to re-check; swap to `cax21` when
+>   ARM returns (the data volume persists through a server replace).
+> - litellm needs ~1.5 Gi memory (OOMKilled at 512 Mi).
+> - The control node (20-size) needs: ansible + `kubernetes.core` +
+>   `python3-kubernetes` + helm. Use `ANSIBLE_VAULT_IDENTITY_LIST=fustercluck@<file>`
+>   to bypass the `op`-based vault password when running from a host without 1Password.
+> - Diagnostics: `infra/hetzner-eddie/eddie-diag.sh` (secret-free) piped to a paste,
+>   or `--logs` for verbose (treat as sensitive).
 
 ## Architecture
 
