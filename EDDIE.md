@@ -23,10 +23,14 @@ Most automation is trigger-based and won't need any of this.
 + SearXNG (private search). No GPU — inference goes to Claude and serverless
 open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
 
-> ⚠️ **Status: reviewed scaffolding, not yet applied.** Nothing here has been run
-> against live infrastructure. Treat the first `tofu apply` / `deploy_eddie.yml`
-> as a validation run. Costs ~$8–12/mo (CAX21 arm64 + volume) ≈ ~$100–150/year
-> (x86 cpx31 would be ~$18–25/mo).
+> **Status (2026-06-14):** node provisioned — `cx33` (Intel 4 vCPU/8 GB) in `hel1`
+> (Helsinki), IP `65.108.152.20`, data volume attached. The k3s/app **deploy step
+> has not been run yet**. Cost ~$7–8/mo (cx33 + volume) ≈ ~$100/year.
+>
+> Server-type note: ARM (cax21, ~half price) was **sold out across all Hetzner
+> locations** at provision time, and `fsn1` had no 4c/8g x86 free either — hence
+> `cx33`/`hel1`. Run `infra/hetzner-eddie/check-availability.sh` to re-check; swap
+> to `cax21` whenever ARM capacity returns (data volume persists through it).
 
 ## Architecture
 
@@ -34,7 +38,7 @@ open models via LiteLLM. See "Bringing Eddie home" for the on-prem path.
                          Internet
                             │  :443 (Traefik + Let's Encrypt)
                             ▼
-   eddie.alvani.me ──► [ k3s @ Hetzner Helsinki, CAX21 (arm64) ]
+   eddie.alvani.me ──► [ k3s @ Hetzner Helsinki, CX33 (x86) ]
                             │
         ┌───────────────────┼────────────────────────┐
         ▼                   ▼                         ▼

@@ -30,14 +30,16 @@ variable "location" {
 
 variable "server_type" {
   description = <<-EOT
-    Hetzner server type. Default CAX21 = 4 vCPU / 8 GB (arm64) — the EU (hel1)
-    ARM line, ~half the price of x86 with 20 TB bandwidth, comfortably runs the
-    full Eddie brain (n8n + LiteLLM + Qdrant + SearXNG). All images are multi-arch
-    (n8n, Qdrant, SearXNG, and the GHCR LiteLLM image all publish arm64).
-    Prefer x86? Set this to "cpx31" (4 vCPU / 8 GB).
+    Hetzner server type. Default CX33 = 4 vCPU / 8 GB (x86, Intel, EU cost-optimized,
+    ~EUR7/mo) — comfortably runs the full Eddie brain (n8n + LiteLLM + Qdrant +
+    SearXNG). The cheaper ARM line (cax21) is ~half price BUT was sold out across
+    ALL Hetzner locations when this was provisioned (Jun 2026); check current
+    availability with ./check-availability.sh before trying it. Note: server-type
+    availability is per-datacenter — fsn1 had no 4c/8g types free; hel1/nbg1 did.
+    All Eddie images are multi-arch, so cax21 works whenever capacity returns.
   EOT
   type        = string
-  default     = "cax21"
+  default     = "cx33"
 }
 
 variable "image" {

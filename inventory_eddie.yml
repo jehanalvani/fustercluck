@@ -1,10 +1,10 @@
 ---
-# Separate inventory for the Eddie cloud node (Hetzner / Hillsboro).
+# Separate inventory for the Eddie cloud node (Hetzner / Helsinki).
 # Kept apart from inventory.yml because this host is NOT on the LAN, uses a
 # public IP (not mDNS .local), and is reached as the `ansible` user created by
 # cloud-init.
 #
-# Fill in ansible_host with the `eddie_ipv4` output from:
+# ansible_host is the `eddie_ipv4` output from:
 #   cd infra/hetzner-eddie && tofu output eddie_ipv4
 #
 # Usage:
@@ -14,8 +14,9 @@
 eddie:
   hosts:
     eddie-01:
-      ansible_host: REPLACE_WITH_TOFU_OUTPUT_eddie_ipv4
+      ansible_host: 65.108.152.20
   vars:
     ansible_user: ansible
-    ansible_ssh_private_key_file: ~/.ssh/claude_homelab
+    # dedicated keypair generated on the control node for the Eddie server
+    ansible_ssh_private_key_file: ~/.ssh/eddie
     ansible_python_interpreter: /usr/bin/python3

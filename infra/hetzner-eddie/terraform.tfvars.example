@@ -12,7 +12,8 @@ admin_cidrs = ["YOUR.HOME.IP.HERE/32"]
 # Optional overrides (defaults shown):
 # server_name         = "eddie-01"
 # location            = "hel1"           # Helsinki, EU (GDPR/jurisdiction). hil = Hillsboro US-West.
-# server_type         = "cax21"          # 4 vCPU / 8 GB ARM (default, ~half price). x86: "cpx31".
+# server_type         = "cx33"           # Intel 4c/8g EU (~EUR7/mo, default). cax21=ARM (cheaper, often sold out).
+#                                        # availability is per-DC: run ./check-availability.sh if apply fails.
 # image               = "ubuntu-24.04"
-# ssh_public_key_path = "~/.ssh/claude_homelab.pub"
+# ssh_public_key_path = "~/.ssh/eddie.pub"
 # data_volume_size    = 20               # GB; 0 to disable the durable data disk
